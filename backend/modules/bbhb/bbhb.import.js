@@ -1,19 +1,30 @@
 /**
  * bbhb.import.js
  *
- * Turkvet Excel/CSV dosyalarini okuyup normalize hayvan kaydi
- * formatina cevirir. Coklu dosya destekler, birlestirir.
+ * Turkvet Excel (.xls/.xlsx) veya CSV dosyalarini okuyup normalize
+ * hayvan kaydi formatina cevirir. Coklu dosya destekler, birlestirir.
  *
- * Beklenen sutun basliklari (gercek Turkvet disa aktarim
- * formatiyla eslenmelidir - asagidaki isimler ornektir):
- *   Isletmeci Id | Isletmeci Adi | Tur | Cinsiyet | Dogum Tarihi | Irk
+ * ONEMLI: Turkvet disa aktarimlari eski binary .xls formatinda gelebilir
+ * (ExcelJS bunu okuyamaz) - bu yuzden 'xlsx' (SheetJS) paketi kullanilir,
+ * o hem .xls hem .xlsx hem .csv okuyabilir.
+ *
+ * Gercek Turkvet basliklari (Kucukbas ve Buyukbas sablonlarinda sutun
+ * SIRASI farkli olabilir - orn. Buyukbas'ta "Anne Kupe Numarasi" ekstra
+ * sutunu var). Bu yuzden ISIM bazli eslestirme yapilir, pozisyon bazli
+ * DEGIL.
+ *
+ * Beklenen basliklar: Küpe Numarası, Tür, Irk, Cinsiyet, Doğum Tarihi,
+ * İl, İlçe, Mahalle, İşletme Sahibi Kişi/Firma, Bulunduğu İşletme
  *
  * Cikti (normalize kayit):
  *   { isletmeciId, isletmeciAdi, tur, cinsiyet, yasAy, irk,
  *     kaynak, kaynakReferans }
+ *
+ *   isletmeciId   <- "Bulunduğu İşletme" (TR kodu, essiz/kalici referans)
+ *   isletmeciAdi  <- "İşletme Sahibi Kişi/Firma" (goruntu adi)
  */
 
-const ExcelJS = require('exceljs');
+const XLSX = require('xlsx');
 const path = require('path');
 
 const TUR_ESLEME = {
@@ -36,84 +47,116 @@ const CINSIYET_ESLEME = {
   'erkek': 'erkek',
 };
 
+// Baslik adi -> olasi yaziliş varyasyonlari (Turkce karakter/harf farkina
+// dayanikli olmak icin kucuk harfe cevrilip karsilastirilir)
+const BASLIK_ANAHTARLARI = {
+  kupeNumarasi: ['küpe numarası', 'kupe numarasi'],
+  tur: ['tür', 'tur'],
+  irk: ['irk', 'ırk'],
+  cinsiyet: ['cinsiyet'],
+  dogumTarihi: ['doğum tarihi', 'dogum tarihi'],
+  isletmeSahibi: ['işletme sahibi kişi/firma', 'isletme sahibi kisi/firma'],
+  bulunduguIsletme: ['bulunduğu işletme', 'bulundugu isletme'],
+};
+
 function turNormalizeEt(hamDeger) {
   const key = String(hamDeger || '').trim().toLocaleLowerCase('tr-TR');
   const sonuc = TUR_ESLEME[key];
-  if (!sonuc) throw new Error(`Bilinmeyen tur degeri: "${hamDeger}"`);
+  if (!sonuc) throw new Error(`Bilinmeyen tür değeri: "${hamDeger}"`);
   return sonuc;
 }
 
 function cinsiyetNormalizeEt(hamDeger) {
   const key = String(hamDeger || '').trim().toLocaleLowerCase('tr-TR');
   const sonuc = CINSIYET_ESLEME[key];
-  if (!sonuc) throw new Error(`Bilinmeyen cinsiyet degeri: "${hamDeger}"`);
+  if (!sonuc) throw new Error(`Bilinmeyen cinsiyet değeri: "${hamDeger}"`);
   return sonuc;
 }
 
-function yasAyHesapla(dogumTarihi, referansTarih = new Date()) {
-  const d = new Date(dogumTarihi);
-  if (Number.isNaN(d.getTime())) {
-    throw new Error(`Gecersiz dogum tarihi: "${dogumTarihi}"`);
+/**
+ * Turkvet tarihleri metin olarak "GG.AA.YY" formatinda gelir (orn. "01.12.21").
+ * 2 haneli yil: 00-30 -> 2000'ler, 31-99 -> 1900'ler kabul edilir.
+ */
+function yasAyHesapla(hamTarih, referansTarih = new Date()) {
+  const metin = String(hamTarih || '').trim();
+  const parcalar = metin.split('.');
+  if (parcalar.length !== 3) {
+    throw new Error(`Geçersiz doğum tarihi formatı: "${hamTarih}"`);
+  }
+  let [gun, ay, yil] = parcalar.map((p) => parseInt(p, 10));
+  if (yil < 100) {
+    yil += yil <= 30 ? 2000 : 1900;
+  }
+  const dogumTarihi = new Date(yil, ay - 1, gun);
+  if (Number.isNaN(dogumTarihi.getTime())) {
+    throw new Error(`Geçersiz doğum tarihi: "${hamTarih}"`);
   }
   const ayFarki =
-    (referansTarih.getFullYear() - d.getFullYear()) * 12 +
-    (referansTarih.getMonth() - d.getMonth());
+    (referansTarih.getFullYear() - dogumTarihi.getFullYear()) * 12 +
+    (referansTarih.getMonth() - dogumTarihi.getMonth());
   return Math.max(ayFarki, 0);
 }
 
+/** Baslik satirindaki sutun index'lerini ISIM bazli bulur. */
+function basliklariEslestir(hamBaslikSatiri) {
+  const normalize = hamBaslikSatiri.map((v) =>
+    String(v || '').trim().toLocaleLowerCase('tr-TR')
+  );
+  const eslesme = {};
+  for (const [anahtar, adaylar] of Object.entries(BASLIK_ANAHTARLARI)) {
+    const index = normalize.findIndex((baslik) => adaylar.includes(baslik));
+    if (index === -1) {
+      throw new Error(`Beklenen sütun bulunamadı: "${adaylar[0]}"`);
+    }
+    eslesme[anahtar] = index;
+  }
+  return eslesme;
+}
+
 /**
- * Tek bir Excel/CSV dosyasini okuyup normalize kayit dizisine cevirir.
+ * Tek bir dosyayi okuyup normalize kayit dizisine cevirir.
  * @param {string} dosyaYolu
  * @returns {Promise<Array>}
  */
 async function dosyaOku(dosyaYolu) {
-  const workbook = new ExcelJS.Workbook();
-  const uzanti = path.extname(dosyaYolu).toLowerCase();
+  const workbook = XLSX.readFile(dosyaYolu);
+  const sheetAdi = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetAdi];
 
-  if (uzanti === '.csv') {
-    await workbook.csv.readFile(dosyaYolu);
-  } else {
-    await workbook.xlsx.readFile(dosyaYolu);
-  }
+  // header:1 -> her satiri dizi olarak al (baslik/pozisyon bagimsiz okuma)
+  const satirlar = XLSX.utils.sheet_to_json(sheet, {
+    header: 1,
+    raw: false,
+    defval: '',
+  });
 
-  const worksheet = workbook.worksheets[0];
-  if (!worksheet) {
+  if (satirlar.length < 2) {
     throw new Error(
-      `Dosya okunamadı, geçerli bir Excel/CSV dosyası olduğundan emin olun: "${path.basename(
-        dosyaYolu
-      )}"`
+      `Dosyada veri satırı bulunamadı: "${path.basename(dosyaYolu)}"`
     );
   }
 
+  const eslesme = basliklariEslestir(satirlar[0]);
   const kayitlar = [];
-  let basliklar = [];
 
-  worksheet.eachRow((row, rowNumber) => {
-    const degerler = row.values.slice(1); // ExcelJS 1-indexli, ilk eleman bos
+  for (let i = 1; i < satirlar.length; i++) {
+    const satir = satirlar[i];
+    if (!satir || satir.every((h) => String(h).trim() === '')) continue;
 
-    if (rowNumber === 1) {
-      basliklar = degerler.map((v) =>
-        String(v || '').trim().toLocaleLowerCase('tr-TR')
-      );
-      return;
-    }
-
-    const satir = {};
-    basliklar.forEach((baslik, i) => {
-      satir[baslik] = degerler[i];
-    });
+    const kupeNo = satir[eslesme.kupeNumarasi];
+    if (!kupeNo) continue;
 
     kayitlar.push({
-      isletmeciId: String(satir['isletmeci id'] || '').trim(),
-      isletmeciAdi: String(satir['isletmeci adi'] || '').trim(),
-      tur: turNormalizeEt(satir['tur']),
-      cinsiyet: cinsiyetNormalizeEt(satir['cinsiyet']),
-      yasAy: yasAyHesapla(satir['dogum tarihi']),
-      irk: String(satir['irk'] || '').trim(),
+      isletmeciId: String(satir[eslesme.bulunduguIsletme] || '').trim(),
+      isletmeciAdi: String(satir[eslesme.isletmeSahibi] || '').trim(),
+      tur: turNormalizeEt(satir[eslesme.tur]),
+      cinsiyet: cinsiyetNormalizeEt(satir[eslesme.cinsiyet]),
+      yasAy: yasAyHesapla(satir[eslesme.dogumTarihi]),
+      irk: String(satir[eslesme.irk] || '').trim(),
       kaynak: 'turkvet_excel',
-      kaynakReferans: `${path.basename(dosyaYolu)}:${rowNumber}`,
+      kaynakReferans: `${path.basename(dosyaYolu)}:${String(kupeNo).trim()}`,
     });
-  });
+  }
 
   return kayitlar;
 }
@@ -135,7 +178,6 @@ async function cokluDosyaOku(dosyaYollari) {
 /**
  * Normalize kayitlari isletmeci bazinda gruplar.
  * @param {Array} kayitlar
- * @returns {Map<string, {isletmeciId, isletmeciAdi, kayitlar: Array}>}
  */
 function isletmeciBazindaGrupla(kayitlar) {
   const gruplar = new Map();
