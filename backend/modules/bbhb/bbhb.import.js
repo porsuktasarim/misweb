@@ -55,6 +55,9 @@ const BASLIK_ANAHTARLARI = {
   irk: ['irk', 'ırk'],
   cinsiyet: ['cinsiyet'],
   dogumTarihi: ['doğum tarihi', 'dogum tarihi'],
+  il: ['il'],
+  ilce: ['ilçe', 'ilce'],
+  mahalle: ['mahalle'],
   isletmeSahibi: ['işletme sahibi kişi/firma', 'isletme sahibi kisi/firma'],
   bulunduguIsletme: ['bulunduğu işletme', 'bulundugu isletme'],
 };
@@ -149,6 +152,9 @@ async function dosyaOku(dosyaYolu) {
     kayitlar.push({
       isletmeciId: String(satir[eslesme.bulunduguIsletme] || '').trim(),
       isletmeciAdi: String(satir[eslesme.isletmeSahibi] || '').trim(),
+      il: String(satir[eslesme.il] || '').trim(),
+      ilce: String(satir[eslesme.ilce] || '').trim(),
+      mahalle: String(satir[eslesme.mahalle] || '').trim(),
       tur: turNormalizeEt(satir[eslesme.tur]),
       cinsiyet: cinsiyetNormalizeEt(satir[eslesme.cinsiyet]),
       yasAy: yasAyHesapla(satir[eslesme.dogumTarihi]),

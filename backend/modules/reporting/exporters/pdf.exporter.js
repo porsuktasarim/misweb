@@ -1,7 +1,8 @@
 /**
  * pdf.exporter.js
  *
- * Ortak rapor contract'ini .pdf dosyasina cevirir (pdfkit ile).
+ * Ortak rapor contract'ini .pdf dosyasina cevirir. Her bolum kendi
+ * basligiyla art arda yazilir.
  */
 
 const PDFDocument = require('pdfkit');
@@ -15,24 +16,32 @@ async function contractToPdf(contract) {
     doc.on('end', () => resolve(Buffer.concat(parcalar)));
     doc.on('error', reject);
 
-    const baslikMetni =
-      `${contract.baslik.il} / ${contract.baslik.ilce}` +
-      (contract.baslik.mahalle ? ` / ${contract.baslik.mahalle}` : '');
-
-    doc.fontSize(16).text(baslikMetni, { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(13).text(`${contract.modulAdi} Raporu`);
+    doc.fontSize(16).text(`${contract.modulAdi} Raporu`, { align: 'center' });
     doc.moveDown();
 
-    for (const isletmeci of contract.isletmeciler) {
-      doc.fontSize(12).text(isletmeci.isletmeciAdi, { underline: true });
-      doc.fontSize(10);
-      for (const k of isletmeci.kayitlar) {
-        doc.text(
-          `${k.grup} - ${k.kategori} | ${lang.ortak.adet}: ${k.adet} | ${lang.ortak.katsayi}: ${k.katsayi} | ${contract.modulAdi}: ${k.deger}`
-        );
+    for (const bolum of contract.bolumler) {
+      const baslikMetni =
+        `${bolum.baslik.il} / ${bolum.baslik.ilce}` +
+        (bolum.baslik.mahalle ? ` / ${bolum.baslik.mahalle}` : '');
+
+      doc.fontSize(14).text(baslikMetni, { underline: true });
+      doc.moveDown(0.5);
+
+      for (const isletmeci of bolum.isletmeciler) {
+        doc.fontSize(12).text(isletmeci.isletmeciAdi, { underline: true });
+        doc.fontSize(10);
+        for (const k of isletmeci.kayitlar) {
+          doc.text(
+            `${k.grup} - ${k.kategori} | ${lang.ortak.adet}: ${k.adet} | ${lang.ortak.katsayi}: ${k.katsayi} | ${contract.modulAdi}: ${k.deger}`
+          );
+        }
+        doc.fontSize(11).text(`${lang.ortak.toplam}: ${isletmeci.isletmeciToplami}`, {
+          align: 'right',
+        });
+        doc.moveDown(0.3);
       }
-      doc.fontSize(11).text(`${lang.ortak.toplam}: ${isletmeci.isletmeciToplami}`, {
+
+      doc.fontSize(12).text(`${baslikMetni} - ${lang.ortak.toplam}: ${bolum.bolumToplami}`, {
         align: 'right',
       });
       doc.moveDown();

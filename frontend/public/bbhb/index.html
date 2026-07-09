@@ -79,21 +79,6 @@
       <!-- 4a: BİRİNCİL (giriş akışı) -->
       <div class="mis-icerik-birincil">
         <div class="mis-panel">
-          <h2>Rapor Başlığı</h2>
-          <form id="baslikForm" class="row g-2">
-            <div class="col-md-4">
-              <input class="form-control" name="il" placeholder="İl" required />
-            </div>
-            <div class="col-md-4">
-              <input class="form-control" name="ilce" placeholder="İlçe" required />
-            </div>
-            <div class="col-md-4">
-              <input class="form-control" name="mahalle" placeholder="Mahalle" />
-            </div>
-          </form>
-        </div>
-
-        <div class="mis-panel">
           <ul class="nav nav-tabs mb-3">
             <li class="nav-item">
               <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#manuel-tab">Manuel Giriş</button>
@@ -105,6 +90,19 @@
 
           <div class="tab-content">
             <div class="tab-pane fade show active" id="manuel-tab">
+              <h2>Rapor Başlığı</h2>
+              <form id="baslikForm" class="row g-2 mb-3">
+                <div class="col-md-4">
+                  <input class="form-control" name="il" placeholder="İl" required />
+                </div>
+                <div class="col-md-4">
+                  <input class="form-control" name="ilce" placeholder="İlçe" required />
+                </div>
+                <div class="col-md-4">
+                  <input class="form-control" name="mahalle" placeholder="Mahalle" />
+                </div>
+              </form>
+
               <p class="text-muted small">
                 Not: kategori/grup seçim listeleri ve işletmeci ekleme akışı
                 bir sonraki adımda tamamlanacaktır.
@@ -113,6 +111,12 @@
             </div>
 
             <div class="tab-pane fade" id="turkvet-tab">
+              <p class="text-muted small">
+                İl / İlçe / Mahalle bilgisi dosyanın kendisinden otomatik
+                okunur — ayrıca girmenize gerek yok. Yüklenen dosyada birden
+                fazla mahalle varsa, sonuç mahalle bazında ayrı bölümler
+                halinde gösterilir.
+              </p>
               <form id="turkvetForm">
                 <div class="mb-2">
                   <input type="file" class="form-control" name="dosyalar" multiple />
@@ -154,17 +158,8 @@
     document.getElementById('turkvetForm').addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const baslikForm = document.getElementById('baslikForm');
-      if (!baslikForm.il.value || !baslikForm.ilce.value) {
-        alert('Lütfen İl ve İlçe alanlarını doldurun.');
-        return;
-      }
-
       const form = e.target;
       const formData = new FormData(form);
-      formData.append('il', baslikForm.il.value);
-      formData.append('ilce', baslikForm.ilce.value);
-      formData.append('mahalle', baslikForm.mahalle.value);
 
       const alan = document.getElementById('turkvetSonucAlani');
       alan.innerHTML = '<div class="text-muted">Hesaplanıyor...</div>';
@@ -178,12 +173,34 @@
           return;
         }
 
+        const { bolumler, genelToplamBBHB } = json.data;
+
+        const bolumlerHtml = bolumler
+          .map((bolum) => {
+            const baslikMetni = [bolum.il, bolum.ilce, bolum.mahalle].filter(Boolean).join(' / ');
+            const isletmeciSatirlari = bolum.isletmeciSonuclari
+              .map((is) => `<li>${is.isletmeciAdi} — <strong>${is.isletmeciToplamBBHB}</strong> BBHB</li>`)
+              .join('');
+            return `
+              <div class="border rounded p-2 mb-2">
+                <div class="fw-semibold">${baslikMetni}</div>
+                <div class="small text-muted">Bölüm Toplamı: ${bolum.bolumToplamBBHB} BBHB</div>
+                <ul class="small mb-0 mt-1">${isletmeciSatirlari}</ul>
+              </div>`;
+          })
+          .join('');
+
         alan.innerHTML = `
           <div class="alert alert-success">
-            Genel Toplam BBHB: <strong>${json.data.genelToplamBBHB}</strong>
+            ${bolumler.length > 1 ? `${bolumler.length} bölüm bulundu. ` : ''}
+            Genel Toplam BBHB: <strong>${genelToplamBBHB}</strong>
           </div>
-          <pre class="bg-light p-3 border rounded" style="max-height:300px;overflow:auto;">${JSON.stringify(json.data, null, 2)}</pre>
-          <button id="kaydetBtn" class="btn btn-success">Kaydet</button>
+          ${bolumlerHtml}
+          <details class="mt-2">
+            <summary class="small text-muted" style="cursor:pointer;">Ham veriyi göster</summary>
+            <pre class="bg-light p-3 border rounded" style="max-height:300px;overflow:auto;">${JSON.stringify(json.data, null, 2)}</pre>
+          </details>
+          <button id="kaydetBtn" class="btn btn-success mt-2">Kaydet</button>
         `;
 
         document.getElementById('kaydetBtn').addEventListener('click', async () => {

@@ -1,7 +1,8 @@
 /**
  * word.exporter.js
  *
- * Ortak rapor contract'ini .docx dosyasina cevirir (docx paketi ile).
+ * Ortak rapor contract'ini .docx dosyasina cevirir. Her bolum kendi
+ * basligiyla ayri bir bolum (section) gibi art arda yazilir.
  */
 
 const {
@@ -35,37 +36,53 @@ function tabloOlustur(basliklar, satirlar) {
 }
 
 async function contractToWord(contract) {
-  const baslikMetni =
-    `${contract.baslik.il} / ${contract.baslik.ilce}` +
-    (contract.baslik.mahalle ? ` / ${contract.baslik.mahalle}` : '');
-
-  const bolumler = [
-    new Paragraph({ text: baslikMetni, heading: HeadingLevel.HEADING_1 }),
-    new Paragraph({ text: `${contract.modulAdi} Raporu`, heading: HeadingLevel.HEADING_2 }),
+  const bolumlerParagraf = [
+    new Paragraph({ text: `${contract.modulAdi} Raporu`, heading: HeadingLevel.HEADING_1 }),
   ];
 
-  for (const isletmeci of contract.isletmeciler) {
-    bolumler.push(
-      new Paragraph({ text: isletmeci.isletmeciAdi, heading: HeadingLevel.HEADING_3 })
+  for (const bolum of contract.bolumler) {
+    const baslikMetni =
+      `${bolum.baslik.il} / ${bolum.baslik.ilce}` +
+      (bolum.baslik.mahalle ? ` / ${bolum.baslik.mahalle}` : '');
+
+    bolumlerParagraf.push(
+      new Paragraph({ text: baslikMetni, heading: HeadingLevel.HEADING_2 })
     );
-    const satirlar = isletmeci.kayitlar.map((k) => [
-      k.grup,
-      k.kategori,
-      k.adet,
-      k.katsayi,
-      k.deger,
-    ]);
-    bolumler.push(
-      tabloOlustur(
-        [lang.ortak.grup, lang.ortak.cins, lang.ortak.adet, lang.ortak.katsayi, contract.modulAdi],
-        satirlar
-      )
-    );
-    bolumler.push(
+
+    for (const isletmeci of bolum.isletmeciler) {
+      bolumlerParagraf.push(
+        new Paragraph({ text: isletmeci.isletmeciAdi, heading: HeadingLevel.HEADING_3 })
+      );
+      const satirlar = isletmeci.kayitlar.map((k) => [
+        k.grup,
+        k.kategori,
+        k.adet,
+        k.katsayi,
+        k.deger,
+      ]);
+      bolumlerParagraf.push(
+        tabloOlustur(
+          [lang.ortak.grup, lang.ortak.cins, lang.ortak.adet, lang.ortak.katsayi, contract.modulAdi],
+          satirlar
+        )
+      );
+      bolumlerParagraf.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `${lang.ortak.toplam}: ${isletmeci.isletmeciToplami}`,
+              bold: true,
+            }),
+          ],
+        })
+      );
+    }
+
+    bolumlerParagraf.push(
       new Paragraph({
         children: [
           new TextRun({
-            text: `${lang.ortak.toplam}: ${isletmeci.isletmeciToplami}`,
+            text: `${baslikMetni} - ${lang.ortak.toplam}: ${bolum.bolumToplami}`,
             bold: true,
           }),
         ],
@@ -73,7 +90,7 @@ async function contractToWord(contract) {
     );
   }
 
-  bolumler.push(
+  bolumlerParagraf.push(
     new Paragraph({
       children: [
         new TextRun({ text: `${lang.ortak.genelToplam}: ${contract.genelToplam}`, bold: true, size: 28 }),
@@ -81,15 +98,15 @@ async function contractToWord(contract) {
     })
   );
 
-  bolumler.push(new Paragraph({ text: lang.ortak.siniflandirmaKriterleri, heading: HeadingLevel.HEADING_2 }));
-  bolumler.push(
+  bolumlerParagraf.push(new Paragraph({ text: lang.ortak.siniflandirmaKriterleri, heading: HeadingLevel.HEADING_2 }));
+  bolumlerParagraf.push(
     tabloOlustur(
       [lang.ortak.grup, lang.ortak.cins, lang.ortak.katsayi],
       contract.siniflandirmaKriterleri.map((k) => [k.grup, k.kategori, k.katsayi])
     )
   );
 
-  const doc = new Document({ sections: [{ children: bolumler }] });
+  const doc = new Document({ sections: [{ children: bolumlerParagraf }] });
   return Packer.toBuffer(doc);
 }
 

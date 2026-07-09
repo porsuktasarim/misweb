@@ -10,16 +10,20 @@ const lang = require('../../../../config/lang/tr');
 const { katsayiTablosunuGetir } = require('../../bbhb/bbhb.rules');
 
 function bbhbToContract(bbhbSonuc) {
-  const isletmeciler = bbhbSonuc.isletmeciSonuclari.map((is) => ({
-    isletmeciAdi: is.isletmeciAdi,
-    kayitlar: is.detaylar.map((d) => ({
-      grup: lang.bbhb.gruplar[d.grup] || d.grup,
-      kategori: lang.bbhb.kategoriler[d.kategori] || d.kategori,
-      adet: d.adet,
-      katsayi: d.katsayi,
-      deger: d.bbhb,
+  const bolumler = bbhbSonuc.bolumler.map((bolum) => ({
+    baslik: { il: bolum.il, ilce: bolum.ilce, mahalle: bolum.mahalle },
+    isletmeciler: bolum.isletmeciSonuclari.map((is) => ({
+      isletmeciAdi: is.isletmeciAdi,
+      kayitlar: is.detaylar.map((d) => ({
+        grup: lang.bbhb.gruplar[d.grup] || d.grup,
+        kategori: lang.bbhb.kategoriler[d.kategori] || d.kategori,
+        adet: d.adet,
+        katsayi: d.katsayi,
+        deger: d.bbhb,
+      })),
+      isletmeciToplami: is.isletmeciToplamBBHB,
     })),
-    isletmeciToplami: is.isletmeciToplamBBHB,
+    bolumToplami: bolum.bolumToplamBBHB,
   }));
 
   const siniflandirmaKriterleri = katsayiTablosunuGetir(
@@ -32,17 +36,12 @@ function bbhbToContract(bbhbSonuc) {
 
   return {
     modulAdi: lang.bbhb.kisaAd,
-    baslik: {
-      il: bbhbSonuc.il,
-      ilce: bbhbSonuc.ilce,
-      mahalle: bbhbSonuc.mahalle,
-    },
-    isletmeciler,
+    bolumler,
     genelToplam: bbhbSonuc.genelToplamBBHB,
     ozet: {
       [lang.bbhb.alanlar.kaynakTipi]: lang.bbhb.kaynakTipi[bbhbSonuc.kaynakTipi],
       [lang.bbhb.alanlar.kuralSetiVersiyonu]: bbhbSonuc.kuralSetiVersiyonu,
-      [lang.ortak.isletmeci + ' Sayisi']: isletmeciler.length,
+      'Bölüm Sayısı': bolumler.length,
     },
     siniflandirmaKriterleri,
     olusturmaTarihi: bbhbSonuc.createdAt || new Date(),

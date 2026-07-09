@@ -2,77 +2,119 @@
  * bbhb.service.js
  *
  * Orkestrasyon katmani. DIGER MODULLER (orn. tahsis) BU DOSYAYI CAGIRIR.
- * HTTP bilmez, ama DB (model) ve diger bbhb.* dosyalarini bir araya getirir.
+ *
+ * ONEMLI TASARIM KARARI: Sonuc her zaman "bolumler" dizisi seklinde
+ * doner - tek bir il/ilce/mahalle degil. Cunku Turkvet dosyasi birden
+ * fazla mahalleden kayit icerebilir; her farkli (il, ilce, mahalle)
+ * ucluesu kendi bolumunu olusturur, rapor da bolum bolum uretilir.
+ * Manuel giris de ayni seklide TEK bolumluk bir sonuc olarak sarilir -
+ * boylece model/raporlama katmani kaynagi (manuel/turkvet) hic bilmez.
  */
 
 const { isletmeciBazindaHesapla } = require('./bbhb.core');
 const { topluSiniflandir } = require('./bbhb.classifier');
-const { dosyaOku, cokluDosyaOku } = require('./bbhb.import');
+const { cokluDosyaOku } = require('./bbhb.import');
 const { AKTIF_VERSIYON } = require('./bbhb.rules');
 const BbhbSonuc = require('./bbhb.model');
 
+/** Ayni isletmeci+grup+kategori icin adet=1 olan kayitlari toplar */
+function adetleriTopla(kayitlar) {
+  const map = new Map();
+  for (const k of kayitlar) {
+    const anahtar = `${k.isletmeciId}::${k.grup}::${k.kategori}`;
+    if (!map.has(anahtar)) map.set(anahtar, { ...k, adet: 0 });
+    map.get(anahtar).adet += k.adet;
+  }
+  return Array.from(map.values());
+}
+
+/** Ham kayitlari (il, ilce, mahalle) ucluesune gore bolumlere ayirir */
+function bolumlereAyir(hamKayitlar) {
+  const map = new Map();
+  for (const kayit of hamKayitlar) {
+    const anahtar = `${kayit.il}::${kayit.ilce}::${kayit.mahalle}`;
+    if (!map.has(anahtar)) {
+      map.set(anahtar, {
+        il: kayit.il,
+        ilce: kayit.ilce,
+        mahalle: kayit.mahalle,
+        kayitlar: [],
+      });
+    }
+    map.get(anahtar).kayitlar.push(kayit);
+  }
+  return Array.from(map.values());
+}
+
 /**
  * MANUEL YOL
+ * Kaynakta il/ilce/mahalle bilgisi olmadigi icin kullanicidan alinir.
+ * Sonuc yine de TEK elemanli bir "bolumler" dizisi olarak doner.
+ *
  * @param {object} params
  * @param {Array<{isletmeciId, isletmeciAdi, grup, kategori, adet}>} params.kalemler
  * @param {{il, ilce, mahalle}} params.baslik
  */
 function manuelHesapla({ kalemler, baslik }) {
-  const { isletmeciSonuclari, genelToplamBBHB } =
+  const { isletmeciSonuclari, genelToplamBBHB: bolumToplamBBHB } =
     isletmeciBazindaHesapla(kalemler, AKTIF_VERSIYON);
 
   return {
-    ...baslik,
     kaynakTipi: 'manuel',
     kaynakDosyalar: [],
-    isletmeciSonuclari,
-    genelToplamBBHB,
+    bolumler: [
+      {
+        il: baslik.il,
+        ilce: baslik.ilce,
+        mahalle: baslik.mahalle,
+        isletmeciSonuclari,
+        bolumToplamBBHB,
+      },
+    ],
+    genelToplamBBHB: bolumToplamBBHB,
     kuralSetiVersiyonu: AKTIF_VERSIYON,
   };
 }
 
 /**
  * TURKVET YOLU
+ * İl/ilçe/mahalle dosyanin kendisinden okunur - kullanicidan istenmez.
+ * Birden fazla mahalle varsa, sonuc birden fazla bolum icerir.
+ *
  * @param {object} params
- * @param {string[]} params.dosyaYollari - yuklenen dosyalarin sunucudaki yollari
- * @param {{il, ilce, mahalle}} params.baslik
+ * @param {string[]} params.dosyaYollari
  */
-async function turkvetIleHesapla({ dosyaYollari, baslik }) {
+async function turkvetIleHesapla({ dosyaYollari }) {
   // 1-2. Dosyalari oku, birlestir
   const hamKayitlar = await cokluDosyaOku(dosyaYollari);
 
-  // 3-4. Siniflandir (isletmeci bilgisi kayitta zaten var, core asamasinda gruplanacak)
-  const siniflandirilmisKayitlar = topluSiniflandir(hamKayitlar);
+  // Il/ilce/mahalle bazinda bolumlere ayir
+  const bolumGruplari = bolumlereAyir(hamKayitlar);
 
-  // Ayni isletmeci+grup+kategori icin adet=1 olan kayitlari topla
-  const sayilmisKayitlar = adetleriTopla(siniflandirilmisKayitlar);
+  const bolumler = [];
+  let genelToplamBBHB = 0;
 
-  // 5. Hesapla
-  const { isletmeciSonuclari, genelToplamBBHB } =
-    isletmeciBazindaHesapla(sayilmisKayitlar, AKTIF_VERSIYON);
+  for (const { il, ilce, mahalle, kayitlar } of bolumGruplari) {
+    // 3-4. Isletmeci bilgisi kayitta var, siniflandir
+    const siniflandirilmisKayitlar = topluSiniflandir(kayitlar);
+    const sayilmisKayitlar = adetleriTopla(siniflandirilmisKayitlar);
+
+    // 5. Hesapla (bu bolum icin)
+    const { isletmeciSonuclari, genelToplamBBHB: bolumToplamBBHB } =
+      isletmeciBazindaHesapla(sayilmisKayitlar, AKTIF_VERSIYON);
+
+    bolumler.push({ il, ilce, mahalle, isletmeciSonuclari, bolumToplamBBHB });
+    genelToplamBBHB += bolumToplamBBHB;
+  }
 
   // 6. Sonucu don (henuz kaydetmeden - controller onizleme gosterip soracak)
   return {
-    ...baslik,
     kaynakTipi: 'turkvet',
     kaynakDosyalar: dosyaYollari.map((p) => p.split('/').pop()),
-    isletmeciSonuclari,
-    genelToplamBBHB,
+    bolumler,
+    genelToplamBBHB: Number(genelToplamBBHB.toFixed(2)),
     kuralSetiVersiyonu: AKTIF_VERSIYON,
   };
-}
-
-/** {isletmeciId, isletmeciAdi, grup, kategori, adet:1}[] -> adet:N olarak toplar */
-function adetleriTopla(kayitlar) {
-  const map = new Map();
-  for (const k of kayitlar) {
-    const anahtar = `${k.isletmeciId}::${k.grup}::${k.kategori}`;
-    if (!map.has(anahtar)) {
-      map.set(anahtar, { ...k, adet: 0 });
-    }
-    map.get(anahtar).adet += k.adet;
-  }
-  return Array.from(map.values());
 }
 
 /**

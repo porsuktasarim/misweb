@@ -28,15 +28,9 @@ async function manuelHesaplaHandler(req, res) {
 
 async function turkvetOnizlemeHandler(req, res) {
   try {
-    // req.files: multer gibi bir middleware ile yuklenen dosyalarin
-    // sunucudaki gecici yollarini icerir (dosyaYollari)
+    // req.files: multer ile yuklenen dosyalarin sunucudaki gecici yollari
     const dosyaYollari = (req.files || []).map((f) => f.path);
-    const baslik = {
-      il: req.body.il,
-      ilce: req.body.ilce,
-      mahalle: req.body.mahalle,
-    };
-    const sonuc = await service.turkvetIleHesapla({ dosyaYollari, baslik });
+    const sonuc = await service.turkvetIleHesapla({ dosyaYollari });
     return basarili(res, sonuc);
   } catch (err) {
     return basarisiz(res, err.message || lang.ortak.hataOlustu);

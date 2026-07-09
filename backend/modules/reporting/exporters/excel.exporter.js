@@ -2,7 +2,8 @@
  * excel.exporter.js
  *
  * Ortak rapor contract'ini .xlsx dosyasina cevirir.
- * BBHB/CKS bilmez, sadece contract seklini bilir.
+ * Birden fazla bolum varsa, her bolum kendi baslik satirlariyla
+ * ayni sayfada alt alta yazilir.
  */
 
 const ExcelJS = require('exceljs');
@@ -12,51 +13,63 @@ async function contractToExcel(contract) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(contract.modulAdi);
 
-  // Baslik
-  sheet.mergeCells('A1:F1');
-  sheet.getCell('A1').value =
-    `${contract.baslik.il} / ${contract.baslik.ilce}` +
-    (contract.baslik.mahalle ? ` / ${contract.baslik.mahalle}` : '');
-  sheet.getCell('A1').font = { bold: true, size: 14 };
+  for (const bolum of contract.bolumler) {
+    const baslikMetni =
+      `${bolum.baslik.il} / ${bolum.baslik.ilce}` +
+      (bolum.baslik.mahalle ? ` / ${bolum.baslik.mahalle}` : '');
 
-  sheet.addRow([]);
+    const baslikRow = sheet.addRow([baslikMetni]);
+    baslikRow.font = { bold: true, size: 14 };
+    sheet.mergeCells(`A${baslikRow.number}:F${baslikRow.number}`);
 
-  // Tablo basliklari
-  const basliklar = [
-    lang.ortak.isletmeci,
-    lang.ortak.grup,
-    lang.ortak.cins,
-    lang.ortak.adet,
-    lang.ortak.katsayi,
-    contract.modulAdi,
-  ];
-  const baslikRow = sheet.addRow(basliklar);
-  baslikRow.font = { bold: true };
+    sheet.addRow([]);
 
-  // Isletmeci detaylari
-  for (const isletmeci of contract.isletmeciler) {
-    for (const kayit of isletmeci.kayitlar) {
-      sheet.addRow([
-        isletmeci.isletmeciAdi,
-        kayit.grup,
-        kayit.kategori,
-        kayit.adet,
-        kayit.katsayi,
-        kayit.deger,
-      ]);
-    }
-    const toplamRow = sheet.addRow([
-      `${isletmeci.isletmeciAdi} - ${lang.ortak.toplam}`,
-      '',
-      '',
-      '',
-      '',
-      isletmeci.isletmeciToplami,
+    const tabloBaslikRow = sheet.addRow([
+      lang.ortak.isletmeci,
+      lang.ortak.grup,
+      lang.ortak.cins,
+      lang.ortak.adet,
+      lang.ortak.katsayi,
+      contract.modulAdi,
     ]);
-    toplamRow.font = { italic: true };
+    tabloBaslikRow.font = { bold: true };
+
+    for (const isletmeci of bolum.isletmeciler) {
+      for (const kayit of isletmeci.kayitlar) {
+        sheet.addRow([
+          isletmeci.isletmeciAdi,
+          kayit.grup,
+          kayit.kategori,
+          kayit.adet,
+          kayit.katsayi,
+          kayit.deger,
+        ]);
+      }
+      const toplamRow = sheet.addRow([
+        `${isletmeci.isletmeciAdi} - ${lang.ortak.toplam}`,
+        '',
+        '',
+        '',
+        '',
+        isletmeci.isletmeciToplami,
+      ]);
+      toplamRow.font = { italic: true };
+    }
+
+    const bolumToplamRow = sheet.addRow([
+      `${baslikMetni} - ${lang.ortak.toplam}`,
+      '',
+      '',
+      '',
+      '',
+      bolum.bolumToplami,
+    ]);
+    bolumToplamRow.font = { bold: true };
+
+    sheet.addRow([]);
+    sheet.addRow([]);
   }
 
-  sheet.addRow([]);
   const genelToplamRow = sheet.addRow([
     lang.ortak.genelToplam,
     '',
@@ -65,7 +78,7 @@ async function contractToExcel(contract) {
     '',
     contract.genelToplam,
   ]);
-  genelToplamRow.font = { bold: true };
+  genelToplamRow.font = { bold: true, size: 12 };
 
   // Ozet
   sheet.addRow([]);
@@ -74,7 +87,7 @@ async function contractToExcel(contract) {
     sheet.addRow([anahtar, deger]);
   }
 
-  // Siniflandirma kriterleri (rapor sonunda)
+  // Siniflandirma kriterleri (rapor sonunda, TEK sefer - tum bolumler icin ortak)
   sheet.addRow([]);
   sheet.addRow([lang.ortak.siniflandirmaKriterleri]).font = { bold: true };
   sheet.addRow([lang.ortak.grup, lang.ortak.cins, lang.ortak.katsayi]).font = {
@@ -85,7 +98,7 @@ async function contractToExcel(contract) {
   }
 
   sheet.columns.forEach((col) => {
-    col.width = 22;
+    col.width = 24;
   });
 
   return workbook.xlsx.writeBuffer();

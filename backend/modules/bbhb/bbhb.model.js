@@ -2,11 +2,10 @@
  * bbhb.model.js
  *
  * Her hesaplama calistirmasi YENI ve DEGISMEZ (immutable) bir kayit
- * olusturur. Ayni hesap tekrar calistirilirsa eski kayit GUNCELLENMEZ,
- * yeni bir dokuman eklenir. Boylece:
- *  - Tahsis modulu hangi BBHB hesabina dayandigini kalici referansla izler
- *  - kuralSetiVersiyonu sayesinde katsayilar ileride degisse bile
- *    gecmis sonuclar bozulmaz
+ * olusturur. Bir kayit birden fazla "bolum" icerebilir - her bolum
+ * kendi (il, ilce, mahalle) ucluesune ve kendi isletmeci sonuclarina
+ * sahiptir. Turkvet dosyasi birden fazla mahalleden veri iceriyorsa,
+ * her mahalle kendi bolumune duser.
  */
 
 const mongoose = require('mongoose');
@@ -32,19 +31,25 @@ const isletmeciSonucSchema = new mongoose.Schema(
   { _id: false }
 );
 
-const bbhbSonucSchema = new mongoose.Schema(
+const bolumSchema = new mongoose.Schema(
   {
-    // Baslik bilgisi (raporlama icin)
     il: { type: String, required: true },
     ilce: { type: String, required: true },
     mahalle: { type: String },
+    isletmeciSonuclari: { type: [isletmeciSonucSchema], default: [] },
+    bolumToplamBBHB: { type: Number, required: true },
+  },
+  { _id: false }
+);
 
+const bbhbSonucSchema = new mongoose.Schema(
+  {
     // Kaynak bilgisi
     kaynakTipi: { type: String, enum: ['manuel', 'turkvet'], required: true },
-    kaynakDosyalar: { type: [String], default: [] }, // turkvet icin dosya adlari
+    kaynakDosyalar: { type: [String], default: [] },
 
-    // Hesaplama sonucu
-    isletmeciSonuclari: { type: [isletmeciSonucSchema], default: [] },
+    // Hesaplama sonucu - il/ilce/mahalle bazinda bolumlenmis
+    bolumler: { type: [bolumSchema], default: [] },
     genelToplamBBHB: { type: Number, required: true },
 
     // Denetlenebilirlik
@@ -52,13 +57,11 @@ const bbhbSonucSchema = new mongoose.Schema(
     olusturanKullaniciId: { type: String },
 
     // Bu kaydin en guncel calistirma mi, yoksa arsiv mi oldugunu belirtir.
-    // Ayni parametrelerle tekrar hesap yapildiginda yeni kayit "aktif"
-    // olur, oncekiler "arsiv" olarak korunur (silinmez).
     durum: { type: String, enum: ['aktif', 'arsiv'], default: 'aktif' },
   },
   { timestamps: true }
 );
 
-bbhbSonucSchema.index({ il: 1, ilce: 1, mahalle: 1, durum: 1 });
+bbhbSonucSchema.index({ 'bolumler.il': 1, 'bolumler.ilce': 1, 'bolumler.mahalle': 1, durum: 1 });
 
 module.exports = mongoose.model('BbhbSonuc', bbhbSonucSchema);
