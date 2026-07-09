@@ -51,6 +51,34 @@ async function sil(id) {
   return kayit;
 }
 
+/** Bir ilin adini degistirir - o ile ait TUM kayitlarda toplu guncelleme yapar. */
+async function ilGuncelle(eskiIl, yeniIl) {
+  const sonuc = await YerlesimYeri.updateMany({ il: eskiIl }, { $set: { il: yeniIl.trim() } });
+  if (sonuc.matchedCount === 0) throw new Error(`İl bulunamadı: ${eskiIl}`);
+  return sonuc;
+}
+
+/** Bir ile ait TUM ilce ve koy/mahalleleri (kademeli) siler. */
+async function ilSil(il) {
+  const sonuc = await YerlesimYeri.deleteMany({ il });
+  if (sonuc.deletedCount === 0) throw new Error(`İl bulunamadı: ${il}`);
+  return sonuc;
+}
+
+/** Bir ilcenin adini degistirir - o il+ilceye ait TUM kayitlarda toplu guncelleme yapar. */
+async function ilceGuncelle(il, eskiIlce, yeniIlce) {
+  const sonuc = await YerlesimYeri.updateMany({ il, ilce: eskiIlce }, { $set: { ilce: yeniIlce.trim() } });
+  if (sonuc.matchedCount === 0) throw new Error(`İlçe bulunamadı: ${eskiIlce}`);
+  return sonuc;
+}
+
+/** Bir ilceye ait TUM koy/mahalleleri (kademeli) siler. */
+async function ilceSil(il, ilce) {
+  const sonuc = await YerlesimYeri.deleteMany({ il, ilce });
+  if (sonuc.deletedCount === 0) throw new Error(`İlçe bulunamadı: ${ilce}`);
+  return sonuc;
+}
+
 /** Koleksiyon bossa, bundled JSON'dan otomatik yukler (app.js baslangicinda cagrilir). */
 async function gerekirseIlkYuklemeYap() {
   const mevcutSayi = await YerlesimYeri.countDocuments();
@@ -89,6 +117,10 @@ module.exports = {
   ekle,
   guncelle,
   sil,
+  ilGuncelle,
+  ilSil,
+  ilceGuncelle,
+  ilceSil,
   gerekirseIlkYuklemeYap,
   yenidenIceAktar,
 };

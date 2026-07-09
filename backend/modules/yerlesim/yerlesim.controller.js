@@ -77,6 +77,46 @@ async function yenidenIceAktarHandler(req, res) {
   }
 }
 
+async function ilGuncelleHandler(req, res) {
+  try {
+    const { yeniIl } = req.body;
+    if (!yeniIl || !yeniIl.trim()) return basarisiz(res, 'Yeni il adı zorunludur');
+    await service.ilGuncelle(req.params.il, yeniIl);
+    return basarili(res, null, 'İl güncellendi');
+  } catch (err) {
+    return basarisiz(res, err.message, 404);
+  }
+}
+
+async function ilSilHandler(req, res) {
+  try {
+    await service.ilSil(req.params.il);
+    return basarili(res, null, 'İl ve altındaki tüm ilçe/köy-mahalleler silindi');
+  } catch (err) {
+    return basarisiz(res, err.message, 404);
+  }
+}
+
+async function ilceGuncelleHandler(req, res) {
+  try {
+    const { yeniIlce } = req.body;
+    if (!yeniIlce || !yeniIlce.trim()) return basarisiz(res, 'Yeni ilçe adı zorunludur');
+    await service.ilceGuncelle(req.params.il, req.params.ilce, yeniIlce);
+    return basarili(res, null, 'İlçe güncellendi');
+  } catch (err) {
+    return basarisiz(res, err.message, 404);
+  }
+}
+
+async function ilceSilHandler(req, res) {
+  try {
+    await service.ilceSil(req.params.il, req.params.ilce);
+    return basarili(res, null, 'İlçe ve altındaki tüm köy-mahalleler silindi');
+  } catch (err) {
+    return basarisiz(res, err.message, 404);
+  }
+}
+
 module.exports = {
   illerHandler,
   ilcelerHandler,
@@ -85,4 +125,8 @@ module.exports = {
   guncelleHandler,
   silHandler,
   yenidenIceAktarHandler,
+  ilGuncelleHandler,
+  ilSilHandler,
+  ilceGuncelleHandler,
+  ilceSilHandler,
 };

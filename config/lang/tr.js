@@ -18,7 +18,7 @@ module.exports = {
   ortak: {
     il: 'İl',
     ilce: 'İlçe',
-    mahalle: 'Mahalle',
+    mahalle: 'Köy/Mahalle',
     toplam: 'Toplam',
     genelToplam: 'Genel Toplam',
     tarih: 'Tarih',
@@ -90,4 +90,22 @@ module.exports = {
 
   // ÇKS modülü geldiğinde ayni desenle buraya eklenecek:
   // cks: { kisaAd: 'ÇKS', tamAd: '...', ... },
+
+  yerlesim: {
+    baslikTekil: 'İl / İlçe / Köy-Mahalle Listesi',
+    il: 'İl',
+    ilce: 'İlçe',
+    koyMahalle: 'Köy/Mahalle',
+    seciniz: 'Seçiniz...',
+    onceIlSecin: 'Önce bir il seçin',
+    onceIlceSecin: 'Önce bir ilçe seçin',
+    yeniKayitEkle: 'Yeni Kayıt Ekle',
+    yenidenIceAktar: 'Resmi Listeyi Yeniden İçe Aktar',
+    duzenle: 'Düzenle',
+    sil: 'Sil',
+    ekle: 'Ekle',
+    kayitYok: 'Kayıt yok',
+    ilSilUyarisi: 'Bu il silinirse altındaki TÜM ilçe ve köy/mahalleler de silinecek.',
+    ilceSilUyarisi: 'Bu ilçe silinirse altındaki TÜM köy/mahalleler de silinecek.',
+  },
 };

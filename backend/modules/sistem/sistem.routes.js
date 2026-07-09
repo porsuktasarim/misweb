@@ -22,4 +22,10 @@ router.get('/versiyon', (req, res) => {
   });
 });
 
+// Arayuzun (frontend) de TEK dil kaynagindan (config/lang/tr.js) okuyabilmesi
+// icin - boylece ayni metin iki yerde ayri ayri tanimlanmiyor.
+router.get('/dil', (req, res) => {
+  res.json({ success: true, data: lang, message: null });
+});
+
 module.exports = router;
