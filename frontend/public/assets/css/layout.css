@@ -74,13 +74,19 @@ h1, h2, h3, .mis-baslik-yazitipi {
 .mis-marka {
   grid-area: marka;
   background: var(--renk-mera-koyu);
+  overflow: hidden;
+}
+
+.mis-marka-baglanti {
   display: flex;
   align-items: center;
   gap: 10px;
+  height: 100%;
   padding: 0 18px;
-  overflow: hidden;
+  text-decoration: none;
   white-space: nowrap;
 }
+.mis-marka-baglanti:hover { background: rgba(255, 255, 255, 0.06); }
 
 .mis-marka svg { flex: none; width: 28px; height: 28px; }
 

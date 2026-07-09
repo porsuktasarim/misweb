@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ayarlar - Mera İzleme Sistemi</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="/assets/css/layout.css" rel="stylesheet" />
+  <style>
+    .mis-yerlesim-sutun {
+      background: var(--renk-yuzey);
+      border: 1px solid var(--renk-kenarlik);
+      border-radius: var(--radius);
+      height: 460px;
+      overflow-y: auto;
+    }
+    .mis-yerlesim-sutun-baslik {
+      position: sticky;
+      top: 0;
+      background: var(--renk-yuzey);
+      border-bottom: 1px solid var(--renk-kenarlik);
+      padding: 10px 12px;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--renk-mera-koyu);
+      z-index: 1;
+    }
+    .mis-yerlesim-satir {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+    }
+    .mis-yerlesim-satir:hover { background: var(--renk-zemin); }
+    .mis-yerlesim-satir.aktif { background: var(--renk-zemin); border-left-color: var(--renk-bugday); font-weight: 600; }
+    .mis-yerlesim-satir .mis-eylemler { display: none; gap: 4px; }
+    .mis-yerlesim-satir:hover .mis-eylemler { display: flex; }
+    .mis-yerlesim-satir .mis-eylemler button {
+      border: none; background: transparent; padding: 2px 5px; font-size: 12px; color: var(--renk-metin-soluk);
+    }
+    .mis-yerlesim-satir .mis-eylemler button:hover { color: var(--renk-mera-koyu); }
+  </style>
+</head>
+<body>
+
+  <div class="mis-kabuk" id="mis-kabuk">
+    <div class="mis-marka" id="mis-marka"></div>
+    <div class="mis-ustcubuk" id="mis-ustcubuk"></div>
+    <nav class="mis-anamenu" id="mis-anamenu"></nav>
+
+    <div class="mis-icerik">
+
+      <div class="mis-icerik-birincil">
+        <div class="mis-panel">
+          <h2>İl / İlçe / Mahalle-Köy Listesi</h2>
+          <p class="text-muted small">
+            Kaynak: <a href="https://github.com/nejdetkadir/il-ilce-semt-mahalleler" target="_blank" rel="noopener">nejdetkadir/il-ilce-semt-mahalleler</a>
+            (açık lisans, doğru Türkçe karakter kodlaması). Listeler düzenlenebilir, silinebilir, elle eklenebilir.
+          </p>
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="mis-yerlesim-sutun">
+                <div class="mis-yerlesim-sutun-baslik">İller</div>
+                <div id="ilListesi"><div class="text-muted small p-2">Yükleniyor...</div></div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="mis-yerlesim-sutun">
+                <div class="mis-yerlesim-sutun-baslik">İlçeler</div>
+                <div id="ilceListesi"><div class="text-muted small p-2">Önce bir il seçin</div></div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="mis-yerlesim-sutun">
+                <div class="mis-yerlesim-sutun-baslik">Mahalle / Köy</div>
+                <div id="mahalleListesi"><div class="text-muted small p-2">Önce bir ilçe seçin</div></div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-4" />
+
+          <h2>Yeni Kayıt Ekle</h2>
+          <p class="text-muted small">
+            Yeni bir il/ilçe eklemek istiyorsan üçünü de yaz. Seçili ilçeye
+            sadece mahalle eklemek istiyorsan İl/İlçe alanları otomatik dolar.
+          </p>
+          <form id="yeniKayitForm" class="row g-2">
+            <div class="col-md-3">
+              <input class="form-control form-control-sm" id="yeniIl" placeholder="İl" required />
+            </div>
+            <div class="col-md-3">
+              <input class="form-control form-control-sm" id="yeniIlce" placeholder="İlçe" required />
+            </div>
+            <div class="col-md-4">
+              <input class="form-control form-control-sm" id="yeniMahalle" placeholder="Mahalle / Köy" required />
+            </div>
+            <div class="col-md-2">
+              <button type="submit" class="btn btn-sm btn-primary w-100">Ekle</button>
+            </div>
+          </form>
+          <div id="yeniKayitSonuc" class="mt-2"></div>
+        </div>
+      </div>
+
+      <div class="mis-icerik-ikincil">
+        <div class="mis-panel">
+          <h2>Veri Kaynağı</h2>
+          <p class="text-muted small mb-2">
+            İlk çalıştırmada 81 il, 973 ilçe, ~49.600 mahalle/köy otomatik
+            olarak yüklenir. Koleksiyon boş değilse tekrar yüklenmez.
+          </p>
+          <button class="btn btn-sm btn-outline-secondary w-100" id="yenidenIceAktarBtn">
+            Resmi Listeyi Yeniden İçe Aktar
+          </button>
+          <div id="yenidenIceAktarSonuc" class="small mt-2"></div>
+        </div>
+
+        <div class="mis-panel">
+          <h2>Not</h2>
+          <p class="text-muted small mb-0">
+            Bu liste, BBHB ve ileride eklenecek diğer modüllerin İl/İlçe/
+            Mahalle alanlarında kullanılacaktır. "Yeniden İçe Aktar" mevcut
+            tüm elle eklediğin kayıtları da SİLER ve kaynak dosyadan
+            baştan yükler — dikkatli kullan.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <footer class="mis-footer" id="mis-footer"></footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/assets/js/mis-menu.js"></script>
+  <script src="/assets/js/shell.js"></script>
+  <script>
+    misKabuguBaslat('ayarlar', 'Ayarlar<span class="ayrac">/</span>İl-İlçe-Mahalle Listesi');
+
+    let seciliIl = null;
+    let seciliIlce = null;
+
+    async function apiGet(url) {
+      const res = await fetch(url);
+      return res.json();
+    }
+
+    async function illeriYukle() {
+      const alan = document.getElementById('ilListesi');
+      const json = await apiGet('/api/yerlesim/iller');
+      if (!json.success) {
+        alan.innerHTML = `<div class="text-danger small p-2">${json.message}</div>`;
+        return;
+      }
+      alan.innerHTML = json.data
+        .map((il) => `<div class="mis-yerlesim-satir" data-il="${il}"><span>${il}</span></div>`)
+        .join('');
+      alan.querySelectorAll('.mis-yerlesim-satir').forEach((satir) => {
+        satir.addEventListener('click', () => {
+          seciliIl = satir.dataset.il;
+          seciliIlce = null;
+          alan.querySelectorAll('.mis-yerlesim-satir').forEach((s) => s.classList.toggle('aktif', s === satir));
+          document.getElementById('yeniIl').value = seciliIl;
+          document.getElementById('yeniIlce').value = '';
+          ilceleriYukle(seciliIl);
+          document.getElementById('mahalleListesi').innerHTML = '<div class="text-muted small p-2">Önce bir ilçe seçin</div>';
+        });
+      });
+    }
+
+    async function ilceleriYukle(il) {
+      const alan = document.getElementById('ilceListesi');
+      alan.innerHTML = '<div class="text-muted small p-2">Yükleniyor...</div>';
+      const json = await apiGet(`/api/yerlesim/ilceler/${encodeURIComponent(il)}`);
+      if (!json.success) {
+        alan.innerHTML = `<div class="text-danger small p-2">${json.message}</div>`;
+        return;
+      }
+      alan.innerHTML = json.data
+        .map((ilce) => `<div class="mis-yerlesim-satir" data-ilce="${ilce}"><span>${ilce}</span></div>`)
+        .join('');
+      alan.querySelectorAll('.mis-yerlesim-satir').forEach((satir) => {
+        satir.addEventListener('click', () => {
+          seciliIlce = satir.dataset.ilce;
+          alan.querySelectorAll('.mis-yerlesim-satir').forEach((s) => s.classList.toggle('aktif', s === satir));
+          document.getElementById('yeniIlce').value = seciliIlce;
+          mahalleleriYukle(seciliIl, seciliIlce);
+        });
+      });
+    }
+
+    function mahalleSatiriHtml(kayit) {
+      return `
+        <div class="mis-yerlesim-satir" data-id="${kayit.id}">
+          <span class="mis-mahalle-metin">${kayit.mahalle}</span>
+          <span class="mis-eylemler">
+            <button type="button" class="mis-duzenle-btn" title="Düzenle">✎</button>
+            <button type="button" class="mis-sil-btn" title="Sil">✕</button>
+          </span>
+        </div>`;
+    }
+
+    async function mahalleleriYukle(il, ilce) {
+      const alan = document.getElementById('mahalleListesi');
+      alan.innerHTML = '<div class="text-muted small p-2">Yükleniyor...</div>';
+      const json = await apiGet(`/api/yerlesim/mahalleler/${encodeURIComponent(il)}/${encodeURIComponent(ilce)}`);
+      if (!json.success) {
+        alan.innerHTML = `<div class="text-danger small p-2">${json.message}</div>`;
+        return;
+      }
+      alan.innerHTML = json.data.map(mahalleSatiriHtml).join('') || '<div class="text-muted small p-2">Kayıt yok</div>';
+
+      alan.querySelectorAll('.mis-sil-btn').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const satir = btn.closest('.mis-yerlesim-satir');
+          if (!confirm(`"${satir.querySelector('.mis-mahalle-metin').textContent}" silinsin mi?`)) return;
+          const res = await fetch(`/api/yerlesim/${satir.dataset.id}`, { method: 'DELETE' });
+          const json2 = await res.json();
+          if (json2.success) {
+            satir.remove();
+          } else {
+            alert(json2.message);
+          }
+        });
+      });
+
+      alan.querySelectorAll('.mis-duzenle-btn').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const satir = btn.closest('.mis-yerlesim-satir');
+          const metinAlani = satir.querySelector('.mis-mahalle-metin');
+          const mevcutAd = metinAlani.textContent;
+          const yeniAd = prompt('Yeni mahalle/köy adı:', mevcutAd);
+          if (!yeniAd || yeniAd.trim() === '' || yeniAd === mevcutAd) return;
+
+          const res = await fetch(`/api/yerlesim/${satir.dataset.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ il: seciliIl, ilce: seciliIlce, mahalle: yeniAd.trim() }),
+          });
+          const json2 = await res.json();
+          if (json2.success) {
+            metinAlani.textContent = yeniAd.trim();
+          } else {
+            alert(json2.message);
+          }
+        });
+      });
+    }
+
+    document.getElementById('yeniKayitForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const il = document.getElementById('yeniIl').value.trim();
+      const ilce = document.getElementById('yeniIlce').value.trim();
+      const mahalle = document.getElementById('yeniMahalle').value.trim();
+      const sonucAlan = document.getElementById('yeniKayitSonuc');
+
+      const res = await fetch('/api/yerlesim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ il, ilce, mahalle }),
+      });
+      const json = await res.json();
+
+      if (!json.success) {
+        sonucAlan.innerHTML = `<div class="alert alert-danger py-1 small mb-0">${json.message}</div>`;
+        return;
+      }
+
+      sonucAlan.innerHTML = `<div class="alert alert-success py-1 small mb-0">Eklendi.</div>`;
+      document.getElementById('yeniMahalle').value = '';
+
+      // Ekranı güncelle: aynı il/ilçe görüntüleniyorsa listeyi tazele
+      if (il === seciliIl && ilce === seciliIlce) {
+        mahalleleriYukle(il, ilce);
+      } else if (il === seciliIl) {
+        ilceleriYukle(il);
+      } else {
+        illeriYukle();
+      }
+    });
+
+    document.getElementById('yenidenIceAktarBtn').addEventListener('click', async () => {
+      if (!confirm('Tüm liste silinip resmi kaynaktan yeniden yüklenecek. Elle eklediğin kayıtlar da silinecek. Emin misin?')) return;
+      const sonucAlan = document.getElementById('yenidenIceAktarSonuc');
+      sonucAlan.textContent = 'İçe aktarılıyor, bu biraz sürebilir...';
+      const res = await fetch('/api/yerlesim/yeniden-ice-aktar', { method: 'POST' });
+      const json = await res.json();
+      sonucAlan.textContent = json.message || '';
+      illeriYukle();
+      document.getElementById('ilceListesi').innerHTML = '<div class="text-muted small p-2">Önce bir il seçin</div>';
+      document.getElementById('mahalleListesi').innerHTML = '<div class="text-muted small p-2">Önce bir ilçe seçin</div>';
+    });
+
+    illeriYukle();
+  </script>
+</body>
+</html>
