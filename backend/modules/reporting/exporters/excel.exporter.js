@@ -28,7 +28,7 @@ const RENK = {
 
 const YAZI_TIPI = 'Times New Roman';
 const YAZI_BOYUTU = 8;
-const SATIR_YUKSEKLIGI = 14.5;
+const SATIR_YUKSEKLIGI = 15;
 
 // ---- Resmi sablon sutun haritasi: [grup baslik, [{etiket, kategoriKodlari}]] ----
 const SUTUN_HARITASI = [
@@ -64,7 +64,92 @@ const SUTUN_HARITASI = [
   ]},
 ];
 
-// Sabit sutunlar: A=Sira No, B=Isletmeci Adi, ... son sutun=Toplam BBHB
+// ---- Siniflandirma kriterleri: paragraf metni icin yas/cinsiyet/irk aciklamalari ----
+const KRITER_ACIKLAMALARI = [
+  {
+    grup: 'kulturIrki',
+    baslik: 'Kültür Irkı',
+    not: '"M" ile bitmeyen ve yerli ırk listesinde yer almayan ırklar',
+    kategoriler: [
+      { kod: 'inek', etiket: 'İnek', kosul: 'dişi, 22 ay ve üzeri' },
+      { kod: 'duve', etiket: 'Düve', kosul: 'dişi, 21 ay ve altı' },
+      { kod: 'dana', etiket: 'Dana', kosul: 'erkek, 12 ay ve altı' },
+    ],
+  },
+  {
+    grup: 'kulturMelezi',
+    baslik: 'Kültür Melezi',
+    not: 'ırk adı "M" ile bitenler',
+    kategoriler: [
+      { kod: 'inek', etiket: 'İnek', kosul: 'dişi, 22 ay ve üzeri' },
+      { kod: 'duve', etiket: 'Düve', kosul: 'dişi, 21 ay ve altı' },
+      { kod: 'dana', etiket: 'Dana', kosul: 'erkek, 12 ay ve altı' },
+    ],
+  },
+  {
+    grup: 'yerliIrk',
+    baslik: 'Yerli Irk',
+    not: 'Akkaraman, Kıvırcık, Morkaraman, İvesi, Norduz, Hemşin, Kangal ırkları',
+    kategoriler: [
+      { kod: 'inek', etiket: 'İnek', kosul: 'dişi, 22 ay ve üzeri' },
+      { kod: 'duve', etiket: 'Düve', kosul: 'dişi, 21 ay ve altı' },
+      { kod: 'dana', etiket: 'Dana', kosul: 'erkek, 12 ay ve altı' },
+    ],
+  },
+  {
+    grup: 'buyukbasErkek',
+    baslik: 'Büyükbaş Diğer',
+    not: null,
+    kategoriler: [
+      { kod: 'boga', etiket: 'Boğa', kosul: 'erkek, 13-96 ay' },
+      { kod: 'okuz', etiket: 'Öküz', kosul: 'erkek, 97 ay ve üzeri' },
+    ],
+  },
+  {
+    grup: 'manda',
+    baslik: 'Manda',
+    not: 'yaştan bağımsız',
+    kategoriler: [
+      { kod: 'mandaErkek', etiket: 'Erkek', kosul: null },
+      { kod: 'mandaDisi', etiket: 'Dişi', kosul: null },
+    ],
+  },
+  {
+    grup: 'kucukbas',
+    baslik: 'Küçükbaş',
+    not: 'ırktan bağımsız',
+    kategoriler: [
+      { kod: 'koyun', etiket: 'Koyun', kosul: '12 ay üzeri' },
+      { kod: 'kec', etiket: 'Keçi', kosul: '12 ay üzeri' },
+      { kod: 'kuzu', etiket: 'Kuzu', kosul: 'koyun yavrusu, 12 ay ve altı' },
+      { kod: 'oglak', etiket: 'Oğlak', kosul: 'keçi yavrusu, 12 ay ve altı' },
+    ],
+  },
+  {
+    grup: 'tekTirnakli',
+    baslik: 'Tek Tırnaklı',
+    not: 'yaş/cinsiyetten bağımsız',
+    kategoriler: [
+      { kod: 'at', etiket: 'At', kosul: null },
+      { kod: 'katir', etiket: 'Katır', kosul: null },
+      { kod: 'esek', etiket: 'Eşek', kosul: null },
+    ],
+  },
+];
+
+function kriterParagraflariOlustur() {
+  return KRITER_ACIKLAMALARI.map((g) => {
+    const kategoriMetni = g.kategoriler
+      .map((k) => {
+        const katsayi = katsayiBul(g.grup, k.kod);
+        const kosulMetni = k.kosul ? ` (${k.kosul})` : '';
+        return `${k.etiket}${kosulMetni}: ${katsayi}`;
+      })
+      .join('  ·  ');
+    const notMetni = g.not ? ` — ${g.not}` : '';
+    return `${g.baslik}${notMetni}: ${kategoriMetni}`;
+  });
+}
 const SABIT_ONCESI = 2; // A, B
 // ONEMLI: her alt sutuna kendi grupKodu'nu da tasiyoruz - yoksa orn.
 // "inek" kategori kodu Kultur/Melez/Yerli uc grupta da var, grupKodu
@@ -98,9 +183,10 @@ function isletmeciSatiriDizisi(kayitlar) {
 }
 
 function bolumYaz(sheet, bolum, satirNoRef) {
-  const baslikMetni =
+  const baslikMetni = (
     `${bolum.baslik.il} İli ${bolum.baslik.ilce} İlçesi` +
-    (bolum.baslik.mahalle ? ` ${bolum.baslik.mahalle} Köyü/Mahallesi` : '');
+    (bolum.baslik.mahalle ? ` ${bolum.baslik.mahalle} Köyü/Mahallesi` : '')
+  ).toLocaleUpperCase('tr-TR');
 
   // Baslik satirlari
   const r1 = sheet.addRow([baslikMetni]);
@@ -240,8 +326,9 @@ async function contractToExcel(contract) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(contract.modulAdi);
 
-  sheet.columns = new Array(TOPLAM_SUTUN_INDEX).fill(null).map(() => ({ width: 12 }));
-  sheet.getColumn(2).width = 30; // Isletmeci adi genis olsun
+  // Standart sutunlar 3.75, Isletmeci Adi (B) 8x = 30
+  sheet.columns = new Array(TOPLAM_SUTUN_INDEX).fill(null).map(() => ({ width: 3.75 }));
+  sheet.getColumn(2).width = 30;
 
   for (const bolum of contract.bolumler) {
     bolumYaz(sheet, bolum);
@@ -264,21 +351,23 @@ async function contractToExcel(contract) {
   }
 
   // Siniflandirma kriterleri (rapor sonunda, TEK sefer)
+  // Siniflandirma kriterleri (rapor sonunda, TEK sefer) - yas/cinsiyet/irk
+  // bilgisiyle birlikte PARAGRAF seklinde, hucreler birlestirilerek yazilir.
   const kriterBaslikRow = sheet.addRow([lang.ortak.siniflandirmaKriterleri]);
-  sheet.mergeCells(`A${kriterBaslikRow.number}:C${kriterBaslikRow.number}`);
+  sheet.mergeCells(`A${kriterBaslikRow.number}:${sheet.getColumn(TOPLAM_SUTUN_INDEX).letter}${kriterBaslikRow.number}`);
   hucreStil(kriterBaslikRow.getCell(1), { fill: RENK.koyu, bold: true, renkBeyaz: true, align: 'left' });
 
-  const kriterTabloBaslikRow = sheet.addRow([lang.ortak.grup, lang.ortak.cins, lang.ortak.katsayi]);
-  kriterTabloBaslikRow.eachCell((h) => hucreStil(h, { fill: RENK.orta, bold: true, renkBeyaz: true, align: 'left' }));
-
-  for (const kriter of contract.siniflandirmaKriterleri) {
-    const row = sheet.addRow([kriter.grup, kriter.kategori, kriter.katsayi]);
-    row.eachCell((h) => hucreStil(h, { align: 'left' }));
+  for (const paragraf of kriterParagraflariOlustur()) {
+    const row = sheet.addRow([paragraf]);
+    sheet.mergeCells(`A${row.number}:${sheet.getColumn(TOPLAM_SUTUN_INDEX).letter}${row.number}`);
+    hucreStil(row.getCell(1), { align: 'left' });
+    row.height = 24; // paragraf metni icin standarttan daha yuksek satir
   }
 
-  // Tum satirlara sabit satir yuksekligi uygula
+  // Tum satirlara sabit satir yuksekligi uygula - paragraf satirlarinin
+  // (yukarida ayrica 24 verilmis) OZEL yuksekligini EZMEZ.
   sheet.eachRow((row) => {
-    row.height = SATIR_YUKSEKLIGI;
+    if (!row.height) row.height = SATIR_YUKSEKLIGI;
   });
 
   return workbook.xlsx.writeBuffer();
