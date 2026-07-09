@@ -77,6 +77,14 @@ async function dosyaOku(dosyaYolu) {
   }
 
   const worksheet = workbook.worksheets[0];
+  if (!worksheet) {
+    throw new Error(
+      `Dosya okunamadı, geçerli bir Excel/CSV dosyası olduğundan emin olun: "${path.basename(
+        dosyaYolu
+      )}"`
+    );
+  }
+
   const kayitlar = [];
   let basliklar = [];
 
