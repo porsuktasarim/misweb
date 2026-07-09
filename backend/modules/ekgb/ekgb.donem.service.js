@@ -48,6 +48,52 @@ async function donemGuncelle(id, { donemAdi, yururlukTarihi, fiyatlar }) {
   return donem;
 }
 
+/**
+ * Koleksiyon bossa, kullanicinin sagladigi "Eski Haline Getirme Bedeli
+ * 2026" referans dosyasindaki 2026 sutunu degerleriyle ilk donemi
+ * otomatik olusturur (app.js baslangicinda cagrilir).
+ */
+async function gerekirseIlkDonemiYukle() {
+  const mevcutSayi = await EkgbDonem.countDocuments();
+  if (mevcutSayi > 0) return { yapildi: false, mevcutSayi };
+
+  const fiyatlar2026 = [
+    { kalemKod: 'derinSurum', fiyat: 511.87 },
+    { kalemKod: 'surum', fiyat: 354.94 },
+    { kalemKod: 'ikileme', fiyat: 266.21 },
+    { kalemKod: 'tirmik', fiyat: 342.9 },
+    { kalemKod: 'gubrelemeMakineli', fiyat: 179.9 },
+    { kalemKod: 'ekimMibzer', fiyat: 658.24 },
+    { kalemKod: 'temizlikTesviye', fiyat: 342.9 },
+    { kalemKod: 'asfaltBetonSokumu', fiyat: 288.9 },
+    { kalemKod: 'telOrguKaldirma', fiyat: 121.25 },
+    { kalemKod: 'nakliyeUcreti', fiyat: 5 },
+    { kalemKod: 'dokumSahasiGirisUcreti', fiyat: 5771 },
+    { kalemKod: 'yuklemeIscilik1200', fiyat: 162 },
+    { kalemKod: 'yuklemeIscilikFazla60', fiyat: 11 },
+    { kalemKod: 'insaatYikintiBertaraf', fiyat: 405 },
+    { kalemKod: 'toprakFiyati', fiyat: 800 },
+    { kalemKod: 'italyanCimi', fiyat: 220 },
+    { kalemKod: 'domuzAyrigi', fiyat: 600 },
+    { kalemKod: 'yuksekCayirYumagi', fiyat: 500 },
+    { kalemKod: 'cayirSalkimOtu', fiyat: 750 },
+    { kalemKod: 'yonca', fiyat: 800 },
+    { kalemKod: 'akUcgul', fiyat: 900 },
+    { kalemKod: 'korunga', fiyat: 300 },
+    { kalemKod: 'amonyumSulfat', fiyat: 25 },
+    { kalemKod: 'yanmisHayvanGubresi', fiyat: 3 },
+    { kalemKod: 'komposeGubre', fiyat: 40 },
+  ];
+
+  fiyatlariDogrula(fiyatlar2026);
+  const donem = await EkgbDonem.create({
+    donemAdi: '2026',
+    yururlukTarihi: new Date(2026, 0, 1),
+    fiyatlar: fiyatlar2026,
+  });
+  return { yapildi: true, donemId: donem._id };
+}
+
 /** Donem fiyatlarini {kalemKod: fiyat} haritasina cevirir - core.js bunu bekler. */
 function fiyatHaritasinaCevir(donem) {
   const harita = {};
@@ -61,4 +107,5 @@ module.exports = {
   donemEkle,
   donemGuncelle,
   fiyatHaritasinaCevir,
+  gerekirseIlkDonemiYukle,
 };

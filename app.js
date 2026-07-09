@@ -12,6 +12,7 @@ const sistemRoutes = require('./backend/modules/sistem/sistem.routes');
 const yerlesimRoutes = require('./backend/modules/yerlesim/yerlesim.routes');
 const yerlesimService = require('./backend/modules/yerlesim/yerlesim.service');
 const ekgbRoutes = require('./backend/modules/ekgb/ekgb.routes');
+const ekgbDonemService = require('./backend/modules/ekgb/ekgb.donem.service');
 
 const app = express();
 
@@ -40,6 +41,15 @@ mongoose
       }
     } catch (err) {
       console.error('Yerleşim verisi yüklenirken hata:', err.message);
+    }
+
+    try {
+      const sonuc = await ekgbDonemService.gerekirseIlkDonemiYukle();
+      if (sonuc.yapildi) {
+        console.log('EKGB 2026 birim fiyat dönemi ilk kez yüklendi');
+      }
+    } catch (err) {
+      console.error('EKGB dönemi yüklenirken hata:', err.message);
     }
 
     app.listen(PORT, () => console.log(`MİS ${PORT} portunda çalışıyor`));
