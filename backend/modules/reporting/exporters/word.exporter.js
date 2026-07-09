@@ -106,6 +106,11 @@ async function contractToWord(contract) {
       })
     );
     bolumler.push(new Paragraph({ text: '' }));
+    bolumler.push(
+      new Paragraph({
+        children: [new TextRun({ text: `Hesaplama Tarihi: ${new Date(contract.hesaplamaTarihi).toLocaleDateString('tr-TR')}`, font: 'Times New Roman', size: 16 })],
+      })
+    );
     bolumler.push(bolumTablosu(bolum));
     bolumler.push(
       new Paragraph({

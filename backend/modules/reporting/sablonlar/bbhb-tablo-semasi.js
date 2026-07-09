@@ -15,7 +15,7 @@
  *   26       : Toplam BBHB
  */
 
-const { katsayiBul } = require('../../bbhb/bbhb.rules');
+const { kriterParagraflariOlustur } = require('../../bbhb/bbhb.aciklamalar');
 
 const SUTUN_HARITASI = [
   { grup: 'kulturIrki', baslik: 'Kültür Irkı', altlar: [
@@ -70,80 +70,8 @@ function isletmeciSatiriDizisi(kayitlar) {
   });
 }
 
-// ---- Siniflandirma kriterleri: yas/cinsiyet/irk aciklamali paragraflar ----
-const KRITER_ACIKLAMALARI = [
-  {
-    grup: 'kulturIrki', baslik: 'Kültür Irkı',
-    not: '"M" ile bitmeyen ve yerli ırk listesinde yer almayan ırklar',
-    kategoriler: [
-      { kod: 'inek', etiket: 'İnek', kosul: 'dişi, 22 ay ve üzeri' },
-      { kod: 'duve', etiket: 'Düve', kosul: 'dişi, 21 ay ve altı' },
-      { kod: 'dana', etiket: 'Dana', kosul: 'erkek, 12 ay ve altı' },
-    ],
-  },
-  {
-    grup: 'kulturMelezi', baslik: 'Kültür Melezi', not: 'ırk adı "M" ile bitenler',
-    kategoriler: [
-      { kod: 'inek', etiket: 'İnek', kosul: 'dişi, 22 ay ve üzeri' },
-      { kod: 'duve', etiket: 'Düve', kosul: 'dişi, 21 ay ve altı' },
-      { kod: 'dana', etiket: 'Dana', kosul: 'erkek, 12 ay ve altı' },
-    ],
-  },
-  {
-    grup: 'yerliIrk', baslik: 'Yerli Irk',
-    not: 'Akkaraman, Kıvırcık, Morkaraman, İvesi, Norduz, Hemşin, Kangal ırkları',
-    kategoriler: [
-      { kod: 'inek', etiket: 'İnek', kosul: 'dişi, 22 ay ve üzeri' },
-      { kod: 'duve', etiket: 'Düve', kosul: 'dişi, 21 ay ve altı' },
-      { kod: 'dana', etiket: 'Dana', kosul: 'erkek, 12 ay ve altı' },
-    ],
-  },
-  {
-    grup: 'buyukbasErkek', baslik: 'Büyükbaş Diğer', not: null,
-    kategoriler: [
-      { kod: 'boga', etiket: 'Boğa', kosul: 'erkek, 13-96 ay' },
-      { kod: 'okuz', etiket: 'Öküz', kosul: 'erkek, 97 ay ve üzeri' },
-    ],
-  },
-  {
-    grup: 'manda', baslik: 'Manda', not: 'yaştan bağımsız',
-    kategoriler: [
-      { kod: 'mandaErkek', etiket: 'Erkek', kosul: null },
-      { kod: 'mandaDisi', etiket: 'Dişi', kosul: null },
-    ],
-  },
-  {
-    grup: 'kucukbas', baslik: 'Küçükbaş', not: 'ırktan bağımsız',
-    kategoriler: [
-      { kod: 'koyun', etiket: 'Koyun', kosul: '12 ay üzeri' },
-      { kod: 'kec', etiket: 'Keçi', kosul: '12 ay üzeri' },
-      { kod: 'kuzu', etiket: 'Kuzu', kosul: 'koyun yavrusu, 12 ay ve altı' },
-      { kod: 'oglak', etiket: 'Oğlak', kosul: 'keçi yavrusu, 12 ay ve altı' },
-    ],
-  },
-  {
-    grup: 'tekTirnakli', baslik: 'Tek Tırnaklı', not: 'yaş/cinsiyetten bağımsız',
-    kategoriler: [
-      { kod: 'at', etiket: 'At', kosul: null },
-      { kod: 'katir', etiket: 'Katır', kosul: null },
-      { kod: 'esek', etiket: 'Eşek', kosul: null },
-    ],
-  },
-];
-
-function kriterParagraflariOlustur() {
-  return KRITER_ACIKLAMALARI.map((g) => {
-    const kategoriMetni = g.kategoriler
-      .map((k) => {
-        const katsayi = katsayiBul(g.grup, k.kod);
-        const kosulMetni = k.kosul ? ` (${k.kosul})` : '';
-        return `${k.etiket}${kosulMetni}: ${katsayi}`;
-      })
-      .join('  ·  ');
-    const notMetni = g.not ? ` — ${g.not}` : '';
-    return `${g.baslik}${notMetni}: ${kategoriMetni}`;
-  });
-}
+// ---- Siniflandirma kriterleri paragraflari artik bbhb.aciklamalar.js'den
+// geliyor (yukarida import edildi) - burada TEKRAR TANIMLANMAZ.
 
 function bolumBasligiMetni(baslik) {
   return (
@@ -159,7 +87,6 @@ module.exports = {
   ISLETMECI_ADI_SUTUN_SAYISI,
   TOPLAM_SUTUN_INDEX,
   isletmeciSatiriDizisi,
-  KRITER_ACIKLAMALARI,
   kriterParagraflariOlustur,
   bolumBasligiMetni,
 };

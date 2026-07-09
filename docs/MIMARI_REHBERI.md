@@ -117,3 +117,26 @@ literal olarak içermez.
   olarak tutulur ve versiyonlanır
 - Her hesaplama modülü: core (saf) → service (orkestrasyon) →
   controller (HTTP) katmanlarına ayrılır
+
+## 9. Güncel Durum Notu (10. paket sonrası)
+
+BBHB modülü tamamlandı: hesaplama motoru, Türkvet + manuel girdi,
+il/ilçe/mahalle bazlı bölümleme, Excel/Word/PDF raporlama (ortak şema
+`reporting/sablonlar/bbhb-tablo-semasi.js`), Kayıtlı Sonuçlar ekranı.
+
+Yeni eklenen dosyalar:
+- `backend/modules/bbhb/bbhb.aciklamalar.js` - kategori yaş/cinsiyet/ırk
+  açıklamaları (TEK KAYNAK; hem raporlama hem manuel giriş formu buradan
+  okur, `GET /api/bbhb/kategoriler` ile dışa açılır)
+- `backend/modules/reporting/sablonlar/bbhb-tablo-semasi.js` - Excel/
+  Word/PDF'in ORTAK sütun şeması ve kriter paragrafları
+- `backend/modules/reporting/sablonlar/fontlar/` - PDF'te Türkçe
+  karakter desteği için gömülü DejaVu Serif fontu (Times New Roman
+  PDFKit'te embed edilemiyor ve Türkçe karakter içermiyor - Excel/Word'de
+  gerçek Times New Roman kullanılabiliyor çünkü onlar sadece font ADI
+  yazıyor, kullanıcının sistemindeki fontu kullanıyor)
+- `frontend/public/assets/js/mis-menu.js` + `shell.js` - modüler kabuk
+
+Sıradaki adaylar: ÇKS modülü, Tahsis modülü, Tahmini Canlı Ağırlık/Kaba
+Yem/Mera Miktarı hesaplama bölümleri (formülleri henüz tanımlı değil),
+imzalı rapor çıktısı.

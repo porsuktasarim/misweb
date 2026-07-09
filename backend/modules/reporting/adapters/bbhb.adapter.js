@@ -40,6 +40,7 @@ function bbhbToContract(bbhbSonuc) {
     modulAdi: lang.bbhb.kisaAd,
     bolumler,
     genelToplam: bbhbSonuc.genelToplamBBHB,
+    hesaplamaTarihi: bbhbSonuc.hesaplamaTarihi,
     ozet: {
       [lang.bbhb.alanlar.kaynakTipi]: lang.bbhb.kaynakTipi[bbhbSonuc.kaynakTipi],
       [lang.bbhb.alanlar.kuralSetiVersiyonu]: bbhbSonuc.kuralSetiVersiyonu,

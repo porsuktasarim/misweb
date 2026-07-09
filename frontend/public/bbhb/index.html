@@ -52,11 +52,17 @@
                 </div>
               </form>
 
-              <p class="text-muted small">
-                Not: kategori/grup seçim listeleri ve işletmeci ekleme akışı
-                bir sonraki adımda tamamlanacaktır.
-              </p>
-              <div id="sonucAlani"></div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">İşletmeci Adı</label>
+                <input class="form-control" id="manuelIsletmeciAdi" placeholder="Ad Soyad / Firma" required />
+              </div>
+
+              <div id="manuelKategoriAlani">
+                <div class="text-muted small">Kategoriler yükleniyor...</div>
+              </div>
+
+              <button type="button" class="btn btn-primary mt-2" id="manuelHesaplaBtn">Hesapla</button>
+              <div id="sonucAlani" class="mt-3"></div>
             </div>
 
             <div class="tab-pane fade" id="turkvet-tab">
@@ -92,7 +98,7 @@
           <h2>Kural Seti</h2>
           <span class="mis-rozet">Aktif versiyon: v1</span>
           <p class="text-muted small mt-2 mb-0">
-            19 kategori, 4342 sayılı Mera Kanunu esaslarına göre tanımlıdır.
+            20 kategori, 4342 sayılı Mera Kanunu esaslarına göre tanımlıdır.
           </p>
         </div>
 
@@ -117,6 +123,112 @@
   <script src="/assets/js/shell.js"></script>
   <script>
     misKabuguBaslat('bbhb', 'BBHB<span class="ayrac">/</span>Büyükbaş Hayvan Birimi Hesaplama');
+
+    // ---- Manuel giriş: kategori formunu dinamik kur ----
+    async function manuelKategorileriYukle() {
+      const alan = document.getElementById('manuelKategoriAlani');
+      try {
+        const res = await fetch('/api/bbhb/kategoriler');
+        const json = await res.json();
+        if (!json.success) {
+          alan.innerHTML = `<div class="alert alert-danger">${json.message}</div>`;
+          return;
+        }
+
+        alan.innerHTML = json.data
+          .map(
+            (grup) => `
+            <div class="border rounded p-2 mb-2">
+              <div class="fw-semibold small mb-2">${grup.baslik}${grup.not ? ` <span class="text-muted fw-normal">— ${grup.not}</span>` : ''}</div>
+              <div class="row g-2">
+                ${grup.kategoriler
+                  .map(
+                    (k) => `
+                  <div class="col-6 col-md-4 col-lg-3">
+                    <label class="form-label small mb-0">${k.etiket} <span class="text-muted">(katsayı ${k.katsayi})</span></label>
+                    <input type="number" min="0" class="form-control form-control-sm mis-adet-girisi"
+                      data-grup="${grup.grupKodu}" data-kategori="${k.kod}" value="" placeholder="0" />
+                    <div class="text-muted" style="font-size:11px;">${k.kosul ? k.kosul : 'yaş/cinsiyetten bağımsız'}</div>
+                  </div>`
+                  )
+                  .join('')}
+              </div>
+            </div>`
+          )
+          .join('');
+      } catch (err) {
+        alan.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+      }
+    }
+    manuelKategorileriYukle();
+
+    document.getElementById('manuelHesaplaBtn').addEventListener('click', async () => {
+      const baslikForm = document.getElementById('baslikForm');
+      const isletmeciAdi = document.getElementById('manuelIsletmeciAdi').value.trim();
+      const sonucAlan = document.getElementById('sonucAlani');
+
+      if (!baslikForm.il.value || !baslikForm.ilce.value) {
+        alert('Lütfen İl ve İlçe alanlarını doldurun.');
+        return;
+      }
+      if (!isletmeciAdi) {
+        alert('Lütfen İşletmeci Adı girin.');
+        return;
+      }
+
+      const kalemler = [];
+      document.querySelectorAll('.mis-adet-girisi').forEach((input) => {
+        const adet = parseInt(input.value, 10);
+        if (adet > 0) {
+          kalemler.push({
+            isletmeciId: isletmeciAdi,
+            isletmeciAdi,
+            grup: input.dataset.grup,
+            kategori: input.dataset.kategori,
+            adet,
+          });
+        }
+      });
+
+      if (kalemler.length === 0) {
+        alert('En az bir kategoriye adet girin.');
+        return;
+      }
+
+      sonucAlan.innerHTML = '<div class="text-muted">Hesaplanıyor...</div>';
+
+      try {
+        const res = await fetch('/api/bbhb/manuel/hesapla', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            kalemler,
+            baslik: { il: baslikForm.il.value, ilce: baslikForm.ilce.value, mahalle: baslikForm.mahalle.value },
+          }),
+        });
+        const json = await res.json();
+        if (!json.success) {
+          sonucAlan.innerHTML = `<div class="alert alert-danger">${json.message}</div>`;
+          return;
+        }
+
+        sonucAlan.innerHTML = `
+          <div class="alert alert-success">Toplam BBHB: <strong>${json.data.genelToplamBBHB}</strong></div>
+          <button id="manuelKaydetBtn" class="btn btn-success">Kaydet</button>
+        `;
+        document.getElementById('manuelKaydetBtn').addEventListener('click', async () => {
+          const kaydetRes = await fetch('/api/bbhb/kaydet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(json.data),
+          });
+          const kaydetJson = await kaydetRes.json();
+          alert(kaydetJson.message || 'Kaydedildi');
+        });
+      } catch (err) {
+        sonucAlan.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+      }
+    });
 
     // ---- Türkvet akışı ----
     document.getElementById('turkvetForm').addEventListener('submit', async (e) => {

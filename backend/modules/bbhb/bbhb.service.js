@@ -47,6 +47,19 @@ function bolumlereAyir(hamKayitlar) {
 }
 
 /**
+ * "Hesaplama tarihi": rapor/yükleme tarihi DEĞİL, yaş hesaplamasında
+ * kullanılan referans tarih. Kaydedildiği/hesaplandığı AYIN 1. GÜNÜ
+ * olarak sabitlenir - böylece ayın hangi gününde hesap yapılırsa
+ * yapılsın aynı ay için herkes aynı yaş referansıyla değerlendirilir,
+ * ve bu tarih kayıtla birlikte SAKLANIR (rapor her açıldığında bugünün
+ * tarihine göre değil, o günkü hesaplama tarihine göre gösterilir).
+ */
+function hesaplamaTarihiUret() {
+  const simdi = new Date();
+  return new Date(simdi.getFullYear(), simdi.getMonth(), 1);
+}
+
+/**
  * MANUEL YOL
  * Kaynakta il/ilce/mahalle bilgisi olmadigi icin kullanicidan alinir.
  * Sonuc yine de TEK elemanli bir "bolumler" dizisi olarak doner.
@@ -62,6 +75,7 @@ function manuelHesapla({ kalemler, baslik }) {
   return {
     kaynakTipi: 'manuel',
     kaynakDosyalar: [],
+    hesaplamaTarihi: hesaplamaTarihiUret(),
     bolumler: [
       {
         il: baslik.il,
@@ -85,8 +99,10 @@ function manuelHesapla({ kalemler, baslik }) {
  * @param {string[]} params.dosyaYollari
  */
 async function turkvetIleHesapla({ dosyaYollari }) {
-  // 1-2. Dosyalari oku, birlestir
-  const hamKayitlar = await cokluDosyaOku(dosyaYollari);
+  const hesaplamaTarihi = hesaplamaTarihiUret();
+
+  // 1-2. Dosyalari oku, birlestir (yas hesaplamasi hesaplamaTarihi'ne gore yapilir)
+  const hamKayitlar = await cokluDosyaOku(dosyaYollari, hesaplamaTarihi);
 
   // Il/ilce/mahalle bazinda bolumlere ayir
   const bolumGruplari = bolumlereAyir(hamKayitlar);
@@ -111,6 +127,7 @@ async function turkvetIleHesapla({ dosyaYollari }) {
   return {
     kaynakTipi: 'turkvet',
     kaynakDosyalar: dosyaYollari.map((p) => p.split('/').pop()),
+    hesaplamaTarihi,
     bolumler,
     genelToplamBBHB: Number(genelToplamBBHB.toFixed(2)),
     kuralSetiVersiyonu: AKTIF_VERSIYON,

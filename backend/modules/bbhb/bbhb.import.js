@@ -79,8 +79,17 @@ function cinsiyetNormalizeEt(hamDeger) {
 /**
  * Turkvet tarihleri metin olarak "GG.AA.YY" formatinda gelir (orn. "01.12.21").
  * 2 haneli yil: 00-30 -> 2000'ler, 31-99 -> 1900'ler kabul edilir.
+ *
+ * ONEMLI: referansTarih parametresi ZORUNLUDUR ve "bugun" degil,
+ * hesaplamanin yapildigi/kaydedildigi ayin 1. gunudur (bkz. bbhb.service.js
+ * hesaplamaTarihiUret()). Boylece ayin hangi gununde hesaplama yapilirsa
+ * yapilsin, o ay icin herkes AYNI yas referansiyla hesaplanir ve sonuc
+ * rapor tarihinden BAGIMSIZ, kaydedildigi anda SABITLENIR.
  */
-function yasAyHesapla(hamTarih, referansTarih = new Date()) {
+function yasAyHesapla(hamTarih, referansTarih) {
+  if (!referansTarih) {
+    throw new Error('yasAyHesapla: referansTarih zorunludur (bugunun tarihi kullanilmaz)');
+  }
   const metin = String(hamTarih || '').trim();
   const parcalar = metin.split('.');
   if (parcalar.length !== 3) {
@@ -119,9 +128,10 @@ function basliklariEslestir(hamBaslikSatiri) {
 /**
  * Tek bir dosyayi okuyup normalize kayit dizisine cevirir.
  * @param {string} dosyaYolu
+ * @param {Date} hesaplamaTarihi - yas hesaplamasinda kullanilacak referans tarih
  * @returns {Promise<Array>}
  */
-async function dosyaOku(dosyaYolu) {
+async function dosyaOku(dosyaYolu, hesaplamaTarihi) {
   const workbook = XLSX.readFile(dosyaYolu);
   const sheetAdi = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetAdi];
@@ -157,7 +167,7 @@ async function dosyaOku(dosyaYolu) {
       mahalle: String(satir[eslesme.mahalle] || '').trim(),
       tur: turNormalizeEt(satir[eslesme.tur]),
       cinsiyet: cinsiyetNormalizeEt(satir[eslesme.cinsiyet]),
-      yasAy: yasAyHesapla(satir[eslesme.dogumTarihi]),
+      yasAy: yasAyHesapla(satir[eslesme.dogumTarihi], hesaplamaTarihi),
       irk: String(satir[eslesme.irk] || '').trim(),
       kaynak: 'turkvet_excel',
       kaynakReferans: `${path.basename(dosyaYolu)}:${String(kupeNo).trim()}`,
@@ -170,12 +180,13 @@ async function dosyaOku(dosyaYolu) {
 /**
  * Birden fazla dosyayi okuyup tek bir normalize kayit listesinde birlestirir.
  * @param {string[]} dosyaYollari
+ * @param {Date} hesaplamaTarihi - yas hesaplamasinda kullanilacak referans tarih
  * @returns {Promise<Array>}
  */
-async function cokluDosyaOku(dosyaYollari) {
+async function cokluDosyaOku(dosyaYollari, hesaplamaTarihi) {
   const tumKayitlar = [];
   for (const dosyaYolu of dosyaYollari) {
-    const kayitlar = await dosyaOku(dosyaYolu);
+    const kayitlar = await dosyaOku(dosyaYolu, hesaplamaTarihi);
     tumKayitlar.push(...kayitlar);
   }
   return tumKayitlar;

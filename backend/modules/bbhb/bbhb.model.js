@@ -48,6 +48,10 @@ const bbhbSonucSchema = new mongoose.Schema(
     kaynakTipi: { type: String, enum: ['manuel', 'turkvet'], required: true },
     kaynakDosyalar: { type: [String], default: [] },
 
+    // Yas hesaplamasinda kullanilan referans tarih (rapor/yukleme tarihi
+    // DEGIL) - kaydedildigi ayin 1. gunu, hesaplama aninda sabitlenir.
+    hesaplamaTarihi: { type: Date, required: true },
+
     // Hesaplama sonucu - il/ilce/mahalle bazinda bolumlenmis
     bolumler: { type: [bolumSchema], default: [] },
     genelToplamBBHB: { type: Number, required: true },

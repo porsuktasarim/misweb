@@ -71,7 +71,7 @@ function veriSatiriDizisi(siraNo, isletmeciAdi, pivotDegerler, toplam) {
   return [siraNo, isletmeciAdi, ...bosluklar, ...pivotDegerler, toplam];
 }
 
-function bolumYaz(sheet, bolum) {
+function bolumYaz(sheet, bolum, hesaplamaTarihi) {
   const baslikMetni = bolumBasligiMetni(bolum.baslik);
 
   const r1 = sheet.addRow([baslikMetni]);
@@ -82,7 +82,7 @@ function bolumYaz(sheet, bolum) {
   sheet.mergeCells(`A${r2.number}:${sutunHarfi(sheet, TOPLAM_SUTUN_INDEX)}${r2.number}`);
   hucreStil(r2.getCell(1), { fill: RENK.koyu, bold: true, renkBeyaz: true, align: 'center' });
 
-  const r3 = sheet.addRow([`Tarih: ${new Date().toLocaleDateString('tr-TR')}`]);
+  const r3 = sheet.addRow([`Hesaplama Tarihi: ${new Date(hesaplamaTarihi).toLocaleDateString('tr-TR')}`]);
   hucreStil(r3.getCell(1), {});
 
   // Baslik satirlari (grup adlari + alt kategoriler)
@@ -213,7 +213,7 @@ async function contractToExcel(contract) {
   }
 
   for (const bolum of contract.bolumler) {
-    bolumYaz(sheet, bolum);
+    bolumYaz(sheet, bolum, contract.hesaplamaTarihi);
   }
 
   if (contract.bolumler.length > 1) {

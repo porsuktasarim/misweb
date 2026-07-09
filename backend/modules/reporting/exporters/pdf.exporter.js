@@ -56,7 +56,7 @@ function hucreCiz(doc, { x, y, w, h, metin, fill, kalin = false, renkYazi = RENK
   }
 }
 
-function bolumCiz(doc, bolum, sutunGenislikleri, solKenar, ustBaslangic) {
+function bolumCiz(doc, bolum, sutunGenislikleri, solKenar, ustBaslangic, hesaplamaTarihi) {
   let y = ustBaslangic;
   const toplamGenislik = sutunGenislikleri.reduce((a, b) => a + b, 0);
 
@@ -72,7 +72,7 @@ function bolumCiz(doc, bolum, sutunGenislikleri, solKenar, ustBaslangic) {
   y += SATIR_YUKSEKLIGI;
 
   doc.font(FONT_NORMAL).fontSize(YAZI_BOYUTU).fillColor(RENK.koyuYazi)
-    .text(`Tarih: ${new Date().toLocaleDateString('tr-TR')}`, solKenar, y + 2);
+    .text(`Hesaplama Tarihi: ${new Date(hesaplamaTarihi).toLocaleDateString('tr-TR')}`, solKenar, y + 2);
   y += SATIR_YUKSEKLIGI;
 
   // Sutun x-konumlari
@@ -188,7 +188,7 @@ async function contractToPdf(contract) {
         doc.addPage();
         y = doc.page.margins.top;
       }
-      y = bolumCiz(doc, bolum, sutunGenislikleri, solKenar, y);
+      y = bolumCiz(doc, bolum, sutunGenislikleri, solKenar, y, contract.hesaplamaTarihi);
     }
 
     if (y > doc.page.height - 150) {

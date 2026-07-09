@@ -35,6 +35,11 @@ router.post(
 // Onizlemeyi onayla, kalici kayit olustur
 router.post('/kaydet', controller.kaydetHandler);
 
+// Manuel giris formu icin: grup/kategori/yas kurali/katsayi listesi
+// ONEMLI: bu route /:id'den ONCE tanimlanmali, yoksa Express "kategoriler"i
+// bir ID sanip getirHandler'a yonlendirir.
+router.get('/kategoriler', controller.kategorilerHandler);
+
 // Kayitli tum sonuclarin listesi ("Kayıtlı Sonuçlar" sekmesi icin)
 router.get('/', controller.listeHandler);
 

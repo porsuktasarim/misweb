@@ -7,6 +7,7 @@
 
 const fs = require('fs/promises');
 const service = require('./bbhb.service');
+const { kategorileriKatsayiIleGetir } = require('./bbhb.aciklamalar');
 const lang = require('../../../config/lang/tr');
 
 function basarili(res, data, mesaj = null) {
@@ -91,6 +92,11 @@ async function silHandler(req, res) {
   }
 }
 
+/** Manuel giris ekraninin dinamik olusturdugu form icin: grup/kategori/yas/katsayi listesi */
+function kategorilerHandler(req, res) {
+  return basarili(res, kategorileriKatsayiIleGetir());
+}
+
 module.exports = {
   manuelHesaplaHandler,
   turkvetOnizlemeHandler,
@@ -98,4 +104,5 @@ module.exports = {
   getirHandler,
   listeHandler,
   silHandler,
+  kategorilerHandler,
 };
