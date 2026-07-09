@@ -10,6 +10,6 @@ COPY . .
 # Turkvet yuklemeleri icin klasor (uploads/ .gitignore'da, imaj icinde olusturulmali)
 RUN mkdir -p uploads/turkvet
 
-EXPOSE 3000
+EXPOSE 4342
 
 CMD ["node", "app.js"]

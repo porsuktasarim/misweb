@@ -17,7 +17,7 @@ app.use(express.static(path.join(__dirname, 'frontend/public')));
 app.use('/api/bbhb', bbhbRoutes);
 app.use('/api/raporlar', reportRoutes);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4342;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/mis';
 
 mongoose
