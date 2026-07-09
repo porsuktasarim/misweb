@@ -2,75 +2,166 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BBHB Hesaplama - Mera İzleme Sistemi</title>
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="/assets/css/layout.css" rel="stylesheet" />
 </head>
-<body class="bg-light">
-  <div class="container py-4">
-    <h1 class="h3 mb-4">BBHB Hesaplama</h1>
+<body>
 
-    <ul class="nav nav-tabs mb-3">
-      <li class="nav-item">
-        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#manuel-tab">
-          Manuel Giriş
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#turkvet-tab">
-          Türkvet Dosyası
-        </button>
-      </li>
-    </ul>
+  <div class="mis-kabuk">
 
-    <div class="tab-content">
-      <!-- MANUEL GİRİŞ -->
-      <div class="tab-pane fade show active" id="manuel-tab">
-        <form id="baslikForm" class="row g-2 mb-3">
-          <div class="col-md-4">
-            <input class="form-control" name="il" placeholder="İl" required />
+    <!-- 1: MARKA -->
+    <div class="mis-marka">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M5 8c-1.2-.6-2-1.8-1.6-2.8.4-1 1.8-1 2.6-.2M19 8c1.2-.6 2-1.8 1.6-2.8-.4-1-1.8-1-2.6-.2"
+          stroke="#c79a46" stroke-width="1.4" stroke-linecap="round"/>
+        <ellipse cx="12" cy="13.5" rx="7" ry="6" fill="#f5f4ef"/>
+        <ellipse cx="7.6" cy="10.5" rx="1.6" ry="2.1" fill="#f5f4ef" transform="rotate(-25 7.6 10.5)"/>
+        <ellipse cx="16.4" cy="10.5" rx="1.6" ry="2.1" fill="#f5f4ef" transform="rotate(25 16.4 10.5)"/>
+        <circle cx="9.3" cy="13" r="1" fill="#1f4331"/>
+        <circle cx="14.7" cy="13" r="1" fill="#1f4331"/>
+        <ellipse cx="12" cy="16.2" rx="2.6" ry="1.6" fill="#1f4331"/>
+      </svg>
+      <div class="mis-marka-metin">
+        MİS
+        <small>Mera İzleme Sistemi</small>
+      </div>
+    </div>
+
+    <!-- 2: ÜST ÇUBUK -->
+    <div class="mis-ustcubuk">
+      <button class="mis-menu-toggle" title="Menüyü daralt/genişlet" aria-label="Menüyü daralt/genişlet">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+
+      <div class="mis-arac-adi">BBHB<span class="ayrac">/</span>Büyükbaş Hayvan Birimi Hesaplama</div>
+
+      <div class="mis-ustcubuk-baglantilar">
+        <a href="#" title="Ayarlar" aria-label="Ayarlar">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.6 1z"/>
+          </svg>
+        </a>
+        <a href="#" title="Kullanıcı" aria-label="Kullanıcı">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- 3: ANA MENÜ -->
+    <nav class="mis-anamenu">
+      <div class="mis-anamenu-grup-baslik">Araçlar</div>
+      <a href="/bbhb/" class="aktif">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+        <span>BBHB Hesaplama</span>
+      </a>
+      <!-- Sonraki araçlar (ÇKS, Tahsis, Raporlar) buraya eklenecek -->
+
+      <div class="mis-anamenu-grup-baslik">Sistem</div>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20V10M18 20V4M6 20v-6"/></svg>
+        <span>Raporlarım</span>
+      </a>
+    </nav>
+
+    <!-- 4: İÇERİK -->
+    <div class="mis-icerik">
+
+      <!-- 4a: BİRİNCİL (giriş akışı) -->
+      <div class="mis-icerik-birincil">
+        <div class="mis-panel">
+          <h2>Rapor Başlığı</h2>
+          <form id="baslikForm" class="row g-2">
+            <div class="col-md-4">
+              <input class="form-control" name="il" placeholder="İl" required />
+            </div>
+            <div class="col-md-4">
+              <input class="form-control" name="ilce" placeholder="İlçe" required />
+            </div>
+            <div class="col-md-4">
+              <input class="form-control" name="mahalle" placeholder="Mahalle" />
+            </div>
+          </form>
+        </div>
+
+        <div class="mis-panel">
+          <ul class="nav nav-tabs mb-3">
+            <li class="nav-item">
+              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#manuel-tab">Manuel Giriş</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#turkvet-tab">Türkvet Dosyası</button>
+            </li>
+          </ul>
+
+          <div class="tab-content">
+            <div class="tab-pane fade show active" id="manuel-tab">
+              <p class="text-muted small">
+                Not: kategori/grup seçim listeleri ve işletmeci ekleme akışı
+                bir sonraki adımda tamamlanacaktır.
+              </p>
+              <div id="sonucAlani"></div>
+            </div>
+
+            <div class="tab-pane fade" id="turkvet-tab">
+              <form id="turkvetForm">
+                <div class="mb-2">
+                  <input type="file" class="form-control" name="dosyalar" multiple />
+                </div>
+                <button type="submit" class="btn btn-primary">Önizleme Oluştur</button>
+              </form>
+              <div id="turkvetSonucAlani" class="mt-3"></div>
+            </div>
           </div>
-          <div class="col-md-4">
-            <input class="form-control" name="ilce" placeholder="İlçe" required />
-          </div>
-          <div class="col-md-4">
-            <input class="form-control" name="mahalle" placeholder="Mahalle" />
-          </div>
-        </form>
-
-        <p class="text-muted small">
-          Not: Bu ekran iskelet amaçlıdır — kategori/grup seçim listeleri ve
-          işletmeci ekleme akışı bir sonraki adımda tamamlanacaktır.
-        </p>
-
-        <div id="sonucAlani"></div>
+        </div>
       </div>
 
-      <!-- TÜRKVET DOSYASI -->
-      <div class="tab-pane fade" id="turkvet-tab">
-        <form id="turkvetForm" class="mb-3">
-          <div class="mb-2">
-            <input type="file" class="form-control" name="dosyalar" multiple />
-          </div>
-          <button type="submit" class="btn btn-primary">Önizleme Oluştur</button>
-        </form>
-        <div id="turkvetSonucAlani"></div>
+      <!-- 4b: İKİNCİL (bağlam) -->
+      <div class="mis-icerik-ikincil">
+        <div class="mis-panel">
+          <h2>Kural Seti</h2>
+          <span class="mis-rozet">Aktif versiyon: v1</span>
+          <p class="text-muted small mt-2 mb-0">
+            19 kategori, 4342 sayılı Mera Kanunu esaslarına göre tanımlıdır.
+          </p>
+        </div>
+
+        <div class="mis-panel">
+          <h2>Nasıl Çalışır</h2>
+          <p class="text-muted small mb-0">
+            Manuel giriş veya Türkvet dosyası ile hesapla, sonucu önizle,
+            onaylarsan kalıcı olarak kaydedilir. Kayıtlı sonuçlar
+            raporlama modülünden Excel/Word/PDF olarak indirilebilir.
+          </p>
+        </div>
       </div>
+
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/assets/js/layout.js"></script>
   <script>
-    // Türkvet dosyası önizleme akışı
     document.getElementById('turkvetForm').addEventListener('submit', async (e) => {
       e.preventDefault();
+
+      const baslikForm = document.getElementById('baslikForm');
+      if (!baslikForm.il.value || !baslikForm.ilce.value) {
+        alert('Lütfen İl ve İlçe alanlarını doldurun.');
+        return;
+      }
+
       const form = e.target;
       const formData = new FormData(form);
-
-      // Başlık bilgisini manuel sekmesindeki alanlardan alıyoruz (basitleştirme)
-      const baslikForm = document.getElementById('baslikForm');
       formData.append('il', baslikForm.il.value);
       formData.append('ilce', baslikForm.ilce.value);
       formData.append('mahalle', baslikForm.mahalle.value);
@@ -79,10 +170,7 @@
       alan.innerHTML = '<div class="text-muted">Hesaplanıyor...</div>';
 
       try {
-        const res = await fetch('/api/bbhb/turkvet/onizleme', {
-          method: 'POST',
-          body: formData,
-        });
+        const res = await fetch('/api/bbhb/turkvet/onizleme', { method: 'POST', body: formData });
         const json = await res.json();
 
         if (!json.success) {
@@ -94,7 +182,7 @@
           <div class="alert alert-success">
             Genel Toplam BBHB: <strong>${json.data.genelToplamBBHB}</strong>
           </div>
-          <pre class="bg-white p-3 border">${JSON.stringify(json.data, null, 2)}</pre>
+          <pre class="bg-light p-3 border rounded" style="max-height:300px;overflow:auto;">${JSON.stringify(json.data, null, 2)}</pre>
           <button id="kaydetBtn" class="btn btn-success">Kaydet</button>
         `;
 

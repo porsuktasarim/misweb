@@ -1,0 +1,254 @@
+/**
+ * layout.css
+ *
+ * MIS uygulama kabugu (shell): 2x2 sabit yerlesim.
+ *
+ *   +----------------+-----------------------------------+
+ *   | 1  MARKA        | 2  UST CUBUK (daralt / arac adi / baglantilar) |
+ *   +----------------+-----------------------------------+
+ *   | 3  ANA MENU     | 4  ICERIK (sol: giris | sag: baglam)          |
+ *   |    (kenar cubuk) |                                              |
+ *   +----------------+-----------------------------------+
+ *
+ * Her modul ekrani bu shell'i kullanir; sadece "content-primary" ve
+ * "content-secondary" ic gorunumu degisir.
+ */
+
+:root {
+  /* --- Renk: Mera/kurum temasi --- */
+  --renk-mera-koyu: #1f4331;      /* marka / birincil */
+  --renk-mera: #2e5c3f;           /* vurgu-1 (hover, aktif) */
+  --renk-bugday: #c79a46;         /* vurgu-2 (isaretleyici, rozet) */
+  --renk-zemin: #f5f4ef;          /* sayfa zemini (taş tonu, krem degil) */
+  --renk-yuzey: #ffffff;          /* kart / panel zemini */
+  --renk-kenarlik: #e2e0d6;
+  --renk-metin: #1c1e1b;
+  --renk-metin-soluk: #6b6f68;
+  --renk-metin-ters: #f5f4ef;     /* koyu zemin uzerindeki metin */
+
+  /* --- Tipografi --- */
+  --yazi-baslik: 'Archivo', 'Segoe UI', sans-serif;
+  --yazi-govde: 'Inter', 'Segoe UI', sans-serif;
+
+  /* --- Olcu --- */
+  --kenar-cubugu-genislik: 248px;
+  --kenar-cubugu-daraltilmis: 72px;
+  --ust-cubuk-yukseklik: 64px;
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--yazi-govde);
+  color: var(--renk-metin);
+  background: var(--renk-zemin);
+}
+
+h1, h2, h3, .mis-baslik-yazitipi {
+  font-family: var(--yazi-baslik);
+  letter-spacing: -0.01em;
+}
+
+/* ============ SHELL ============ */
+
+.mis-kabuk {
+  display: grid;
+  grid-template-columns: var(--kenar-cubugu-genislik) 1fr;
+  grid-template-rows: var(--ust-cubuk-yukseklik) 1fr;
+  grid-template-areas:
+    "marka  ustcubuk"
+    "menu   icerik";
+  height: 100vh;
+  transition: grid-template-columns 0.18s ease;
+}
+
+.mis-kabuk.menu-daraltilmis {
+  grid-template-columns: var(--kenar-cubugu-daraltilmis) 1fr;
+}
+
+/* ---- 1. MARKA (üst-sol) ---- */
+.mis-marka {
+  grid-area: marka;
+  background: var(--renk-mera-koyu);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 18px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.mis-marka svg { flex: none; width: 28px; height: 28px; }
+
+.mis-marka-metin {
+  color: var(--renk-metin-ters);
+  font-family: var(--yazi-baslik);
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.1;
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+
+.mis-marka-metin small {
+  display: block;
+  font-family: var(--yazi-govde);
+  font-weight: 400;
+  font-size: 11px;
+  color: #b7c9bd;
+}
+
+.menu-daraltilmis .mis-marka-metin { opacity: 0; width: 0; }
+
+/* ---- 2. ÜST ÇUBUK (üst-sağ) ---- */
+.mis-ustcubuk {
+  grid-area: ustcubuk;
+  background: var(--renk-yuzey);
+  border-bottom: 1px solid var(--renk-kenarlik);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+}
+
+.mis-menu-toggle {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--renk-metin);
+}
+.mis-menu-toggle:hover { background: var(--renk-zemin); }
+
+.mis-arac-adi {
+  font-family: var(--yazi-baslik);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--renk-metin);
+  margin-left: 4px;
+}
+.mis-arac-adi .ayrac { color: var(--renk-metin-soluk); font-weight: 400; margin: 0 6px; }
+
+.mis-ustcubuk-baglantilar {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mis-ustcubuk-baglantilar button,
+.mis-ustcubuk-baglantilar a {
+  border: none;
+  background: transparent;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--renk-metin-soluk);
+  text-decoration: none;
+  cursor: pointer;
+}
+.mis-ustcubuk-baglantilar button:hover,
+.mis-ustcubuk-baglantilar a:hover { background: var(--renk-zemin); color: var(--renk-metin); }
+
+/* ---- 3. ANA MENÜ (alt-sol) ---- */
+.mis-anamenu {
+  grid-area: menu;
+  background: var(--renk-mera-koyu);
+  overflow-y: auto;
+  padding: 10px 0;
+}
+
+.mis-anamenu-grup-baslik {
+  color: #8fa895;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 14px 18px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.menu-daraltilmis .mis-anamenu-grup-baslik { opacity: 0; height: 0; padding: 0; }
+
+.mis-anamenu a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  color: #d7e3da;
+  text-decoration: none;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  border-left: 3px solid transparent;
+}
+
+.mis-anamenu a svg { flex: none; width: 18px; height: 18px; }
+
+.mis-anamenu a:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+
+.mis-anamenu a.aktif {
+  background: rgba(255, 255, 255, 0.09);
+  color: #fff;
+  border-left-color: var(--renk-bugday);
+}
+
+.menu-daraltilmis .mis-anamenu a span { display: none; }
+
+/* ---- 4. İÇERİK (alt-sağ) ---- */
+.mis-icerik {
+  grid-area: icerik;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: 1fr minmax(280px, 340px);
+  gap: 20px;
+  padding: 24px;
+  align-content: start;
+}
+
+.mis-icerik-birincil { min-width: 0; }
+.mis-icerik-ikincil { min-width: 0; }
+
+.mis-panel {
+  background: var(--renk-yuzey);
+  border: 1px solid var(--renk-kenarlik);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.mis-panel h2 {
+  font-size: 15px;
+  margin: 0 0 14px;
+  color: var(--renk-mera-koyu);
+}
+
+.mis-rozet {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fbf3e3;
+  color: #8a6a1f;
+  border: 1px solid #eddcb2;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+/* ---- Mobil: menü otomatik daralır, içerik tek sütuna düşer ---- */
+@media (max-width: 900px) {
+  .mis-kabuk { grid-template-columns: var(--kenar-cubugu-daraltilmis) 1fr; }
+  .mis-marka-metin { opacity: 0; width: 0; }
+  .mis-anamenu a span { display: none; }
+  .mis-icerik { grid-template-columns: 1fr; }
+}
