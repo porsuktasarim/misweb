@@ -1,163 +1,56 @@
 /**
  * excel.exporter.js
  *
- * Resmi BBHB raporu sablonuna (Ek-4/ab tarzi) uygun genis (wide) tablo
- * uretir: Sira No, Isletmeci Adi, grup basina alt kategori sutunlari
- * (adet), Toplam BBHB. Renk semasi TEK RENK AILESI (gri tonlari) -
- * kurumsal rapor standardi: Times New Roman 8pt, 14.5pt satir yuksekligi.
+ * Resmi BBHB raporu sablonu (Ek-4/ab tarzi), gri ton renk semasi.
+ * Sutun semasi backend/modules/reporting/sablonlar/bbhb-tablo-semasi.js
+ * dosyasindan gelir (Word/PDF ile ORTAK, tek kaynak).
  *
- * Birden fazla bolum (il/ilce/mahalle) varsa, her bolum kendi basligi
- * ve tablosuyla alt alta yazilir; en sonda GENEL OZET ve tek seferlik
- * siniflandirma kriterleri tablosu gelir.
+ * Sayfa: yatay (landscape), kenar boslugu 1cm, basliklar ortali.
+ * Isletmeci Adi alani TEK genis sutun DEGIL, 8 adet 3.75 genislikte
+ * sutunun BIRLESTIRILMESIYLE olusturulur (kullanicinin acik istegi).
  */
 
 const ExcelJS = require('exceljs');
 const lang = require('../../../../config/lang/tr');
 const { katsayiBul } = require('../../bbhb/bbhb.rules');
+const {
+  SUTUN_HARITASI,
+  TUM_ALTLAR,
+  SABIT_ONCESI,
+  ISLETMECI_ADI_SUTUN_SAYISI,
+  TOPLAM_SUTUN_INDEX,
+  isletmeciSatiriDizisi,
+  kriterParagraflariOlustur,
+  bolumBasligiMetni,
+} = require('../sablonlar/bbhb-tablo-semasi');
 
-// ---- Gri ton paleti (kurumsal, tek renk ailesi) ----
 const RENK = {
-  koyu: 'FF3F3F3C',        // ana baslik / bolum basligi
-  orta: 'FF6E6E68',        // grup/alt-kategori basliklari
-  katsayi: 'FFEDEBE4',     // katsayi satiri
-  seritAcik: 'FFFFFFFF',   // veri satiri (acik)
-  seritKoyu: 'FFF4F4F2',   // veri satiri (alternatif)
-  toplam: 'FFDCDCD7',      // TOPLAM satiri
-  ozetEtiket: 'FFD9D9D4',  // ozet bilgi etiket hucresi
+  koyu: 'FF3F3F3C',
+  orta: 'FF6E6E68',
+  katsayi: 'FFEDEBE4',
+  seritAcik: 'FFFFFFFF',
+  seritKoyu: 'FFF4F4F2',
+  toplam: 'FFDCDCD7',
+  ozetEtiket: 'FFD9D9D4',
 };
 
 const YAZI_TIPI = 'Times New Roman';
 const YAZI_BOYUTU = 8;
 const SATIR_YUKSEKLIGI = 15;
+const BIR_CM_INC = 1 / 2.54;
 
-// ---- Resmi sablon sutun haritasi: [grup baslik, [{etiket, kategoriKodlari}]] ----
-const SUTUN_HARITASI = [
-  { grup: 'kulturIrki', baslik: 'Kültür Irkı', altlar: [
-    { etiket: 'İnek', kodlar: ['inek'] },
-    { etiket: 'Dana-Düve', kodlar: ['dana', 'duve'] },
-  ]},
-  { grup: 'kulturMelezi', baslik: 'Kültür Melezi', altlar: [
-    { etiket: 'İnek', kodlar: ['inek'] },
-    { etiket: 'Dana-Düve', kodlar: ['dana', 'duve'] },
-  ]},
-  { grup: 'yerliIrk', baslik: 'Yerli Irk', altlar: [
-    { etiket: 'İnek', kodlar: ['inek'] },
-    { etiket: 'Dana-Düve', kodlar: ['dana', 'duve'] },
-  ]},
-  { grup: 'buyukbasErkek', baslik: 'Büyükbaş Diğer', altlar: [
-    { etiket: 'Boğa', kodlar: ['boga'] },
-    { etiket: 'Öküz', kodlar: ['okuz'] },
-  ]},
-  { grup: 'manda', baslik: 'Manda', altlar: [
-    { etiket: 'Erkek', kodlar: ['mandaErkek'] },
-    { etiket: 'Dişi', kodlar: ['mandaDisi'] },
-  ]},
-  { grup: 'kucukbas', baslik: 'Küçükbaş', altlar: [
-    { etiket: 'Koyun', kodlar: ['koyun'] },
-    { etiket: 'Keçi', kodlar: ['kec'] },
-    { etiket: 'Kuzu/Oğlak', kodlar: ['kuzu', 'oglak'] },
-  ]},
-  { grup: 'tekTirnakli', baslik: 'Tek Tırnaklı', altlar: [
-    { etiket: 'At', kodlar: ['at'] },
-    { etiket: 'Katır', kodlar: ['katir'] },
-    { etiket: 'Eşek', kodlar: ['esek'] },
-  ]},
-];
+const ISLETMECI_ADI_BASLANGIC = 2; // B
+const ISLETMECI_ADI_BITIS = 1 + ISLETMECI_ADI_SUTUN_SAYISI; // I (9)
 
-// ---- Siniflandirma kriterleri: paragraf metni icin yas/cinsiyet/irk aciklamalari ----
-const KRITER_ACIKLAMALARI = [
-  {
-    grup: 'kulturIrki',
-    baslik: 'Kültür Irkı',
-    not: '"M" ile bitmeyen ve yerli ırk listesinde yer almayan ırklar',
-    kategoriler: [
-      { kod: 'inek', etiket: 'İnek', kosul: 'dişi, 22 ay ve üzeri' },
-      { kod: 'duve', etiket: 'Düve', kosul: 'dişi, 21 ay ve altı' },
-      { kod: 'dana', etiket: 'Dana', kosul: 'erkek, 12 ay ve altı' },
-    ],
-  },
-  {
-    grup: 'kulturMelezi',
-    baslik: 'Kültür Melezi',
-    not: 'ırk adı "M" ile bitenler',
-    kategoriler: [
-      { kod: 'inek', etiket: 'İnek', kosul: 'dişi, 22 ay ve üzeri' },
-      { kod: 'duve', etiket: 'Düve', kosul: 'dişi, 21 ay ve altı' },
-      { kod: 'dana', etiket: 'Dana', kosul: 'erkek, 12 ay ve altı' },
-    ],
-  },
-  {
-    grup: 'yerliIrk',
-    baslik: 'Yerli Irk',
-    not: 'Akkaraman, Kıvırcık, Morkaraman, İvesi, Norduz, Hemşin, Kangal ırkları',
-    kategoriler: [
-      { kod: 'inek', etiket: 'İnek', kosul: 'dişi, 22 ay ve üzeri' },
-      { kod: 'duve', etiket: 'Düve', kosul: 'dişi, 21 ay ve altı' },
-      { kod: 'dana', etiket: 'Dana', kosul: 'erkek, 12 ay ve altı' },
-    ],
-  },
-  {
-    grup: 'buyukbasErkek',
-    baslik: 'Büyükbaş Diğer',
-    not: null,
-    kategoriler: [
-      { kod: 'boga', etiket: 'Boğa', kosul: 'erkek, 13-96 ay' },
-      { kod: 'okuz', etiket: 'Öküz', kosul: 'erkek, 97 ay ve üzeri' },
-    ],
-  },
-  {
-    grup: 'manda',
-    baslik: 'Manda',
-    not: 'yaştan bağımsız',
-    kategoriler: [
-      { kod: 'mandaErkek', etiket: 'Erkek', kosul: null },
-      { kod: 'mandaDisi', etiket: 'Dişi', kosul: null },
-    ],
-  },
-  {
-    grup: 'kucukbas',
-    baslik: 'Küçükbaş',
-    not: 'ırktan bağımsız',
-    kategoriler: [
-      { kod: 'koyun', etiket: 'Koyun', kosul: '12 ay üzeri' },
-      { kod: 'kec', etiket: 'Keçi', kosul: '12 ay üzeri' },
-      { kod: 'kuzu', etiket: 'Kuzu', kosul: 'koyun yavrusu, 12 ay ve altı' },
-      { kod: 'oglak', etiket: 'Oğlak', kosul: 'keçi yavrusu, 12 ay ve altı' },
-    ],
-  },
-  {
-    grup: 'tekTirnakli',
-    baslik: 'Tek Tırnaklı',
-    not: 'yaş/cinsiyetten bağımsız',
-    kategoriler: [
-      { kod: 'at', etiket: 'At', kosul: null },
-      { kod: 'katir', etiket: 'Katır', kosul: null },
-      { kod: 'esek', etiket: 'Eşek', kosul: null },
-    ],
-  },
-];
-
-function kriterParagraflariOlustur() {
-  return KRITER_ACIKLAMALARI.map((g) => {
-    const kategoriMetni = g.kategoriler
-      .map((k) => {
-        const katsayi = katsayiBul(g.grup, k.kod);
-        const kosulMetni = k.kosul ? ` (${k.kosul})` : '';
-        return `${k.etiket}${kosulMetni}: ${katsayi}`;
-      })
-      .join('  ·  ');
-    const notMetni = g.not ? ` — ${g.not}` : '';
-    return `${g.baslik}${notMetni}: ${kategoriMetni}`;
-  });
+function sutunHarfi(sheet, index) {
+  return sheet.getColumn(index).letter;
 }
-const SABIT_ONCESI = 2; // A, B
-// ONEMLI: her alt sutuna kendi grupKodu'nu da tasiyoruz - yoksa orn.
-// "inek" kategori kodu Kultur/Melez/Yerli uc grupta da var, grupKodu
-// olmadan filtrelersek uc sutuna da AYNI deger yazilir (hatali karisma).
-const TUM_ALTLAR = SUTUN_HARITASI.flatMap((g) =>
-  g.altlar.map((alt) => ({ ...alt, grupKodu: g.grup }))
-);
-const TOPLAM_SUTUN_INDEX = SABIT_ONCESI + TUM_ALTLAR.length + 1; // 1-indexli
+
+function isletmeciAlaniniBirlestir(sheet, satirNo1, satirNo2 = satirNo1) {
+  sheet.mergeCells(
+    `${sutunHarfi(sheet, ISLETMECI_ADI_BASLANGIC)}${satirNo1}:${sutunHarfi(sheet, ISLETMECI_ADI_BITIS)}${satirNo2}`
+  );
+}
 
 function hucreStil(hucre, { fill, bold = false, renkBeyaz = false, align = 'center' } = {}) {
   hucre.font = {
@@ -172,45 +65,37 @@ function hucreStil(hucre, { fill, bold = false, renkBeyaz = false, align = 'cent
   hucre.alignment = { vertical: 'middle', horizontal: align, wrapText: true };
 }
 
-/** İşletmecinin kayitlarindan (grupKodu,kategoriKodu,adet) sutun sirasina gore adet dizisi cikarir */
-function isletmeciSatiriDizisi(kayitlar) {
-  return TUM_ALTLAR.map((alt) => {
-    const toplam = kayitlar
-      .filter((k) => k.grupKodu === alt.grupKodu && alt.kodlar.includes(k.kategoriKodu))
-      .reduce((t, k) => t + k.adet, 0);
-    return toplam || '';
-  });
+/** [siraNo, isletmeciAdi, ...bosluklar(7), ...pivotDegerler, toplam] - 26 hucrelik satir dizisi kurar */
+function veriSatiriDizisi(siraNo, isletmeciAdi, pivotDegerler, toplam) {
+  const bosluklar = new Array(ISLETMECI_ADI_SUTUN_SAYISI - 1).fill('');
+  return [siraNo, isletmeciAdi, ...bosluklar, ...pivotDegerler, toplam];
 }
 
-function bolumYaz(sheet, bolum, satirNoRef) {
-  const baslikMetni = (
-    `${bolum.baslik.il} İli ${bolum.baslik.ilce} İlçesi` +
-    (bolum.baslik.mahalle ? ` ${bolum.baslik.mahalle} Köyü/Mahallesi` : '')
-  ).toLocaleUpperCase('tr-TR');
+function bolumYaz(sheet, bolum) {
+  const baslikMetni = bolumBasligiMetni(bolum.baslik);
 
-  // Baslik satirlari
   const r1 = sheet.addRow([baslikMetni]);
-  sheet.mergeCells(`A${r1.number}:${sheet.getColumn(TOPLAM_SUTUN_INDEX).letter}${r1.number}`);
-  hucreStil(r1.getCell(1), { fill: RENK.koyu, bold: true, renkBeyaz: true, align: 'left' });
+  sheet.mergeCells(`A${r1.number}:${sutunHarfi(sheet, TOPLAM_SUTUN_INDEX)}${r1.number}`);
+  hucreStil(r1.getCell(1), { fill: RENK.koyu, bold: true, renkBeyaz: true, align: 'center' });
 
   const r2 = sheet.addRow(['BÜYÜK BAŞ HAYVAN BİRİMİ (BBHB) RAPORU']);
-  sheet.mergeCells(`A${r2.number}:${sheet.getColumn(TOPLAM_SUTUN_INDEX).letter}${r2.number}`);
-  hucreStil(r2.getCell(1), { fill: RENK.koyu, bold: true, renkBeyaz: true, align: 'left' });
+  sheet.mergeCells(`A${r2.number}:${sutunHarfi(sheet, TOPLAM_SUTUN_INDEX)}${r2.number}`);
+  hucreStil(r2.getCell(1), { fill: RENK.koyu, bold: true, renkBeyaz: true, align: 'center' });
 
-  const tarihMetni = `Tarih: ${new Date().toLocaleDateString('tr-TR')}`;
-  const r3 = sheet.addRow([tarihMetni]);
+  const r3 = sheet.addRow([`Tarih: ${new Date().toLocaleDateString('tr-TR')}`]);
   hucreStil(r3.getCell(1), {});
 
-  // Baslik satiri 1 (grup adlari, birlesik)
+  // Baslik satirlari (grup adlari + alt kategoriler)
   const grupBaslikRow = sheet.addRow([]);
   const altBaslikRow = sheet.addRow([]);
 
-  hucreStil(grupBaslikRow.getCell(1), { fill: RENK.koyu, bold: true, renkBeyaz: true });
   grupBaslikRow.getCell(1).value = 'Sıra\nNo';
-  hucreStil(grupBaslikRow.getCell(2), { fill: RENK.koyu, bold: true, renkBeyaz: true });
-  grupBaslikRow.getCell(2).value = 'İkamet Eden Aile Temsilcisinin\nAdı Soyadı (Aile)';
+  hucreStil(grupBaslikRow.getCell(1), { fill: RENK.koyu, bold: true, renkBeyaz: true });
   sheet.mergeCells(`A${grupBaslikRow.number}:A${altBaslikRow.number}`);
-  sheet.mergeCells(`B${grupBaslikRow.number}:B${altBaslikRow.number}`);
+
+  grupBaslikRow.getCell(ISLETMECI_ADI_BASLANGIC).value = 'İkamet Eden Aile Temsilcisinin\nAdı Soyadı (Aile)';
+  hucreStil(grupBaslikRow.getCell(ISLETMECI_ADI_BASLANGIC), { fill: RENK.koyu, bold: true, renkBeyaz: true });
+  isletmeciAlaniniBirlestir(sheet, grupBaslikRow.number, altBaslikRow.number);
 
   let sutunIndex = SABIT_ONCESI + 1;
   for (const grup of SUTUN_HARITASI) {
@@ -220,9 +105,7 @@ function bolumYaz(sheet, bolum, satirNoRef) {
     hucre.value = grup.baslik;
     hucreStil(hucre, { fill: RENK.orta, bold: true, renkBeyaz: true });
     if (bitisIndex > baslaIndex) {
-      sheet.mergeCells(
-        `${sheet.getColumn(baslaIndex).letter}${grupBaslikRow.number}:${sheet.getColumn(bitisIndex).letter}${grupBaslikRow.number}`
-      );
+      sheet.mergeCells(`${sutunHarfi(sheet, baslaIndex)}${grupBaslikRow.number}:${sutunHarfi(sheet, bitisIndex)}${grupBaslikRow.number}`);
     }
     for (const alt of grup.altlar) {
       const altHucre = altBaslikRow.getCell(sutunIndex);
@@ -235,19 +118,15 @@ function bolumYaz(sheet, bolum, satirNoRef) {
   const toplamBaslikHucre = grupBaslikRow.getCell(TOPLAM_SUTUN_INDEX);
   toplamBaslikHucre.value = 'Toplam\nBBHB';
   hucreStil(toplamBaslikHucre, { fill: RENK.orta, bold: true, renkBeyaz: true });
-  sheet.mergeCells(
-    `${sheet.getColumn(TOPLAM_SUTUN_INDEX).letter}${grupBaslikRow.number}:${sheet.getColumn(TOPLAM_SUTUN_INDEX).letter}${altBaslikRow.number}`
-  );
+  sheet.mergeCells(`${sutunHarfi(sheet, TOPLAM_SUTUN_INDEX)}${grupBaslikRow.number}:${sutunHarfi(sheet, TOPLAM_SUTUN_INDEX)}${altBaslikRow.number}`);
 
-  // Katsayi satiri
+  // Katsayi satiri - SABIT kanun tablosu, veriden bagimsiz her zaman dolu
   const katsayiRow = sheet.addRow([]);
   hucreStil(katsayiRow.getCell(1), { fill: RENK.katsayi, bold: true });
-  hucreStil(katsayiRow.getCell(2), { fill: RENK.katsayi, bold: true });
+  hucreStil(katsayiRow.getCell(ISLETMECI_ADI_BASLANGIC), { fill: RENK.katsayi, bold: true });
+  isletmeciAlaniniBirlestir(sheet, katsayiRow.number);
   let ki = SABIT_ONCESI + 1;
   for (const alt of TUM_ALTLAR) {
-    // Katsayi SABIT bir kanun tablosudur - o gun yuklenen veride o kategori
-    // olmasa bile satir her zaman dolu gosterilir (dana/duve gibi birlesik
-    // sutunlarda katsayilar zaten esit oldugu icin ilk kod yeterli).
     const hucre = katsayiRow.getCell(ki);
     hucre.value = katsayiBul(alt.grupKodu, alt.kodlar[0]);
     hucreStil(hucre, { fill: RENK.katsayi, bold: true });
@@ -259,49 +138,39 @@ function bolumYaz(sheet, bolum, satirNoRef) {
   const sutunToplamlari = new Array(TUM_ALTLAR.length).fill(0);
   let siraNo = 1;
   for (const isletmeci of bolum.isletmeciler) {
-    const row = sheet.addRow([
-      siraNo,
-      isletmeci.isletmeciAdi,
-      ...isletmeciSatiriDizisi(isletmeci.kayitlar),
-      isletmeci.isletmeciToplami,
-    ]);
+    const pivotDegerler = isletmeciSatiriDizisi(isletmeci.kayitlar);
+    const row = sheet.addRow(veriSatiriDizisi(siraNo, isletmeci.isletmeciAdi, pivotDegerler, isletmeci.isletmeciToplami));
+    isletmeciAlaniniBirlestir(sheet, row.number);
+
     const zeminRenk = siraNo % 2 === 0 ? RENK.seritKoyu : RENK.seritAcik;
     row.eachCell({ includeEmpty: true }, (hucre, sutunNo) => {
       hucreStil(hucre, {
         fill: zeminRenk,
         bold: sutunNo === TOPLAM_SUTUN_INDEX,
-        align: sutunNo === 2 ? 'left' : 'center',
+        align: sutunNo === ISLETMECI_ADI_BASLANGIC ? 'left' : 'center',
       });
     });
 
-    isletmeciSatiriDizisi(isletmeci.kayitlar).forEach((deger, idx) => {
+    pivotDegerler.forEach((deger, idx) => {
       if (typeof deger === 'number') sutunToplamlari[idx] += deger;
     });
-
     siraNo += 1;
   }
 
   // TOPLAM satiri
-  const toplamRow = sheet.addRow([
-    'TOPLAM',
-    '',
-    ...sutunToplamlari.map((t) => t || ''),
-    bolum.bolumToplami,
-  ]);
+  const toplamRow = sheet.addRow(veriSatiriDizisi('TOPLAM', '', sutunToplamlari.map((t) => t || ''), bolum.bolumToplami));
+  isletmeciAlaniniBirlestir(sheet, toplamRow.number);
   toplamRow.eachCell({ includeEmpty: true }, (hucre) => {
     hucreStil(hucre, { fill: RENK.toplam, bold: true });
   });
-  sheet.mergeCells(`A${toplamRow.number}:B${toplamRow.number}`);
 
   sheet.addRow([]);
 
-  // OZET BILGILER (sadece elimizde formulu olan metrikler)
-  const toplamHayvan = bolum.isletmeciler
-    .flatMap((is) => is.kayitlar)
-    .reduce((t, k) => t + k.adet, 0);
+  // OZET BILGILER
+  const toplamHayvan = bolum.isletmeciler.flatMap((is) => is.kayitlar).reduce((t, k) => t + k.adet, 0);
 
   const ozetBaslikRow = sheet.addRow(['ÖZET BİLGİLER']);
-  sheet.mergeCells(`A${ozetBaslikRow.number}:${sheet.getColumn(TOPLAM_SUTUN_INDEX).letter}${ozetBaslikRow.number}`);
+  sheet.mergeCells(`A${ozetBaslikRow.number}:${sutunHarfi(sheet, TOPLAM_SUTUN_INDEX)}${ozetBaslikRow.number}`);
   hucreStil(ozetBaslikRow.getCell(1), { fill: RENK.koyu, bold: true, renkBeyaz: true, align: 'left' });
 
   const ozetSatirlari = [
@@ -312,8 +181,8 @@ function bolumYaz(sheet, bolum, satirNoRef) {
   for (const [etiket, deger] of ozetSatirlari) {
     const row = sheet.addRow([etiket]);
     hucreStil(row.getCell(1), { fill: RENK.ozetEtiket, bold: true, align: 'left' });
-    sheet.mergeCells(`A${row.number}:E${row.number}`);
-    const degerHucre = row.getCell(6);
+    sheet.mergeCells(`A${row.number}:${sutunHarfi(sheet, ISLETMECI_ADI_BITIS)}${row.number}`);
+    const degerHucre = row.getCell(ISLETMECI_ADI_BITIS + 1);
     degerHucre.value = deger;
     hucreStil(degerHucre, { align: 'left' });
   }
@@ -326,46 +195,53 @@ async function contractToExcel(contract) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(contract.modulAdi);
 
-  // Standart sutunlar 3.75, Isletmeci Adi (B) 8x = 30
-  sheet.columns = new Array(TOPLAM_SUTUN_INDEX).fill(null).map(() => ({ width: 3.75 }));
-  sheet.getColumn(2).width = 30;
+  // Sayfa duzeni: yatay, kenar bosluklari 1cm
+  sheet.pageSetup = {
+    orientation: 'landscape',
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    margins: {
+      left: BIR_CM_INC, right: BIR_CM_INC, top: BIR_CM_INC, bottom: BIR_CM_INC,
+      header: 0, footer: 0,
+    },
+  };
+
+  // Sutun genislikleri: Sira No + Isletmeci Adi alani (8x) + veri sutunlari hepsi 3.75
+  for (let i = 1; i <= TOPLAM_SUTUN_INDEX; i++) {
+    sheet.getColumn(i).width = 3.75;
+  }
 
   for (const bolum of contract.bolumler) {
     bolumYaz(sheet, bolum);
   }
 
-  // GENEL OZET (birden fazla bolum varsa anlamli)
   if (contract.bolumler.length > 1) {
     const genelOzetRow = sheet.addRow(['GENEL ÖZET (Tüm Bölümler)']);
-    sheet.mergeCells(`A${genelOzetRow.number}:${sheet.getColumn(TOPLAM_SUTUN_INDEX).letter}${genelOzetRow.number}`);
+    sheet.mergeCells(`A${genelOzetRow.number}:${sutunHarfi(sheet, TOPLAM_SUTUN_INDEX)}${genelOzetRow.number}`);
     hucreStil(genelOzetRow.getCell(1), { fill: RENK.koyu, bold: true, renkBeyaz: true, align: 'left' });
 
     const row = sheet.addRow(['Genel Toplam BBHB']);
     hucreStil(row.getCell(1), { fill: RENK.ozetEtiket, bold: true, align: 'left' });
-    sheet.mergeCells(`A${row.number}:E${row.number}`);
-    const degerHucre = row.getCell(6);
+    sheet.mergeCells(`A${row.number}:${sutunHarfi(sheet, ISLETMECI_ADI_BITIS)}${row.number}`);
+    const degerHucre = row.getCell(ISLETMECI_ADI_BITIS + 1);
     degerHucre.value = contract.genelToplam;
     hucreStil(degerHucre, { align: 'left' });
 
     sheet.addRow([]);
   }
 
-  // Siniflandirma kriterleri (rapor sonunda, TEK sefer)
-  // Siniflandirma kriterleri (rapor sonunda, TEK sefer) - yas/cinsiyet/irk
-  // bilgisiyle birlikte PARAGRAF seklinde, hucreler birlestirilerek yazilir.
   const kriterBaslikRow = sheet.addRow([lang.ortak.siniflandirmaKriterleri]);
-  sheet.mergeCells(`A${kriterBaslikRow.number}:${sheet.getColumn(TOPLAM_SUTUN_INDEX).letter}${kriterBaslikRow.number}`);
+  sheet.mergeCells(`A${kriterBaslikRow.number}:${sutunHarfi(sheet, TOPLAM_SUTUN_INDEX)}${kriterBaslikRow.number}`);
   hucreStil(kriterBaslikRow.getCell(1), { fill: RENK.koyu, bold: true, renkBeyaz: true, align: 'left' });
 
   for (const paragraf of kriterParagraflariOlustur()) {
     const row = sheet.addRow([paragraf]);
-    sheet.mergeCells(`A${row.number}:${sheet.getColumn(TOPLAM_SUTUN_INDEX).letter}${row.number}`);
+    sheet.mergeCells(`A${row.number}:${sutunHarfi(sheet, TOPLAM_SUTUN_INDEX)}${row.number}`);
     hucreStil(row.getCell(1), { align: 'left' });
-    row.height = 24; // paragraf metni icin standarttan daha yuksek satir
+    row.height = 24;
   }
 
-  // Tum satirlara sabit satir yuksekligi uygula - paragraf satirlarinin
-  // (yukarida ayrica 24 verilmis) OZEL yuksekligini EZMEZ.
   sheet.eachRow((row) => {
     if (!row.height) row.height = SATIR_YUKSEKLIGI;
   });
