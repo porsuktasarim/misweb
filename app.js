@@ -11,6 +11,7 @@ const reportRoutes = require('./backend/modules/reporting/report.routes');
 const sistemRoutes = require('./backend/modules/sistem/sistem.routes');
 const yerlesimRoutes = require('./backend/modules/yerlesim/yerlesim.routes');
 const yerlesimService = require('./backend/modules/yerlesim/yerlesim.service');
+const ekgbRoutes = require('./backend/modules/ekgb/ekgb.routes');
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use('/api/bbhb', bbhbRoutes);
 app.use('/api/raporlar', reportRoutes);
 app.use('/api/sistem', sistemRoutes);
 app.use('/api/yerlesim', yerlesimRoutes);
+app.use('/api/ekgb', ekgbRoutes);
 
 const PORT = process.env.PORT || 4342;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/mis';

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eski Konumuna Getirme Bedeli - Mera İzleme Sistemi</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
+  <link href="/assets/css/layout.css?v=12" rel="stylesheet" />
+  <style>
+    .mis-imzaci-satiri { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+    .mis-imzaci-satiri input { flex: 1; }
+  </style>
+</head>
+<body>
+
+  <div class="mis-kabuk" id="mis-kabuk">
+    <div class="mis-marka" id="mis-marka"></div>
+    <div class="mis-ustcubuk" id="mis-ustcubuk"></div>
+    <nav class="mis-anamenu" id="mis-anamenu"></nav>
+
+    <div class="mis-icerik">
+
+      <div class="mis-icerik-birincil">
+        <div class="mis-panel">
+          <ul class="nav nav-tabs mb-3">
+            <li class="nav-item">
+              <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#hesapla-tab">Hesapla</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#kayitlar-tab" id="kayitlarTabBtn">Kayıtlı Sonuçlar</button>
+            </li>
+          </ul>
+
+          <div class="tab-content">
+            <div class="tab-pane fade show active" id="hesapla-tab">
+
+              <h2>Mütecaviz Bilgisi</h2>
+              <div class="row g-2 mb-3">
+                <div class="col-md-6">
+                  <input class="form-control form-control-sm" id="mutecavizAdSoyad" placeholder="Adı Soyadı / Tüzel Kişilik Adı" required />
+                </div>
+                <div class="col-md-6">
+                  <input class="form-control form-control-sm" id="mutecavizTcVkn" placeholder="T.C. / VKN" />
+                </div>
+              </div>
+
+              <h2>İşgal Edilen Yer</h2>
+              <div class="row g-2 mb-2">
+                <div class="col-md-4"><select id="ekgbIl"></select></div>
+                <div class="col-md-4"><select id="ekgbIlce"></select></div>
+                <div class="col-md-4"><select id="ekgbMahalle"></select></div>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-md-6">
+                  <input class="form-control form-control-sm" id="ekgbAda" placeholder="Ada" />
+                </div>
+                <div class="col-md-6">
+                  <input class="form-control form-control-sm" id="ekgbParsel" placeholder="Parsel" />
+                </div>
+              </div>
+
+              <h2>Birim Fiyat Dönemi</h2>
+              <select id="ekgbDonem" class="form-select form-select-sm mb-3"><option value="">Yükleniyor...</option></select>
+
+              <h2>Alan Bilgileri (m²) — Yalnızca ilgili alanları doldurunuz</h2>
+              <div class="row g-2 mb-1">
+                <div class="col-md-4">
+                  <label class="form-label small mb-0">Sürülen/Tarla Olarak Kullanılan Alan (m²)</label>
+                  <input type="number" min="0" class="form-control form-control-sm" id="surulenAlanM2" value="0" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small mb-0">İnşaat/Hafriyat Dökülen Alan (m²)</label>
+                  <input type="number" min="0" class="form-control form-control-sm" id="insaatHafriyatAlanM2" value="0" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small mb-0">Toprak Derinliği (m)</label>
+                  <input type="number" min="0" step="0.01" class="form-control form-control-sm" id="toprakDerinligiM" value="0" />
+                </div>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-md-4">
+                  <label class="form-label small mb-0">Asfalt/Beton Kaplı Alan (m²)</label>
+                  <input type="number" min="0" class="form-control form-control-sm" id="asfaltBetonAlanM2" value="0" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small mb-0">Asfalt/Beton Kalınlığı (m)</label>
+                  <input type="number" min="0" step="0.01" class="form-control form-control-sm" id="asfaltBetonKalinligiM" value="0" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label small mb-0">Tel Örgü Uzunluğu (m)</label>
+                  <input type="number" min="0" class="form-control form-control-sm" id="telOrguUzunlugu" value="0" />
+                </div>
+              </div>
+
+              <h2>Hazırlayanlar (İmza)</h2>
+              <div id="imzaciListesi"></div>
+              <button type="button" class="btn btn-sm btn-outline-secondary mb-3" id="imzaciEkleBtn">+ Kişi Ekle</button>
+
+              <div>
+                <button type="button" class="btn btn-primary" id="ekgbHesaplaBtn">Hesapla</button>
+              </div>
+              <div id="ekgbSonucAlani" class="mt-3"></div>
+            </div>
+
+            <div class="tab-pane fade" id="kayitlar-tab">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <p class="text-muted small mb-0">Kaydedilmiş tüm EKGB sonuçları.</p>
+                <button class="btn btn-sm btn-outline-secondary" id="ekgbKayitlariYenileBtn">Yenile</button>
+              </div>
+              <div id="ekgbKayitlarListesi"><div class="text-muted small">Yükleniyor...</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mis-icerik-ikincil">
+        <div class="mis-panel">
+          <h2>Hakkında</h2>
+          <p class="text-muted small mb-0">
+            4342 sayılı Mera Kanunu kapsamında "Eski Konumuna Getirme Bedeli"
+            hesaplaması. Birim fiyatlar Ayarlar → EKGB Birim Fiyatlar
+            sekmesinden yönetilir.
+          </p>
+        </div>
+        <div class="mis-panel">
+          <h2>Rapor</h2>
+          <p class="text-muted small mb-0">
+            Kaydedilen sonuçlar 2 sayfalık rapor olarak indirilebilir:
+            1. sayfa hesap dökümü ve imzalar, 2. sayfa açıklamalar.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <footer class="mis-footer" id="mis-footer"></footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js"></script>
+  <script src="/assets/js/mis-menu.js?v=13"></script>
+  <script src="/assets/js/shell.js?v=12"></script>
+  <script src="/assets/js/mis-yer-secici.js?v=13"></script>
+  <script>
+    misKabuguBaslat('ekgb', 'EKGB<span class="ayrac">/</span>Eski Konumuna Getirme Bedeli');
+
+    let ekgbYerSecim = { il: '', ilce: '', mahalle: '' };
+    misYerSeciciKur({
+      ilSelectId: 'ekgbIl', ilceSelectId: 'ekgbIlce', mahalleSelectId: 'ekgbMahalle',
+      onDegisti: (secim) => { ekgbYerSecim = secim; },
+    });
+
+    async function apiGet(url) {
+      const res = await fetch(url);
+      return res.json();
+    }
+
+    // ---- Dönem listesi ----
+    async function donemleriYukle() {
+      const sel = document.getElementById('ekgbDonem');
+      const json = await apiGet('/api/ekgb/donemler');
+      if (!json.success || json.data.length === 0) {
+        sel.innerHTML = '<option value="">Kayıtlı dönem yok - önce Ayarlar\'dan ekleyin</option>';
+        return;
+      }
+      sel.innerHTML = json.data
+        .map((d) => `<option value="${d._id}">${d.donemAdi} (${new Date(d.yururlukTarihi).toLocaleDateString('tr-TR')})</option>`)
+        .join('');
+    }
+    donemleriYukle();
+
+    // ---- İmzacılar (dinamik ekle/çıkar) ----
+    function imzaciSatiriEkle(adSoyad = '', unvan = '') {
+      const liste = document.getElementById('imzaciListesi');
+      const satir = document.createElement('div');
+      satir.className = 'mis-imzaci-satiri';
+      satir.innerHTML = `
+        <input class="form-control form-control-sm mis-imzaci-ad" placeholder="Adı Soyadı" value="${adSoyad}" />
+        <input class="form-control form-control-sm mis-imzaci-unvan" placeholder="Unvanı" value="${unvan}" />
+        <button type="button" class="btn btn-sm btn-outline-danger mis-imzaci-sil">✕</button>`;
+      satir.querySelector('.mis-imzaci-sil').addEventListener('click', () => satir.remove());
+      liste.appendChild(satir);
+    }
+    document.getElementById('imzaciEkleBtn').addEventListener('click', () => imzaciSatiriEkle());
+    imzaciSatiriEkle(); // en az 1 satır ile başla
+
+    function imzacilariTopla() {
+      return Array.from(document.querySelectorAll('.mis-imzaci-satiri'))
+        .map((satir) => ({
+          adSoyad: satir.querySelector('.mis-imzaci-ad').value.trim(),
+          unvan: satir.querySelector('.mis-imzaci-unvan').value.trim(),
+        }))
+        .filter((i) => i.adSoyad);
+    }
+
+    // ---- Hesapla ----
+    let sonHesapVerisi = null;
+
+    document.getElementById('ekgbHesaplaBtn').addEventListener('click', async () => {
+      const sonucAlan = document.getElementById('ekgbSonucAlani');
+      const donemId = document.getElementById('ekgbDonem').value;
+
+      if (!ekgbYerSecim.il || !ekgbYerSecim.ilce || !ekgbYerSecim.mahalle) {
+        alert('Lütfen İl / İlçe / Köy-Mahalle seçin.');
+        return;
+      }
+      if (!donemId) {
+        alert('Lütfen bir birim fiyat dönemi seçin.');
+        return;
+      }
+      const mutecavizAdSoyad = document.getElementById('mutecavizAdSoyad').value.trim();
+      if (!mutecavizAdSoyad) {
+        alert('Lütfen mütecaviz adı soyadı girin.');
+        return;
+      }
+
+      const alanBilgileri = {
+        surulenAlanM2: parseFloat(document.getElementById('surulenAlanM2').value) || 0,
+        insaatHafriyatAlanM2: parseFloat(document.getElementById('insaatHafriyatAlanM2').value) || 0,
+        toprakDerinligiM: parseFloat(document.getElementById('toprakDerinligiM').value) || 0,
+        asfaltBetonAlanM2: parseFloat(document.getElementById('asfaltBetonAlanM2').value) || 0,
+        asfaltBetonKalinligiM: parseFloat(document.getElementById('asfaltBetonKalinligiM').value) || 0,
+        telOrguUzunlugu: parseFloat(document.getElementById('telOrguUzunlugu').value) || 0,
+      };
+
+      sonucAlan.innerHTML = '<div class="text-muted">Hesaplanıyor...</div>';
+
+      try {
+        const res = await fetch('/api/ekgb/onizleme', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ donemId, alanBilgileri }),
+        });
+        const json = await res.json();
+        if (!json.success) {
+          sonucAlan.innerHTML = `<div class="alert alert-danger">${json.message}</div>`;
+          return;
+        }
+
+        sonHesapVerisi = {
+          mutecavizAdSoyad,
+          mutecavizTcVkn: document.getElementById('mutecavizTcVkn').value.trim(),
+          il: ekgbYerSecim.il, ilce: ekgbYerSecim.ilce, mahalle: ekgbYerSecim.mahalle,
+          ada: document.getElementById('ekgbAda').value.trim(),
+          parsel: document.getElementById('ekgbParsel').value.trim(),
+          donemId: json.data.donemId, donemAdi: json.data.donemAdi,
+          alanBilgileri,
+          alanOzeti: json.data.alanOzeti,
+          iscilik: json.data.iscilik,
+          tohum: json.data.tohum,
+          gubreleme: json.data.gubreleme,
+          genelToplam: json.data.genelToplam,
+          imzacilar: imzacilariTopla(),
+        };
+
+        sonucAlan.innerHTML = `
+          <div class="alert alert-success">
+            Genel Toplam: <strong>${json.data.genelToplam.toLocaleString('tr-TR')} TL</strong>
+            (İşçilik: ${json.data.iscilik.toplam.toLocaleString('tr-TR')} · Tohum: ${json.data.tohum.toplam.toLocaleString('tr-TR')} · Gübreleme: ${json.data.gubreleme.toplam.toLocaleString('tr-TR')})
+          </div>
+          <button id="ekgbKaydetBtn" class="btn btn-success">Kaydet</button>
+        `;
+
+        document.getElementById('ekgbKaydetBtn').addEventListener('click', async () => {
+          const kaydetRes = await fetch('/api/ekgb/kaydet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sonHesapVerisi),
+          });
+          const kaydetJson = await kaydetRes.json();
+          alert(kaydetJson.message || 'Kaydedildi');
+          if (kaydetJson.success) ekgbKayitlariYukle();
+        });
+      } catch (err) {
+        sonucAlan.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+      }
+    });
+
+    // ---- Kayıtlı Sonuçlar ----
+    function tarihFormatla(iso) {
+      return new Date(iso).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function ekgbKayitlariYukle() {
+      const alan = document.getElementById('ekgbKayitlarListesi');
+      alan.innerHTML = '<div class="text-muted small">Yükleniyor...</div>';
+      const json = await apiGet('/api/ekgb');
+      if (!json.success) { alan.innerHTML = `<div class="alert alert-danger">${json.message}</div>`; return; }
+      if (json.data.length === 0) { alan.innerHTML = '<div class="text-muted small">Henüz kayıtlı sonuç yok.</div>'; return; }
+
+      alan.innerHTML = `
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Tarih</th><th>Mütecaviz</th><th>Yer</th><th>Dönem</th><th>Genel Toplam</th><th>Bağlantılar</th><th></th></tr></thead>
+            <tbody>
+              ${json.data
+                .map(
+                  (k) => `
+                <tr data-id="${k._id}">
+                  <td class="small">${tarihFormatla(k.createdAt)}</td>
+                  <td class="small">${k.mutecavizAdSoyad}</td>
+                  <td class="small">${[k.il, k.ilce, k.mahalle].join('/')}</td>
+                  <td class="small">${k.donemAdi}</td>
+                  <td class="small fw-semibold">${k.genelToplam.toLocaleString('tr-TR')} TL</td>
+                  <td class="small">
+                    <a href="/api/ekgb/${k._id}" target="_blank">Ham veri</a> ·
+                    <a href="/api/raporlar/ekgb/${k._id}/excel">Excel</a> ·
+                    <a href="/api/raporlar/ekgb/${k._id}/word">Word</a> ·
+                    <a href="/api/raporlar/ekgb/${k._id}/pdf">PDF</a>
+                  </td>
+                  <td><button class="btn btn-sm btn-outline-danger mis-ekgb-sil-btn" data-id="${k._id}">Sil</button></td>
+                </tr>`
+                )
+                .join('')}
+            </tbody>
+          </table>
+        </div>`;
+
+      alan.querySelectorAll('.mis-ekgb-sil-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Bu kaydı kalıcı olarak silmek istediğine emin misin?')) return;
+          const res = await fetch(`/api/ekgb/${btn.dataset.id}`, { method: 'DELETE' });
+          const json2 = await res.json();
+          if (json2.success) btn.closest('tr').remove();
+          else alert(json2.message);
+        });
+      });
+    }
+
+    document.getElementById('kayitlarTabBtn').addEventListener('shown.bs.tab', ekgbKayitlariYukle);
+    document.getElementById('ekgbKayitlariYenileBtn').addEventListener('click', ekgbKayitlariYukle);
+  </script>
+</body>
+</html>

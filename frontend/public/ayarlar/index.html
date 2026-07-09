@@ -63,7 +63,10 @@
             <li class="nav-item">
               <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#il-ilce-koy-tab">İl / İlçe / Köy-Mahalle</button>
             </li>
-            <!-- Ileride eklenecek ayar sekmeleri buraya - orn: Kullanicilar, Kural Setleri vb. -->
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ekgb-birim-fiyat-tab">EKGB Birim Fiyatlar</button>
+            </li>
+            <!-- Ileride eklenecek ayar sekmeleri buraya - orn: Personel, Kullanicilar vb. -->
           </ul>
 
           <div class="tab-content">
@@ -117,6 +120,24 @@
                 </div>
               </form>
               <div id="yeniKayitSonuc" class="mt-2"></div>
+            </div>
+
+            <div class="tab-pane fade" id="ekgb-birim-fiyat-tab">
+              <p class="text-muted small">
+                4342 sayılı Mera Kanunu kapsamında "Eski Konumuna Getirme Bedeli"
+                hesaplamasında kullanılan 25 kalemlik birim fiyat listesi. Fiyatlar
+                dönemseldir — <strong>yeni dönem eklenebilir, mevcut dönem
+                düzenlenebilir, ama hiçbir dönem SİLİNEMEZ</strong> (geçmiş
+                hesaplamaların dayandığı fiyatlar korunur).
+              </p>
+
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h2 class="mb-0">Kayıtlı Dönemler</h2>
+                <button class="btn btn-sm btn-primary" id="yeniDonemBtn">+ Yeni Dönem Ekle</button>
+              </div>
+              <div id="donemListesi"><div class="text-muted small">Yükleniyor...</div></div>
+
+              <div id="donemFormAlani" class="mt-3" style="display:none;"></div>
             </div>
           </div>
         </div>
@@ -397,6 +418,158 @@
     });
 
     illeriYukle();
+
+    // ================= EKGB BİRİM FİYAT DÖNEMLERİ =================
+    let ekgbKalemler = [];
+
+    async function ekgbKalemleriYukle() {
+      if (ekgbKalemler.length > 0) return ekgbKalemler;
+      const json = await apiGet('/api/ekgb/kalemler');
+      if (json.success) ekgbKalemler = json.data;
+      return ekgbKalemler;
+    }
+
+    function tarihGoster(iso) {
+      return new Date(iso).toLocaleDateString('tr-TR');
+    }
+
+    async function donemleriYukle() {
+      const alan = document.getElementById('donemListesi');
+      const json = await apiGet('/api/ekgb/donemler');
+      if (!json.success) {
+        alan.innerHTML = `<div class="text-danger small">${json.message}</div>`;
+        return;
+      }
+      if (json.data.length === 0) {
+        alan.innerHTML = '<div class="text-muted small">Henüz kayıtlı dönem yok.</div>';
+        return;
+      }
+      alan.innerHTML = `
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Dönem Adı</th><th>Yürürlük Tarihi</th><th>Kalem Sayısı</th><th></th></tr></thead>
+            <tbody>
+              ${json.data
+                .map(
+                  (d) => `
+                <tr>
+                  <td>${d.donemAdi}</td>
+                  <td>${tarihGoster(d.yururlukTarihi)}</td>
+                  <td>${d.fiyatlar.length}</td>
+                  <td><button class="btn btn-sm btn-outline-secondary mis-donem-duzenle-btn" data-id="${d._id}">Düzenle</button></td>
+                </tr>`
+                )
+                .join('')}
+            </tbody>
+          </table>
+        </div>`;
+
+      alan.querySelectorAll('.mis-donem-duzenle-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const json2 = await apiGet(`/api/ekgb/donemler/${btn.dataset.id}`);
+          if (json2.success) donemFormunuAc(json2.data);
+        });
+      });
+    }
+
+    async function donemFormunuAc(mevcutDonem) {
+      await ekgbKalemleriYukle();
+      const alan = document.getElementById('donemFormAlani');
+      alan.style.display = 'block';
+
+      const fiyatHaritasi = {};
+      if (mevcutDonem) {
+        mevcutDonem.fiyatlar.forEach((f) => { fiyatHaritasi[f.kalemKod] = f.fiyat; });
+      }
+
+      const tarihDegeri = mevcutDonem
+        ? new Date(mevcutDonem.yururlukTarihi).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10);
+
+      alan.innerHTML = `
+        <div class="border rounded p-3">
+          <h2>${mevcutDonem ? 'Dönemi Düzenle' : 'Yeni Dönem Ekle'}</h2>
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <label class="form-label small">Dönem Adı</label>
+              <input class="form-control form-control-sm" id="donemAdiInput" placeholder="örn: 2026 - 2. Dönem" value="${mevcutDonem ? mevcutDonem.donemAdi : ''}" />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small">Yürürlük Tarihi</label>
+              <input type="date" class="form-control form-control-sm" id="yururlukTarihiInput" value="${tarihDegeri}" />
+            </div>
+          </div>
+          <div class="row g-2">
+            ${ekgbKalemler
+              .map(
+                (k) => `
+              <div class="col-6 col-md-4 col-lg-3">
+                <label class="form-label small mb-0">${k.ad} <span class="text-muted">(${k.birim})</span></label>
+                <input type="number" step="0.01" min="0" class="form-control form-control-sm mis-ekgb-fiyat-girisi"
+                  data-kod="${k.kod}" value="${fiyatHaritasi[k.kod] !== undefined ? fiyatHaritasi[k.kod] : ''}" />
+              </div>`
+              )
+              .join('')}
+          </div>
+          <div class="mt-3">
+            <button class="btn btn-primary btn-sm" id="donemKaydetBtn">Kaydet</button>
+            <button class="btn btn-outline-secondary btn-sm" id="donemIptalBtn">İptal</button>
+          </div>
+          <div id="donemFormSonuc" class="mt-2"></div>
+        </div>`;
+
+      document.getElementById('donemIptalBtn').addEventListener('click', () => {
+        alan.style.display = 'none';
+        alan.innerHTML = '';
+      });
+
+      document.getElementById('donemKaydetBtn').addEventListener('click', async () => {
+        const donemAdi = document.getElementById('donemAdiInput').value.trim();
+        const yururlukTarihi = document.getElementById('yururlukTarihiInput').value;
+        const sonucAlan = document.getElementById('donemFormSonuc');
+
+        if (!donemAdi || !yururlukTarihi) {
+          sonucAlan.innerHTML = '<div class="text-danger small">Dönem adı ve yürürlük tarihi zorunlu.</div>';
+          return;
+        }
+
+        const fiyatlar = [];
+        let eksikVar = false;
+        document.querySelectorAll('.mis-ekgb-fiyat-girisi').forEach((input) => {
+          const deger = parseFloat(input.value);
+          if (isNaN(deger)) { eksikVar = true; return; }
+          fiyatlar.push({ kalemKod: input.dataset.kod, fiyat: deger });
+        });
+        if (eksikVar || fiyatlar.length !== ekgbKalemler.length) {
+          sonucAlan.innerHTML = '<div class="text-danger small">Tüm kalemler için bir fiyat girilmelidir.</div>';
+          return;
+        }
+
+        const govde = { donemAdi, yururlukTarihi, fiyatlar };
+        const url = mevcutDonem ? `/api/ekgb/donemler/${mevcutDonem._id}` : '/api/ekgb/donemler';
+        const yontem = mevcutDonem ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method: yontem,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(govde),
+        });
+        const json = await res.json();
+        if (!json.success) {
+          sonucAlan.innerHTML = `<div class="text-danger small">${json.message}</div>`;
+          return;
+        }
+        sonucAlan.innerHTML = '<div class="text-success small">Kaydedildi.</div>';
+        donemleriYukle();
+        setTimeout(() => { alan.style.display = 'none'; alan.innerHTML = ''; }, 800);
+      });
+    }
+
+    document.getElementById('yeniDonemBtn').addEventListener('click', () => donemFormunuAc(null));
+
+    document.querySelector('[data-bs-target="#ekgb-birim-fiyat-tab"]').addEventListener('shown.bs.tab', () => {
+      donemleriYukle();
+    });
   </script>
 </body>
 </html>

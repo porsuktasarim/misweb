@@ -4,6 +4,10 @@
 
 const { raporUret } = require('./report.builder');
 const bbhbService = require('../bbhb/bbhb.service');
+const ekgbService = require('../ekgb/ekgb.service');
+const { contractToEkgbExcel } = require('./exporters/ekgb.excel.exporter');
+const { contractToEkgbWord } = require('./exporters/ekgb.word.exporter');
+const { contractToEkgbPdf } = require('./exporters/ekgb.pdf.exporter');
 const lang = require('../../../config/lang/tr');
 
 const ICERIK_TIPLERI = {
@@ -18,6 +22,12 @@ const ICERIK_TIPLERI = {
     uzanti: 'docx',
   },
   pdf: { contentType: 'application/pdf', uzanti: 'pdf' },
+};
+
+const EKGB_URETICILER = {
+  excel: contractToEkgbExcel,
+  word: contractToEkgbWord,
+  pdf: contractToEkgbPdf,
 };
 
 async function bbhbRaporHandler(req, res) {
@@ -46,4 +56,25 @@ async function bbhbRaporHandler(req, res) {
   }
 }
 
-module.exports = { bbhbRaporHandler };
+async function ekgbRaporHandler(req, res) {
+  try {
+    const { id, format } = req.params;
+    const ekgbSonuc = await ekgbService.sonucuGetir(id);
+    const uretici = EKGB_URETICILER[format];
+    const bilgi = ICERIK_TIPLERI[format];
+    if (!uretici || !bilgi) {
+      return res.status(400).json({ success: false, data: null, message: 'Gecersiz format' });
+    }
+    const buffer = await uretici(ekgbSonuc);
+
+    res.setHeader('Content-Type', bilgi.contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="EKGB-${id}.${bilgi.uzanti}"`);
+    return res.send(buffer);
+  } catch (err) {
+    return res
+      .status(400)
+      .json({ success: false, data: null, message: err.message || lang.ortak.hataOlustu });
+  }
+}
+
+module.exports = { bbhbRaporHandler, ekgbRaporHandler };

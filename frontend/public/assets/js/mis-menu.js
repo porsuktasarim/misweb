@@ -17,6 +17,12 @@ const MIS_MENU = [
         href: '/bbhb/',
         ikonSvg: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
       },
+      {
+        anahtar: 'ekgb',
+        ad: 'Eski Konumuna Getirme Bedeli',
+        href: '/ekgb/',
+        ikonSvg: '<path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/>',
+      },
       // CKS eklendiginde buraya yeni bir { anahtar:'cks', ad:'ÇKS Hesaplama', href:'/cks/', ikonSvg:'...' } satiri eklenecek.
     ],
   },
