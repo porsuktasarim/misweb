@@ -137,9 +137,29 @@ async function sonucuGetir(bbhbSonucId) {
   return kayit;
 }
 
+/** Kayitli sonuclarin listesini dondurur (en yeni en ustte). */
+async function sonuclariListele() {
+  return BbhbSonuc.find({ durum: 'aktif' })
+    .sort({ createdAt: -1 })
+    .select('bolumler genelToplamBBHB kaynakTipi kaynakDosyalar kuralSetiVersiyonu createdAt');
+}
+
+/**
+ * Kaydi siler. NOT: Su an icin referans butunlugu kontrolu yok - ileride
+ * tahsis modulu bu sonuca referans veriyorsa, silme oncesi kontrol
+ * eklenmelidir (kullanici bu riski bilerek "istenilse silinsin" istedi).
+ */
+async function sonucuSil(bbhbSonucId) {
+  const kayit = await BbhbSonuc.findByIdAndDelete(bbhbSonucId);
+  if (!kayit) throw new Error(`BBHB sonucu bulunamadi: ${bbhbSonucId}`);
+  return kayit;
+}
+
 module.exports = {
   manuelHesapla,
   turkvetIleHesapla,
   sonucuKaydet,
   sonucuGetir,
+  sonuclariListele,
+  sonucuSil,
 };

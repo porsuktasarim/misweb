@@ -35,6 +35,12 @@ router.post(
 // Onizlemeyi onayla, kalici kayit olustur
 router.post('/kaydet', controller.kaydetHandler);
 
+// Kayitli tum sonuclarin listesi ("Kayıtlı Sonuçlar" sekmesi icin)
+router.get('/', controller.listeHandler);
+
+// Bir kaydi kalici olarak sil
+router.delete('/:id', controller.silHandler);
+
 // Gecmis bir sonucu getir (tahsis modulu / raporlama icin de kullanilabilir)
 router.get('/:id', controller.getirHandler);
 

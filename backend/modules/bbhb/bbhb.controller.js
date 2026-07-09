@@ -5,6 +5,7 @@
  * cagirip { success, data, message } formatinda cevap doner.
  */
 
+const fs = require('fs/promises');
 const service = require('./bbhb.service');
 const lang = require('../../../config/lang/tr');
 
@@ -14,6 +15,19 @@ function basarili(res, data, mesaj = null) {
 
 function basarisiz(res, mesaj, kod = 400) {
   return res.status(kod).json({ success: false, data: null, message: mesaj });
+}
+
+/** Yuklenen gecici Turkvet dosyalarini diskten siler - ISLEM SONUCU NE
+ * OLURSA OLSUN (basarili/basarisiz) cagrilir. Dosyalar sisteme KALICI
+ * OLARAK SAKLANMAZ, sadece isleme sirasinda gecici olarak diskte durur. */
+async function geciciDosyalariSil(dosyalar) {
+  await Promise.all(
+    (dosyalar || []).map((f) =>
+      fs.unlink(f.path).catch(() => {
+        /* dosya zaten silinmis olabilir - yoksay */
+      })
+    )
+  );
 }
 
 async function manuelHesaplaHandler(req, res) {
@@ -27,13 +41,16 @@ async function manuelHesaplaHandler(req, res) {
 }
 
 async function turkvetOnizlemeHandler(req, res) {
+  const dosyalar = req.files || [];
   try {
-    // req.files: multer ile yuklenen dosyalarin sunucudaki gecici yollari
-    const dosyaYollari = (req.files || []).map((f) => f.path);
+    const dosyaYollari = dosyalar.map((f) => f.path);
     const sonuc = await service.turkvetIleHesapla({ dosyaYollari });
     return basarili(res, sonuc);
   } catch (err) {
     return basarisiz(res, err.message || lang.ortak.hataOlustu);
+  } finally {
+    // Yuklenen dosyalar hesaplama icin gecici kullanildi, kaliciya saklanmiyor
+    await geciciDosyalariSil(dosyalar);
   }
 }
 
@@ -56,9 +73,29 @@ async function getirHandler(req, res) {
   }
 }
 
+async function listeHandler(req, res) {
+  try {
+    const kayitlar = await service.sonuclariListele();
+    return basarili(res, kayitlar);
+  } catch (err) {
+    return basarisiz(res, err.message || lang.ortak.hataOlustu);
+  }
+}
+
+async function silHandler(req, res) {
+  try {
+    await service.sonucuSil(req.params.id);
+    return basarili(res, null, 'Kayıt silindi');
+  } catch (err) {
+    return basarisiz(res, err.message || lang.ortak.hataOlustu, 404);
+  }
+}
+
 module.exports = {
   manuelHesaplaHandler,
   turkvetOnizlemeHandler,
   kaydetHandler,
   getirHandler,
+  listeHandler,
+  silHandler,
 };

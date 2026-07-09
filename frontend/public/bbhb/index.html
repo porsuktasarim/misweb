@@ -12,68 +12,14 @@
 </head>
 <body>
 
-  <div class="mis-kabuk">
+  <div class="mis-kabuk" id="mis-kabuk">
 
-    <!-- 1: MARKA -->
-    <div class="mis-marka">
-      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M5 8c-1.2-.6-2-1.8-1.6-2.8.4-1 1.8-1 2.6-.2M19 8c1.2-.6 2-1.8 1.6-2.8-.4-1-1.8-1-2.6-.2"
-          stroke="#c79a46" stroke-width="1.4" stroke-linecap="round"/>
-        <ellipse cx="12" cy="13.5" rx="7" ry="6" fill="#f5f4ef"/>
-        <ellipse cx="7.6" cy="10.5" rx="1.6" ry="2.1" fill="#f5f4ef" transform="rotate(-25 7.6 10.5)"/>
-        <ellipse cx="16.4" cy="10.5" rx="1.6" ry="2.1" fill="#f5f4ef" transform="rotate(25 16.4 10.5)"/>
-        <circle cx="9.3" cy="13" r="1" fill="#1f4331"/>
-        <circle cx="14.7" cy="13" r="1" fill="#1f4331"/>
-        <ellipse cx="12" cy="16.2" rx="2.6" ry="1.6" fill="#1f4331"/>
-      </svg>
-      <div class="mis-marka-metin">
-        MİS
-        <small>Mera İzleme Sistemi</small>
-      </div>
-    </div>
+    <!-- 1, 2, 3, footer: shell.js tarafından enjekte edilir (bkz. /assets/js/shell.js) -->
+    <div class="mis-marka" id="mis-marka"></div>
+    <div class="mis-ustcubuk" id="mis-ustcubuk"></div>
+    <nav class="mis-anamenu" id="mis-anamenu"></nav>
 
-    <!-- 2: ÜST ÇUBUK -->
-    <div class="mis-ustcubuk">
-      <button class="mis-menu-toggle" title="Menüyü daralt/genişlet" aria-label="Menüyü daralt/genişlet">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-      </button>
-
-      <div class="mis-arac-adi">BBHB<span class="ayrac">/</span>Büyükbaş Hayvan Birimi Hesaplama</div>
-
-      <div class="mis-ustcubuk-baglantilar">
-        <a href="#" title="Ayarlar" aria-label="Ayarlar">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1.1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.6 1z"/>
-          </svg>
-        </a>
-        <a href="#" title="Kullanıcı" aria-label="Kullanıcı">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>
-          </svg>
-        </a>
-      </div>
-    </div>
-
-    <!-- 3: ANA MENÜ -->
-    <nav class="mis-anamenu">
-      <div class="mis-anamenu-grup-baslik">Araçlar</div>
-      <a href="/bbhb/" class="aktif">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-        <span>BBHB Hesaplama</span>
-      </a>
-      <!-- Sonraki araçlar (ÇKS, Tahsis, Raporlar) buraya eklenecek -->
-
-      <div class="mis-anamenu-grup-baslik">Sistem</div>
-      <a href="#">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20V10M18 20V4M6 20v-6"/></svg>
-        <span>Raporlarım</span>
-      </a>
-    </nav>
-
-    <!-- 4: İÇERİK -->
+    <!-- 4: İÇERİK - bu sayfaya özel, shell'den bağımsız -->
     <div class="mis-icerik">
 
       <!-- 4a: BİRİNCİL (giriş akışı) -->
@@ -85,6 +31,9 @@
             </li>
             <li class="nav-item">
               <button class="nav-link" data-bs-toggle="tab" data-bs-target="#turkvet-tab">Türkvet Dosyası</button>
+            </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#kayitlar-tab" id="kayitlarTabBtn">Kayıtlı Sonuçlar</button>
             </li>
           </ul>
 
@@ -113,9 +62,9 @@
             <div class="tab-pane fade" id="turkvet-tab">
               <p class="text-muted small">
                 İl / İlçe / Mahalle bilgisi dosyanın kendisinden otomatik
-                okunur — ayrıca girmenize gerek yok. Yüklenen dosyada birden
-                fazla mahalle varsa, sonuç mahalle bazında ayrı bölümler
-                halinde gösterilir.
+                okunur. Yüklenen dosyada birden fazla mahalle varsa, sonuç
+                mahalle bazında ayrı bölümler halinde gösterilir.
+                Yüklenen dosyalar işlem sonrası sunucuda saklanmaz.
               </p>
               <form id="turkvetForm">
                 <div class="mb-2">
@@ -124,6 +73,14 @@
                 <button type="submit" class="btn btn-primary">Önizleme Oluştur</button>
               </form>
               <div id="turkvetSonucAlani" class="mt-3"></div>
+            </div>
+
+            <div class="tab-pane fade" id="kayitlar-tab">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <p class="text-muted small mb-0">Kaydedilmiş tüm BBHB sonuçları.</p>
+                <button class="btn btn-sm btn-outline-secondary" id="kayitlariYenileBtn">Yenile</button>
+              </div>
+              <div id="kayitlarListesi"><div class="text-muted small">Yükleniyor...</div></div>
             </div>
           </div>
         </div>
@@ -143,24 +100,29 @@
           <h2>Nasıl Çalışır</h2>
           <p class="text-muted small mb-0">
             Manuel giriş veya Türkvet dosyası ile hesapla, sonucu önizle,
-            onaylarsan kalıcı olarak kaydedilir. Kayıtlı sonuçlar
-            raporlama modülünden Excel/Word/PDF olarak indirilebilir.
+            onaylarsan kalıcı olarak kaydedilir. "Kayıtlı Sonuçlar"
+            sekmesinden ham veriyi görüntüleyebilir, Excel/Word/PDF
+            indirebilir veya kaydı silebilirsin.
           </p>
         </div>
       </div>
 
     </div>
+
+    <footer class="mis-footer" id="mis-footer"></footer>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="/assets/js/layout.js"></script>
+  <script src="/assets/js/mis-menu.js"></script>
+  <script src="/assets/js/shell.js"></script>
   <script>
+    misKabuguBaslat('bbhb', 'BBHB<span class="ayrac">/</span>Büyükbaş Hayvan Birimi Hesaplama');
+
+    // ---- Türkvet akışı ----
     document.getElementById('turkvetForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-
       const form = e.target;
       const formData = new FormData(form);
-
       const alan = document.getElementById('turkvetSonucAlani');
       alan.innerHTML = '<div class="text-muted">Hesaplanıyor...</div>';
 
@@ -211,11 +173,96 @@
           });
           const kaydetJson = await kaydetRes.json();
           alert(kaydetJson.message || 'Kaydedildi');
+          if (kaydetJson.success) kayitlariYukle();
         });
       } catch (err) {
         alan.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
       }
     });
+
+    // ---- Kayıtlı Sonuçlar akışı ----
+    function tarihFormatla(isoTarih) {
+      return new Date(isoTarih).toLocaleString('tr-TR', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      });
+    }
+
+    async function kayitlariYukle() {
+      const alan = document.getElementById('kayitlarListesi');
+      alan.innerHTML = '<div class="text-muted small">Yükleniyor...</div>';
+      try {
+        const res = await fetch('/api/bbhb');
+        const json = await res.json();
+        if (!json.success) {
+          alan.innerHTML = `<div class="alert alert-danger">${json.message}</div>`;
+          return;
+        }
+        if (json.data.length === 0) {
+          alan.innerHTML = '<div class="text-muted small">Henüz kayıtlı sonuç yok.</div>';
+          return;
+        }
+
+        alan.innerHTML = `
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>Yüklenme Tarihi</th>
+                  <th>Bölüm(ler)</th>
+                  <th>Kaynak</th>
+                  <th>Genel Toplam</th>
+                  <th>Bağlantılar</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                ${json.data
+                  .map((kayit) => {
+                    const bolumOzet = kayit.bolumler
+                      .map((b) => [b.il, b.ilce, b.mahalle].filter(Boolean).join('/'))
+                      .join(', ');
+                    return `
+                      <tr data-id="${kayit._id}">
+                        <td class="small">${tarihFormatla(kayit.createdAt)}</td>
+                        <td class="small">${bolumOzet}</td>
+                        <td class="small">${kayit.kaynakTipi === 'turkvet' ? 'Türkvet' : 'Manuel'}</td>
+                        <td class="small fw-semibold">${kayit.genelToplamBBHB}</td>
+                        <td class="small">
+                          <a href="/api/bbhb/${kayit._id}" target="_blank">Ham veri</a> ·
+                          <a href="/api/raporlar/bbhb/${kayit._id}/excel">Excel</a> ·
+                          <a href="/api/raporlar/bbhb/${kayit._id}/word">Word</a> ·
+                          <a href="/api/raporlar/bbhb/${kayit._id}/pdf">PDF</a>
+                        </td>
+                        <td>
+                          <button class="btn btn-sm btn-outline-danger mis-sil-btn" data-id="${kayit._id}">Sil</button>
+                        </td>
+                      </tr>`;
+                  })
+                  .join('')}
+              </tbody>
+            </table>
+          </div>`;
+
+        alan.querySelectorAll('.mis-sil-btn').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            if (!confirm('Bu kaydı kalıcı olarak silmek istediğine emin misin?')) return;
+            const id = btn.dataset.id;
+            const res = await fetch(`/api/bbhb/${id}`, { method: 'DELETE' });
+            const json = await res.json();
+            if (json.success) {
+              btn.closest('tr').remove();
+            } else {
+              alert(json.message || 'Silinemedi');
+            }
+          });
+        });
+      } catch (err) {
+        alan.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+      }
+    }
+
+    document.getElementById('kayitlarTabBtn').addEventListener('shown.bs.tab', kayitlariYukle);
+    document.getElementById('kayitlariYenileBtn').addEventListener('click', kayitlariYukle);
   </script>
 </body>
 </html>

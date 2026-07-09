@@ -15,6 +15,8 @@ function bbhbToContract(bbhbSonuc) {
     isletmeciler: bolum.isletmeciSonuclari.map((is) => ({
       isletmeciAdi: is.isletmeciAdi,
       kayitlar: is.detaylar.map((d) => ({
+        grupKodu: d.grup,
+        kategoriKodu: d.kategori,
         grup: lang.bbhb.gruplar[d.grup] || d.grup,
         kategori: lang.bbhb.kategoriler[d.kategori] || d.kategori,
         adet: d.adet,

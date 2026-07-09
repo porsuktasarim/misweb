@@ -34,6 +34,7 @@
   --kenar-cubugu-genislik: 248px;
   --kenar-cubugu-daraltilmis: 72px;
   --ust-cubuk-yukseklik: 64px;
+  --footer-yukseklik: 40px;
   --radius: 8px;
 }
 
@@ -56,10 +57,11 @@ h1, h2, h3, .mis-baslik-yazitipi {
 .mis-kabuk {
   display: grid;
   grid-template-columns: var(--kenar-cubugu-genislik) 1fr;
-  grid-template-rows: var(--ust-cubuk-yukseklik) 1fr;
+  grid-template-rows: var(--ust-cubuk-yukseklik) 1fr var(--footer-yukseklik);
   grid-template-areas:
     "marka  ustcubuk"
-    "menu   icerik";
+    "menu   icerik"
+    "footer footer";
   height: 100vh;
   transition: grid-template-columns 0.18s ease;
 }
@@ -245,10 +247,36 @@ h1, h2, h3, .mis-baslik-yazitipi {
   border-radius: 999px;
 }
 
+/* ---- FOOTER ---- */
+.mis-footer {
+  grid-area: footer;
+  background: var(--renk-yuzey);
+  border-top: 1px solid var(--renk-kenarlik);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  font-size: 12px;
+  color: var(--renk-metin-soluk);
+}
+
+.mis-footer a {
+  color: var(--renk-metin-soluk);
+  text-decoration: none;
+  font-weight: 600;
+}
+.mis-footer a:hover { color: var(--renk-mera-koyu); text-decoration: underline; }
+
+.mis-footer .mis-versiyon {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+
 /* ---- Mobil: menü otomatik daralır, içerik tek sütuna düşer ---- */
 @media (max-width: 900px) {
   .mis-kabuk { grid-template-columns: var(--kenar-cubugu-daraltilmis) 1fr; }
   .mis-marka-metin { opacity: 0; width: 0; }
   .mis-anamenu a span { display: none; }
   .mis-icerik { grid-template-columns: 1fr; }
+  .mis-footer { font-size: 11px; padding: 0 10px; }
 }
