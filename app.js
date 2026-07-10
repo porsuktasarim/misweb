@@ -16,6 +16,9 @@ const ekgbDonemService = require('./backend/modules/ekgb/ekgb.donem.service');
 const cksRoutes = require('./backend/modules/cks/cks.routes');
 const ek4abRoutes = require('./backend/modules/ek4ab/ek4ab.routes');
 const teknikEkipRoutes = require('./backend/modules/personel/teknikEkip.routes');
+const mevzuatRoutes = require('./backend/modules/mevzuat/mevzuat.routes');
+const mevzuatService = require('./backend/modules/mevzuat/mevzuat.service');
+const cron = require('node-cron');
 
 const app = express();
 
@@ -30,6 +33,7 @@ app.use('/api/ekgb', ekgbRoutes);
 app.use('/api/cks', cksRoutes);
 app.use('/api/ek4ab', ek4abRoutes);
 app.use('/api/teknik-ekip', teknikEkipRoutes);
+app.use('/api/mevzuat', mevzuatRoutes);
 
 const PORT = process.env.PORT || 4342;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/mis';
@@ -57,6 +61,14 @@ mongoose
     } catch (err) {
       console.error('EKGB dönemi yüklenirken hata:', err.message);
     }
+
+    // Mevzuat haftalik kontrol - her PAZARTESI saat 04:00 (Europe/Istanbul)
+    cron.schedule('0 4 * * 1', () => {
+      mevzuatService.haftalikKontrol().catch((err) => {
+        console.error('[Mevzuat] Haftalık kontrol hatası:', err.message);
+      });
+    }, { timezone: 'Europe/Istanbul' });
+    console.log('[Cron] Mevzuat haftalık kontrol zamanlandı (her Pazartesi 04:00)');
 
     app.listen(PORT, () => console.log(`MİS ${PORT} portunda çalışıyor`));
   })

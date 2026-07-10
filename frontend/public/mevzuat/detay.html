@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mevzuat Detay - Mera İzleme Sistemi</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link href="/assets/css/layout.css?v=12" rel="stylesheet" />
+  <style>
+    .detay-sekme { border: none; background: none; padding: 9px 15px; font-size: 13px; color: #4a6358; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+    .detay-sekme.active { color: #0F6E56; border-bottom-color: #0F6E56; font-weight: 500; }
+    .detay-tab { display: none; } .detay-tab.active { display: block; }
+    .detay-topbar { display: flex; align-items: center; overflow-x: auto; border-bottom: 1px solid #e2e8e4; margin-bottom: 1rem; }
+    #pdf-viewer { width: 100%; height: 78vh; border: none; border-radius: 8px; }
+    .metin-icerik { white-space: pre-wrap; font-size: 14px; line-height: 1.8; padding: 1rem; background: #f8faf8; border-radius: 8px; max-height: 75vh; overflow-y: auto; }
+    .surum-kart { border: 1px solid #e2e8e4; border-radius: 8px; padding: .85rem 1rem; margin-bottom: .65rem; }
+    .guncelleme-banner { background: #fff8e1; border: 1px solid #ffc107; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; }
+    .diff-eklenen { background: #d4f4dd; color: #1a5c33; padding: 0 1px; border-radius: 2px; }
+    .diff-silinen { background: #fbdada; color: #8a1f1f; text-decoration: line-through; padding: 0 1px; border-radius: 2px; }
+    .diff-icerik { white-space: pre-wrap; font-size: 14px; line-height: 1.9; padding: 1rem; background: #f8faf8; border-radius: 8px; max-height: 75vh; overflow-y: auto; }
+  </style>
+</head>
+<body>
+
+  <div class="mis-kabuk" id="mis-kabuk">
+    <div class="mis-marka" id="mis-marka"></div>
+    <div class="mis-ustcubuk" id="mis-ustcubuk"></div>
+    <nav class="mis-anamenu" id="mis-anamenu"></nav>
+
+    <div class="mis-icerik">
+      <div class="mis-icerik-birincil">
+        <div class="mis-panel">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <h2 class="mb-0" id="bAd">Yükleniyor...</h2>
+              <div class="small text-muted" id="bAltBilgi"></div>
+            </div>
+            <div class="d-flex gap-2">
+              <a href="/mevzuat/" class="btn btn-sm btn-outline-secondary">Listeye Dön</a>
+              <button id="btnYenile" class="btn btn-sm btn-outline-success d-none">Yenile</button>
+              <button class="btn btn-sm btn-outline-danger" onclick="silKayit()">Sil</button>
+            </div>
+          </div>
+
+          <div id="guncellemeBanner" class="d-none guncelleme-banner">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div><i class="bi bi-arrow-repeat text-warning me-2"></i><strong>Bu mevzuatta değişiklik tespit edildi.</strong> <span class="text-muted small" id="guncellemeTarihi"></span></div>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-dark" onclick="degisiklikleriGosterVeGec()">Değişiklikleri Gör</button>
+                <button class="btn btn-sm btn-warning" onclick="guncellemeyiOnayla()">Onayla / Kapat</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="detay-topbar">
+            <button class="detay-sekme active" data-tab="icerik">İçerik</button>
+            <button class="detay-sekme" data-tab="bilgi">Bilgiler</button>
+            <button class="detay-sekme" data-tab="surumler">Eski Sürümler <span class="badge bg-secondary ms-1" id="surumSayisi">0</span></button>
+            <button class="detay-sekme d-none" data-tab="degisiklikler" id="sekmeDegisiklikler">Değişiklikler</button>
+          </div>
+
+          <div class="detay-tab active" id="tab-icerik">
+            <div id="icerikAlani"></div>
+          </div>
+
+          <div class="detay-tab" id="tab-bilgi">
+            <table class="table table-sm">
+              <tbody>
+                <tr><th style="width:180px;">Adı</th><td id="biAd"></td></tr>
+                <tr><th>Türü</th><td id="biTur"></td></tr>
+                <tr><th>Mevzuat No</th><td id="biNo"></td></tr>
+                <tr><th>R.G. Tarihi</th><td id="biRgTarih"></td></tr>
+                <tr><th>R.G. Sayısı</th><td id="biRgSayi"></td></tr>
+                <tr><th>Konu</th><td id="biKonu"></td></tr>
+                <tr><th>Etiketler</th><td id="biEtiketler"></td></tr>
+                <tr><th>Kaynak</th><td id="biKaynak"></td></tr>
+                <tr><th>Son Kontrol</th><td id="biSonKontrol"></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="detay-tab" id="tab-surumler">
+            <div id="surumListesi"><p class="text-muted text-center py-4 small">Henüz eski sürüm yok.</p></div>
+          </div>
+
+          <div class="detay-tab" id="tab-degisiklikler">
+            <p class="small text-muted mb-2">
+              <span class="diff-silinen">Kırmızı üstü çizili</span> metin eski sürümden kaldırılmış,
+              <span class="diff-eklenen">yeşil</span> metin yeni eklenmiştir.
+            </p>
+            <div id="degisiklikAlani" class="diff-icerik"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="mis-footer" id="mis-footer"></footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/diff@5.2.0/dist/diff.min.js"></script>
+  <script src="/assets/js/mis-menu.js?v=16"></script>
+  <script src="/assets/js/shell.js?v=12"></script>
+  <script>
+    misKabuguBaslat('mevzuat', 'Mevzuat<span class="ayrac">/</span>Detay');
+
+    const API = '/api/mevzuat';
+    const id = new URLSearchParams(location.search).get('id');
+    let mevzuat = null;
+
+    document.querySelectorAll('.detay-sekme').forEach((b) => b.addEventListener('click', () => {
+      document.querySelectorAll('.detay-sekme').forEach((x) => x.classList.remove('active'));
+      document.querySelectorAll('.detay-tab').forEach((x) => x.classList.remove('active'));
+      b.classList.add('active');
+      document.getElementById('tab-' + b.dataset.tab).classList.add('active');
+    }));
+
+    function tarihFormatla(iso, saatliMi = false) {
+      if (!iso) return '-';
+      return saatliMi ? new Date(iso).toLocaleString('tr-TR') : new Date(iso).toLocaleDateString('tr-TR');
+    }
+
+    function renderIcerik() {
+      const el = document.getElementById('icerikAlani');
+      if (mevzuat.icerikTipi === 'pdf') {
+        el.innerHTML = `<iframe id="pdf-viewer" src="${API}/${id}/pdf" title="${mevzuat.ad}"></iframe>`;
+      } else if (mevzuat.htmlIcerik) {
+        el.innerHTML = `<div class="metin-icerik">${mevzuat.htmlIcerik}</div>`;
+      } else if (mevzuat.icerik) {
+        el.innerHTML = `<pre class="metin-icerik">${mevzuat.icerik}</pre>`;
+      } else {
+        el.innerHTML = '<p class="text-muted text-center py-4 small">İçerik bulunamadı.</p>';
+      }
+    }
+
+    function renderBilgiler() {
+      document.getElementById('biAd').textContent = mevzuat.ad;
+      document.getElementById('biTur').innerHTML = `<span class="badge bg-secondary">${mevzuat.tur}</span>`;
+      document.getElementById('biNo').textContent = mevzuat.mevzuatNo || '-';
+      document.getElementById('biRgTarih').textContent = tarihFormatla(mevzuat.resmiGazeteTarihi);
+      document.getElementById('biRgSayi').textContent = mevzuat.resmiGazeteSayisi || '-';
+      document.getElementById('biKonu').textContent = mevzuat.konu || '-';
+      document.getElementById('biEtiketler').textContent = (mevzuat.etiketler || []).join(', ') || '-';
+      document.getElementById('biKaynak').innerHTML = mevzuat.mevzuatGovUrl
+        ? `<a href="${mevzuat.mevzuatGovUrl}" target="_blank">${mevzuat.mevzuatGovUrl}</a>`
+        : (mevzuat.pdfOrijinalAd || '-');
+      document.getElementById('biSonKontrol').textContent = tarihFormatla(mevzuat.sonKontrol, true);
+    }
+
+    function renderSurumler() {
+      const surumler = mevzuat.surumler || [];
+      document.getElementById('surumSayisi').textContent = surumler.length;
+      if (!surumler.length) return;
+      document.getElementById('sekmeDegisiklikler').classList.remove('d-none');
+      document.getElementById('surumListesi').innerHTML = [...surumler].reverse().map((s, idx) => `
+        <div class="surum-kart">
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <div><strong class="small">Sürüm ${surumler.length - idx}</strong><span class="text-muted small ms-2">${tarihFormatla(s.createdAt, true)}</span></div>
+            <button class="btn btn-sm btn-outline-dark" onclick="degisiklikleriGoster(${surumler.length - 1 - idx})">Farkı Gör</button>
+          </div>
+          ${s.degisiklikNotu ? `<div class="small text-muted">${s.degisiklikNotu}</div>` : ''}
+        </div>`).join('');
+    }
+
+    window.degisiklikleriGoster = (surumIndex) => {
+      const surumler = mevzuat.surumler || [];
+      if (!surumler.length) return;
+      const idx = surumIndex !== undefined ? surumIndex : surumler.length - 1;
+      const eski = surumler[idx];
+      if (!eski) return;
+
+      const eskiMetin = eski.icerik || '';
+      const yeniMetin = mevzuat.icerik || '';
+      const el = document.getElementById('degisiklikAlani');
+
+      if (!eskiMetin && !yeniMetin) {
+        el.innerHTML = '<p class="text-muted small text-center py-4">Bu içerik tipi için metin karşılaştırması yapılamıyor.</p>';
+        return;
+      }
+      const parcalar = Diff.diffWords(eskiMetin, yeniMetin);
+      el.innerHTML = parcalar.map((p) => {
+        const guvenli = p.value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        if (p.added) return `<span class="diff-eklenen">${guvenli}</span>`;
+        if (p.removed) return `<span class="diff-silinen">${guvenli}</span>`;
+        return guvenli;
+      }).join('');
+    };
+
+    window.degisiklikleriGosterVeGec = () => {
+      degisiklikleriGoster();
+      document.querySelectorAll('.detay-sekme').forEach((b) => b.classList.toggle('active', b.dataset.tab === 'degisiklikler'));
+      document.querySelectorAll('.detay-tab').forEach((p) => p.classList.toggle('active', p.id === 'tab-degisiklikler'));
+    };
+
+    window.guncellemeyiOnayla = async () => {
+      const res = await fetch(`${API}/${id}/onayla`, { method: 'POST' });
+      const json = await res.json();
+      if (json.success) document.getElementById('guncellemeBanner').classList.add('d-none');
+    };
+
+    window.silKayit = async () => {
+      if (!confirm('Bu kaydı kalıcı olarak silmek istediğine emin misin?')) return;
+      const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) window.location.href = '/mevzuat/';
+      else alert(json.message);
+    };
+
+    document.getElementById('btnYenile').addEventListener('click', async () => {
+      const btn = document.getElementById('btnYenile');
+      btn.disabled = true;
+      btn.textContent = 'Kontrol ediliyor...';
+      const res = await fetch(`${API}/${id}/yenile`, { method: 'POST' });
+      const json = await res.json();
+      alert(json.message || 'Tamamlandı');
+      if (json.success) window.location.reload();
+      btn.disabled = false;
+      btn.textContent = 'Yenile';
+    });
+
+    async function yukle() {
+      const res = await fetch(`${API}/${id}`);
+      const json = await res.json();
+      if (!json.success) { document.getElementById('bAd').textContent = 'Bulunamadı'; return; }
+      mevzuat = json.data;
+
+      document.getElementById('bAd').textContent = mevzuat.ad;
+      document.getElementById('bAltBilgi').textContent = `${mevzuat.tur}${mevzuat.mevzuatNo ? ' · No: ' + mevzuat.mevzuatNo : ''}`;
+      document.title = `${mevzuat.ad} - Mevzuat - MİS`;
+
+      if (mevzuat.icerikTipi === 'mevzuat_gov') document.getElementById('btnYenile').classList.remove('d-none');
+      if (mevzuat.guncellemeBekliyor) {
+        document.getElementById('guncellemeBanner').classList.remove('d-none');
+        document.getElementById('guncellemeTarihi').textContent = tarihFormatla(mevzuat.guncellemeTarihi, true);
+      }
+
+      renderIcerik();
+      renderBilgiler();
+      renderSurumler();
+    }
+    yukle();
+  </script>
+</body>
+</html>

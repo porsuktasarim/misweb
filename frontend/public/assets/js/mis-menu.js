@@ -35,6 +35,12 @@ const MIS_MENU = [
         href: '/ek4ab/',
         ikonSvg: '<path d="M8 3v4M16 3v4M4 11h16M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>',
       },
+      {
+        anahtar: 'mevzuat',
+        ad: 'Mevzuat',
+        href: '/mevzuat/',
+        ikonSvg: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/>',
+      },
       // CKS eklendiginde buraya yeni bir { anahtar:'cks', ad:'ÇKS Hesaplama', href:'/cks/', ikonSvg:'...' } satiri eklenecek.
     ],
   },

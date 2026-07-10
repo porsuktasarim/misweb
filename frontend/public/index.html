@@ -2,10 +2,72 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="refresh" content="0; url=/bbhb/" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mera İzleme Sistemi</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link href="/assets/css/layout.css?v=12" rel="stylesheet" />
+  <style>
+    .mis-hizli-kart { display: block; border: 1px solid #e2e8e4; border-radius: 10px; padding: 1rem; text-decoration: none; color: inherit; height: 100%; }
+    .mis-hizli-kart:hover { border-color: #0F6E56; background: #f8faf8; }
+    .mis-uyari-karti { border: 1px solid #ffc107; background: #fff8e1; border-radius: 10px; padding: .85rem 1rem; margin-bottom: .5rem; }
+  </style>
 </head>
 <body>
-  <p>Yönlendiriliyor... <a href="/bbhb/">BBHB Hesaplama</a></p>
+
+  <div class="mis-kabuk" id="mis-kabuk">
+    <div class="mis-marka" id="mis-marka"></div>
+    <div class="mis-ustcubuk" id="mis-ustcubuk"></div>
+    <nav class="mis-anamenu" id="mis-anamenu"></nav>
+
+    <div class="mis-icerik">
+      <div class="mis-icerik-birincil">
+        <div class="mis-panel">
+          <div id="uyariAlani"></div>
+
+          <h2>Hızlı Erişim</h2>
+          <div class="row g-3">
+            <div class="col-md-4"><a href="/bbhb/" class="mis-hizli-kart"><strong>BBHB Hesaplama</strong><div class="text-muted small mt-1">Büyükbaş Hayvan Birimi</div></a></div>
+            <div class="col-md-4"><a href="/ekgb/" class="mis-hizli-kart"><strong>EKGB</strong><div class="text-muted small mt-1">Eski Konumuna Getirme Bedeli</div></a></div>
+            <div class="col-md-4"><a href="/cks/" class="mis-hizli-kart"><strong>ÇKS Cetveli</strong><div class="text-muted small mt-1">Çiftçi Aile ve Geçim Kaynağı</div></a></div>
+            <div class="col-md-4"><a href="/ek4ab/" class="mis-hizli-kart"><strong>Ek-4ab</strong><div class="text-muted small mt-1">Birleşik Cetvel</div></a></div>
+            <div class="col-md-4"><a href="/mevzuat/" class="mis-hizli-kart"><strong>Mevzuat</strong><div class="text-muted small mt-1">Kanun, yönetmelik, karar arşivi</div></a></div>
+            <div class="col-md-4"><a href="/ayarlar/" class="mis-hizli-kart"><strong>Ayarlar</strong><div class="text-muted small mt-1">Yerleşim, birim fiyat, personel</div></a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="mis-footer" id="mis-footer"></footer>
+  </div>
+
+  <script src="/assets/js/mis-menu.js?v=16"></script>
+  <script src="/assets/js/shell.js?v=12"></script>
+  <script>
+    misKabuguBaslat('anasayfa', 'Ana Sayfa');
+
+    async function uyarilariYukle() {
+      try {
+        const res = await fetch('/api/mevzuat/istatistik');
+        const json = await res.json();
+        if (!json.success || !json.data.bekleyen) return;
+
+        const alan = document.getElementById('uyariAlani');
+        const kartlar = json.data.guncellemeler.map((g) => `
+          <a href="/mevzuat/detay.html?id=${g._id}" class="mis-uyari-karti d-block text-decoration-none text-body">
+            <i class="bi bi-arrow-repeat text-warning me-2"></i>
+            <strong>${g.ad}</strong> <span class="text-muted small">(${g.tur}) güncellendi - değişiklikleri görmek için tıkla</span>
+          </a>`).join('');
+
+        alan.innerHTML = `
+          <h2>Mevzuat Güncellemeleri</h2>
+          ${kartlar}
+        `;
+      } catch (err) {
+        // sessizce gec - ana sayfa uyari olmadan da calismali
+      }
+    }
+    uyarilariYukle();
+  </script>
 </body>
 </html>

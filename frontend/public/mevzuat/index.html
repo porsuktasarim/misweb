@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mevzuat - Mera İzleme Sistemi</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link href="/assets/css/layout.css?v=12" rel="stylesheet" />
+  <style>
+    .mis-mevzuat-karti { border: 1px solid #e2e8e4; border-radius: 10px; padding: .9rem 1rem; margin-bottom: .6rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+    .mis-mevzuat-karti:hover { border-color: #0F6E56; }
+    .mis-guncelleme-rozeti { background: #fff8e1; color: #8a6d00; border: 1px solid #ffc107; }
+  </style>
+</head>
+<body>
+
+  <div class="mis-kabuk" id="mis-kabuk">
+    <div class="mis-marka" id="mis-marka"></div>
+    <div class="mis-ustcubuk" id="mis-ustcubuk"></div>
+    <nav class="mis-anamenu" id="mis-anamenu"></nav>
+
+    <div class="mis-icerik">
+
+      <div class="mis-icerik-birincil">
+        <div class="mis-panel">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex gap-2 flex-wrap">
+              <select id="turFiltre" class="form-select form-select-sm" style="width:auto;">
+                <option value="">Tüm Türler</option>
+              </select>
+              <input type="text" id="araKutusu" class="form-control form-control-sm" placeholder="Ara..." style="width:220px;" />
+            </div>
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#ekleModal">+ Mevzuat Ekle</button>
+          </div>
+
+          <div id="mevzuatListesi"><div class="text-muted small">Yükleniyor...</div></div>
+        </div>
+      </div>
+
+      <div class="mis-icerik-ikincil">
+        <div class="mis-panel">
+          <h2>Hakkında</h2>
+          <p class="text-muted small mb-0">
+            Anayasadan yönetmeliğe, mahkeme kararlarına kadar her türlü
+            hukuki kaynak. mevzuat.gov.tr bağlantısı yapıştırıldığında
+            içerik otomatik çekilir ve <strong>her Pazartesi 04:00'da</strong>
+            değişiklik kontrolü yapılır. Uygulama talimatı/görüş gibi
+            mevzuat.gov.tr'de olmayan belgeler PDF olarak yüklenebilir.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <footer class="mis-footer" id="mis-footer"></footer>
+  </div>
+
+  <!-- EKLE MODAL -->
+  <div class="modal fade" id="ekleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Mevzuat Ekle</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold d-block">Kaynak</label>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="icerikTipi" id="tipMevzuatGov" value="mevzuat_gov" checked />
+            <label class="form-check-label small" for="tipMevzuatGov">mevzuat.gov.tr bağlantısı</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="icerikTipi" id="tipPdf" value="pdf" />
+            <label class="form-check-label small" for="tipPdf">PDF Yükle (uygulama talimatı, görüş vb.)</label>
+          </div>
+        </div>
+
+        <div id="alanMevzuatGov" class="mb-3">
+          <label class="form-label small fw-semibold">mevzuat.gov.tr URL'si *</label>
+          <input type="text" class="form-control form-control-sm" id="eMevzuatUrl" placeholder="https://www.mevzuat.gov.tr/mevzuat?MevzuatNo=4342&amp;MevzuatTur=1" />
+          <div class="form-text small">Ad, tarih ve sayı bilgisi otomatik doldurulmaya çalışılır - boş bırakabilirsin.</div>
+        </div>
+
+        <div id="alanPdf" class="mb-3 d-none">
+          <label class="form-label small fw-semibold">PDF Dosyası *</label>
+          <input type="file" class="form-control form-control-sm" id="ePdf" accept=".pdf" />
+        </div>
+
+        <div class="row g-2">
+          <div class="col-md-8"><label class="form-label small fw-semibold">Adı<span id="adZorunluIsareti"> *</span></label><input type="text" class="form-control form-control-sm" id="eAd" /></div>
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold">Türü *</label>
+            <select class="form-select form-select-sm" id="eTur"></select>
+          </div>
+          <div class="col-md-3"><label class="form-label small fw-semibold">Mevzuat No</label><input type="text" class="form-control form-control-sm" id="eNo" /></div>
+          <div class="col-md-3"><label class="form-label small fw-semibold">R.G. Tarihi</label><input type="date" class="form-control form-control-sm" id="eRgTarih" /></div>
+          <div class="col-md-3"><label class="form-label small fw-semibold">R.G. Sayısı</label><input type="text" class="form-control form-control-sm" id="eRgSayi" /></div>
+          <div class="col-md-3"><label class="form-label small fw-semibold">Etiketler</label><input type="text" class="form-control form-control-sm" id="eEtiketler" placeholder="mera, tahsis" /></div>
+          <div class="col-12"><label class="form-label small fw-semibold">Konu</label><textarea class="form-control form-control-sm" id="eKonu" rows="2"></textarea></div>
+        </div>
+        <div id="ekleSonuc" class="mt-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">İptal</button>
+        <button class="btn btn-sm btn-primary" id="ekleKaydetBtn">Kaydet</button>
+      </div>
+    </div></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/assets/js/mis-menu.js?v=16"></script>
+  <script src="/assets/js/shell.js?v=12"></script>
+  <script>
+    misKabuguBaslat('mevzuat', 'Mevzuat');
+
+    const TURLER = ['Anayasa', 'Kanun', 'KHK', 'Tüzük', 'Yönetmelik', 'Tebliğ', 'Genelge', 'Yönerge', 'Cumhurbaşkanlığı Kararnamesi', 'Cumhurbaşkanlığı Kararı', 'Mahkeme Kararı', 'Uygulama Talimatı', 'Görüş', 'Diğer'];
+    document.getElementById('eTur').innerHTML = TURLER.map((t) => `<option>${t}</option>`).join('');
+    document.getElementById('turFiltre').innerHTML += TURLER.map((t) => `<option>${t}</option>`).join('');
+
+    async function apiGet(url) {
+      const res = await fetch(url);
+      return res.json();
+    }
+
+    function tarihFormatla(iso) {
+      if (!iso) return '-';
+      return new Date(iso).toLocaleDateString('tr-TR');
+    }
+
+    async function listeyiYukle() {
+      const alan = document.getElementById('mevzuatListesi');
+      const tur = document.getElementById('turFiltre').value;
+      const ara = document.getElementById('araKutusu').value.trim();
+      const parametreler = new URLSearchParams();
+      if (tur) parametreler.set('tur', tur);
+      if (ara) parametreler.set('ara', ara);
+
+      alan.innerHTML = '<div class="text-muted small">Yükleniyor...</div>';
+      const json = await apiGet(`/api/mevzuat?${parametreler.toString()}`);
+      if (!json.success) { alan.innerHTML = `<div class="alert alert-danger">${json.message}</div>`; return; }
+      if (json.data.length === 0) { alan.innerHTML = '<div class="text-muted small">Kayıt bulunamadı.</div>'; return; }
+
+      const IKONLAR = { pdf: 'bi-file-earmark-pdf text-danger', mevzuat_gov: 'bi-globe text-success' };
+      alan.innerHTML = json.data.map((m) => `
+        <a href="/mevzuat/detay.html?id=${m._id}" class="mis-mevzuat-karti text-decoration-none text-body">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <i class="bi ${IKONLAR[m.icerikTipi] || 'bi-file-earmark'}"></i>
+              <strong>${m.ad}</strong>
+              ${m.guncellemeBekliyor ? '<span class="badge mis-guncelleme-rozeti">Güncelleme Var</span>' : ''}
+            </div>
+            <div class="small text-muted">
+              <span class="badge bg-secondary">${m.tur}</span>
+              ${m.mevzuatNo ? ` · No: ${m.mevzuatNo}` : ''}
+              ${m.resmiGazeteTarihi ? ` · R.G. ${tarihFormatla(m.resmiGazeteTarihi)}` : ''}
+            </div>
+          </div>
+        </a>`).join('');
+    }
+
+    document.getElementById('turFiltre').addEventListener('change', listeyiYukle);
+    let araZamanlayici;
+    document.getElementById('araKutusu').addEventListener('input', () => {
+      clearTimeout(araZamanlayici);
+      araZamanlayici = setTimeout(listeyiYukle, 300);
+    });
+    listeyiYukle();
+
+    // ---- Ekle modal mantığı ----
+    document.querySelectorAll('input[name="icerikTipi"]').forEach((r) => {
+      r.addEventListener('change', (e) => {
+        const mevzuatGov = e.target.value === 'mevzuat_gov';
+        document.getElementById('alanMevzuatGov').classList.toggle('d-none', !mevzuatGov);
+        document.getElementById('alanPdf').classList.toggle('d-none', mevzuatGov);
+        document.getElementById('adZorunluIsareti').style.display = mevzuatGov ? 'none' : 'inline';
+      });
+    });
+
+    document.getElementById('ekleKaydetBtn').addEventListener('click', async () => {
+      const tip = document.querySelector('input[name="icerikTipi"]:checked').value;
+      const sonucAlan = document.getElementById('ekleSonuc');
+      const ad = document.getElementById('eAd').value.trim();
+
+      if (tip === 'pdf' && !ad) { sonucAlan.innerHTML = '<div class="text-danger small">PDF için ad zorunludur.</div>'; return; }
+      if (tip === 'mevzuat_gov' && !document.getElementById('eMevzuatUrl').value.trim()) {
+        sonucAlan.innerHTML = '<div class="text-danger small">mevzuat.gov.tr URL\'si zorunludur.</div>'; return;
+      }
+      if (tip === 'pdf' && !document.getElementById('ePdf').files.length) {
+        sonucAlan.innerHTML = '<div class="text-danger small">PDF dosyası seçilmedi.</div>'; return;
+      }
+
+      const formData = new FormData();
+      formData.append('icerikTipi', tip);
+      formData.append('ad', ad);
+      formData.append('tur', document.getElementById('eTur').value);
+      formData.append('konu', document.getElementById('eKonu').value);
+      formData.append('mevzuatNo', document.getElementById('eNo').value);
+      formData.append('resmiGazeteTarihi', document.getElementById('eRgTarih').value);
+      formData.append('resmiGazeteSayisi', document.getElementById('eRgSayi').value);
+      const etiketler = document.getElementById('eEtiketler').value.split(',').map((s) => s.trim()).filter(Boolean);
+      formData.append('etiketler', JSON.stringify(etiketler));
+
+      if (tip === 'mevzuat_gov') {
+        formData.append('mevzuatGovUrl', document.getElementById('eMevzuatUrl').value.trim());
+      } else {
+        formData.append('pdf', document.getElementById('ePdf').files[0]);
+      }
+
+      sonucAlan.innerHTML = '<div class="text-muted small">Kaydediliyor... (mevzuat.gov.tr\'den çekiliyor olabilir, biraz sürebilir)</div>';
+      try {
+        const res = await fetch('/api/mevzuat', { method: 'POST', body: formData });
+        const json = await res.json();
+        if (!json.success) { sonucAlan.innerHTML = `<div class="text-danger small">${json.message}</div>`; return; }
+        sonucAlan.innerHTML = '<div class="text-success small">Eklendi.</div>';
+        setTimeout(() => { window.location.href = `/mevzuat/detay.html?id=${json.data._id}`; }, 600);
+      } catch (err) {
+        sonucAlan.innerHTML = `<div class="text-danger small">${err.message}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>
