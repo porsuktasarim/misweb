@@ -14,6 +14,7 @@ const { contractToCksExcel } = require('./exporters/cks.excel.exporter');
 const { contractToCksWord } = require('./exporters/cks.word.exporter');
 const { contractToCksPdf } = require('./exporters/cks.pdf.exporter');
 const { contractToEk4abExcel } = require('./exporters/ek4ab.excel.exporter');
+const { contentDispositionDegeri } = require('./sablonlar/rapor-dosya-adi');
 const lang = require('../../../config/lang/tr');
 
 const ICERIK_TIPLERI = {
@@ -56,9 +57,10 @@ async function bbhbRaporHandler(req, res) {
     }
 
     res.setHeader('Content-Type', bilgi.contentType);
+    const ilkBolum = bbhbSonuc.bolumler[0] || {};
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="${lang.bbhb.kisaAd}-${id}.${bilgi.uzanti}"`
+      contentDispositionDegeri('bbhb', { il: ilkBolum.il, ilce: ilkBolum.ilce, koyMahalle: ilkBolum.mahalle }, bilgi.uzanti)
     );
     return res.send(buffer);
   } catch (err) {
@@ -101,7 +103,10 @@ async function cksRaporHandler(req, res) {
     const buffer = await uretici(cksSonuc);
 
     res.setHeader('Content-Type', bilgi.contentType);
-    res.setHeader('Content-Disposition', `attachment; filename="CKS-${id}.${bilgi.uzanti}"`);
+    res.setHeader(
+      'Content-Disposition',
+      contentDispositionDegeri('cks', { il: cksSonuc.il, ilce: cksSonuc.ilce, koyMahalle: cksSonuc.koyMahalle }, bilgi.uzanti)
+    );
     return res.send(buffer);
   } catch (err) {
     return res
@@ -120,7 +125,10 @@ async function ek4abRaporHandler(req, res) {
     const buffer = await contractToEk4abExcel(ek4abSonuc);
 
     res.setHeader('Content-Type', ICERIK_TIPLERI.excel.contentType);
-    res.setHeader('Content-Disposition', `attachment; filename="Ek4ab-${id}.xlsx"`);
+    res.setHeader(
+      'Content-Disposition',
+      contentDispositionDegeri('4ab', { il: ek4abSonuc.il, ilce: ek4abSonuc.ilce, koyMahalle: ek4abSonuc.koyMahalle }, 'xlsx')
+    );
     return res.send(buffer);
   } catch (err) {
     return res
