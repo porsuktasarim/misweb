@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ÇKS - Mera İzleme Sistemi</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
+  <link href="/assets/css/layout.css?v=12" rel="stylesheet" />
+  <style>
+    .mis-imzaci-satiri { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+    .mis-imzaci-satiri input { flex: 1; }
+  </style>
+</head>
+<body>
+
+  <div class="mis-kabuk" id="mis-kabuk">
+    <div class="mis-marka" id="mis-marka"></div>
+    <div class="mis-ustcubuk" id="mis-ustcubuk"></div>
+    <nav class="mis-anamenu" id="mis-anamenu"></nav>
+
+    <div class="mis-icerik">
+
+      <div class="mis-icerik-birincil">
+        <div class="mis-panel">
+          <ul class="nav nav-tabs mb-3">
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#yukle-tab">Dosya Yükle</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#kayitlar-tab" id="kayitlarTabBtn">Kayıtlı Sonuçlar</button></li>
+          </ul>
+
+          <div class="tab-content">
+            <div class="tab-pane fade show active" id="yukle-tab">
+              <h2>Rapor Başlığı</h2>
+              <div class="row g-2 mb-2">
+                <div class="col-md-4"><select id="cksIl"></select></div>
+                <div class="col-md-4"><select id="cksIlce"></select></div>
+                <div class="col-md-4"><select id="cksMahalle"></select></div>
+              </div>
+              <div class="row g-2 mb-3">
+                <div class="col-md-3">
+                  <input type="number" class="form-control form-control-sm" id="cksUretimYili" placeholder="Üretim Yılı" value="2026" />
+                </div>
+              </div>
+
+              <h2>ÇKS Dosyası</h2>
+              <p class="text-muted small">
+                "Köy Genelinde Parsel Üretim Belgesi" formatında .xls/.xlsx dosyası
+                yükleyin. Ürünler otomatik olarak Yem Bitkisi / Sebze-Meyve /
+                Hububat-Yağlı Tohumlar kategorilerine ayrılır.
+              </p>
+              <form id="cksYukleForm" class="mb-3">
+                <input type="file" class="form-control" name="dosyalar" multiple accept=".xls,.xlsx,.csv" />
+                <button type="submit" class="btn btn-primary mt-2">Önizleme Oluştur</button>
+              </form>
+
+              <div id="cksSonucAlani"></div>
+
+              <div id="imzaBolumu" style="display:none;">
+                <h2>Teknik Ekip Üyeleri</h2>
+                <div id="teknikEkipListesi"></div>
+                <button type="button" class="btn btn-sm btn-outline-secondary mb-3" id="teknikEkipEkleBtn">+ Kişi Ekle</button>
+
+                <h2>Muhtar ve İhtiyar Heyeti</h2>
+                <div id="muhtarHeyetiListesi"></div>
+                <button type="button" class="btn btn-sm btn-outline-secondary mb-3" id="muhtarHeyetiEkleBtn">+ Kişi Ekle</button>
+
+                <div>
+                  <button type="button" class="btn btn-success" id="cksKaydetBtn">Kaydet</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="tab-pane fade" id="kayitlar-tab">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <p class="text-muted small mb-0">Kaydedilmiş tüm ÇKS sonuçları.</p>
+                <button class="btn btn-sm btn-outline-secondary" id="cksKayitlariYenileBtn">Yenile</button>
+              </div>
+              <div id="cksKayitlarListesi"><div class="text-muted small">Yükleniyor...</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mis-icerik-ikincil">
+        <div class="mis-panel">
+          <h2>Hakkında</h2>
+          <p class="text-muted small mb-0">
+            Ek-4/a "Çiftçi Aile ve Geçim Kaynağı Bildirim Cetveli" — ÇKS'nin
+            Köy Genelinde Parsel Üretim Belgesi verisinden otomatik üretilir.
+            Hayvan Varlığı/Hayvancılık sütunları bu araçta doldurulmaz (BBHB
+            kaynaklıdır).
+          </p>
+        </div>
+        <div class="mis-panel">
+          <h2>Sınıflandırma</h2>
+          <p class="text-muted small mb-0">
+            Bilinmeyen ürünler otomatik olarak "Sebze/Meyve" kategorisine
+            varsayılan atanır ve önizlemede uyarı olarak gösterilir — kayıt
+            etmeden önce gözden geçir.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <footer class="mis-footer" id="mis-footer"></footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js"></script>
+  <script src="/assets/js/mis-menu.js?v=14"></script>
+  <script src="/assets/js/shell.js?v=12"></script>
+  <script src="/assets/js/mis-yer-secici.js?v=13"></script>
+  <script>
+    misKabuguBaslat('cks', 'ÇKS<span class="ayrac">/</span>Çiftçi Kayıt Sistemi Cetveli');
+
+    let cksYerSecim = { il: '', ilce: '', mahalle: '' };
+    misYerSeciciKur({
+      ilSelectId: 'cksIl', ilceSelectId: 'cksIlce', mahalleSelectId: 'cksMahalle',
+      onDegisti: (secim) => { cksYerSecim = secim; },
+    });
+
+    async function apiGet(url) {
+      const res = await fetch(url);
+      return res.json();
+    }
+
+    // ---- İmzacı listeleri (dinamik) ----
+    function imzaciSatiriEkle(listeId, adSoyad = '', unvan = '') {
+      const liste = document.getElementById(listeId);
+      const satir = document.createElement('div');
+      satir.className = 'mis-imzaci-satiri';
+      satir.innerHTML = `
+        <input class="form-control form-control-sm mis-imzaci-ad" placeholder="Adı Soyadı" value="${adSoyad}" />
+        <input class="form-control form-control-sm mis-imzaci-unvan" placeholder="Unvanı/Görevi" value="${unvan}" />
+        <button type="button" class="btn btn-sm btn-outline-danger mis-imzaci-sil">✕</button>`;
+      satir.querySelector('.mis-imzaci-sil').addEventListener('click', () => satir.remove());
+      liste.appendChild(satir);
+    }
+    function imzacilariTopla(listeId) {
+      return Array.from(document.querySelectorAll(`#${listeId} .mis-imzaci-satiri`))
+        .map((satir) => ({ adSoyad: satir.querySelector('.mis-imzaci-ad').value.trim(), unvan: satir.querySelector('.mis-imzaci-unvan').value.trim() }))
+        .filter((i) => i.adSoyad);
+    }
+    document.getElementById('teknikEkipEkleBtn').addEventListener('click', () => imzaciSatiriEkle('teknikEkipListesi'));
+    document.getElementById('muhtarHeyetiEkleBtn').addEventListener('click', () => imzaciSatiriEkle('muhtarHeyetiListesi'));
+    imzaciSatiriEkle('teknikEkipListesi');
+    imzaciSatiriEkle('muhtarHeyetiListesi');
+
+    // ---- Dosya yükleme / önizleme ----
+    let sonOnizlemeVerisi = null;
+
+    document.getElementById('cksYukleForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const sonucAlan = document.getElementById('cksSonucAlani');
+
+      if (!cksYerSecim.il || !cksYerSecim.ilce || !cksYerSecim.mahalle) {
+        alert('Lütfen İl / İlçe / Köy-Mahalle seçin.');
+        return;
+      }
+
+      const form = e.target;
+      const formData = new FormData(form);
+      formData.append('il', cksYerSecim.il);
+      formData.append('ilce', cksYerSecim.ilce);
+      formData.append('koyMahalle', cksYerSecim.mahalle);
+      formData.append('uretimYili', document.getElementById('cksUretimYili').value);
+
+      sonucAlan.innerHTML = '<div class="text-muted">İşleniyor...</div>';
+      document.getElementById('imzaBolumu').style.display = 'none';
+
+      try {
+        const res = await fetch('/api/cks/onizleme', { method: 'POST', body: formData });
+        const json = await res.json();
+        if (!json.success) {
+          sonucAlan.innerHTML = `<div class="alert alert-danger">${json.message}</div>`;
+          return;
+        }
+
+        sonOnizlemeVerisi = json.data;
+
+        const uyariHtml = json.data.siniflandirmaUyarilari.length > 0
+          ? `<div class="alert alert-warning small">
+               <strong>${json.data.siniflandirmaUyarilari.length} ürün otomatik/varsayılan sınıflandırıldı</strong> (Sebze/Meyve kabul edildi), kontrol et:<br>
+               ${json.data.siniflandirmaUyarilari.map(u => u.urun).join(', ')}
+             </div>`
+          : '';
+
+        sonucAlan.innerHTML = `
+          <div class="alert alert-success">${json.data.ciftciler.length} çiftçi ailesi bulundu.</div>
+          ${uyariHtml}
+          <div class="table-responsive" style="max-height:400px;overflow:auto;">
+            <table class="table table-sm">
+              <thead><tr><th>Sıra</th><th>Adı Soyadı</th><th>Yem Bitkisi</th><th>Sebze/Meyve</th><th>Hububat/Yağlı</th><th>Tarım</th></tr></thead>
+              <tbody>
+                ${json.data.ciftciler.map((c, i) => `
+                  <tr>
+                    <td>${i + 1}</td><td>${c.isletmeciAdi}</td>
+                    <td>${c.yemBitkisi || ''}</td><td>${c.sebzeMeyve || ''}</td><td>${c.hububatYagli || ''}</td>
+                    <td>${c.tarim ? 'X' : ''}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>`;
+
+        document.getElementById('imzaBolumu').style.display = 'block';
+      } catch (err) {
+        sonucAlan.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+      }
+    });
+
+    document.getElementById('cksKaydetBtn').addEventListener('click', async () => {
+      const veri = {
+        ...sonOnizlemeVerisi,
+        teknikEkipImzacilari: imzacilariTopla('teknikEkipListesi'),
+        muhtarHeyetiImzacilari: imzacilariTopla('muhtarHeyetiListesi'),
+      };
+      const res = await fetch('/api/cks/kaydet', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri),
+      });
+      const json = await res.json();
+      alert(json.message || 'Kaydedildi');
+      if (json.success) cksKayitlariYukle();
+    });
+
+    // ---- Kayıtlı Sonuçlar ----
+    function tarihFormatla(iso) {
+      return new Date(iso).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function cksKayitlariYukle() {
+      const alan = document.getElementById('cksKayitlarListesi');
+      alan.innerHTML = '<div class="text-muted small">Yükleniyor...</div>';
+      const json = await apiGet('/api/cks');
+      if (!json.success) { alan.innerHTML = `<div class="alert alert-danger">${json.message}</div>`; return; }
+      if (json.data.length === 0) { alan.innerHTML = '<div class="text-muted small">Henüz kayıtlı sonuç yok.</div>'; return; }
+
+      alan.innerHTML = `
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead><tr><th>Tarih</th><th>Yer</th><th>Çiftçi Sayısı</th><th>Bağlantılar</th><th></th></tr></thead>
+            <tbody>
+              ${json.data.map((k) => `
+                <tr data-id="${k._id}">
+                  <td class="small">${tarihFormatla(k.createdAt)}</td>
+                  <td class="small">${[k.il, k.ilce, k.koyMahalle].join('/')}</td>
+                  <td class="small">${k.ciftciler.length}</td>
+                  <td class="small">
+                    <a href="/api/cks/${k._id}" target="_blank">Ham veri</a> ·
+                    <a href="/api/raporlar/cks/${k._id}/excel">Excel</a> ·
+                    <a href="/api/raporlar/cks/${k._id}/word">Word</a> ·
+                    <a href="/api/raporlar/cks/${k._id}/pdf">PDF</a>
+                  </td>
+                  <td><button class="btn btn-sm btn-outline-danger mis-cks-sil-btn" data-id="${k._id}">Sil</button></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>`;
+
+      alan.querySelectorAll('.mis-cks-sil-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Bu kaydı kalıcı olarak silmek istediğine emin misin?')) return;
+          const res = await fetch(`/api/cks/${btn.dataset.id}`, { method: 'DELETE' });
+          const json2 = await res.json();
+          if (json2.success) btn.closest('tr').remove();
+          else alert(json2.message);
+        });
+      });
+    }
+
+    document.getElementById('kayitlarTabBtn').addEventListener('shown.bs.tab', cksKayitlariYukle);
+    document.getElementById('cksKayitlariYenileBtn').addEventListener('click', cksKayitlariYukle);
+  </script>
+</body>
+</html>

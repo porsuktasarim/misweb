@@ -13,4 +13,7 @@ router.get('/bbhb/:id/:format', controller.bbhbRaporHandler);
 // GET /api/raporlar/ekgb/:id/excel|word|pdf
 router.get('/ekgb/:id/:format', controller.ekgbRaporHandler);
 
+// GET /api/raporlar/cks/:id/excel|word|pdf
+router.get('/cks/:id/:format', controller.cksRaporHandler);
+
 module.exports = router;
