@@ -34,6 +34,18 @@ const ek4abSonucSchema = new mongoose.Schema(
 
     bbhbSonucId: { type: mongoose.Schema.Types.ObjectId, ref: 'BbhbSonuc' },
     cksSonucId: { type: mongoose.Schema.Types.ObjectId, ref: 'CksSonuc' },
+    teknikEkipId: { type: mongoose.Schema.Types.ObjectId, ref: 'TeknikEkip' },
+    teknikEkipAdi: { type: String },
+    imzacilar: {
+      type: [
+        {
+          adSoyad: String,
+          unvan: String,
+          imzaKurumMetni: String,
+        },
+      ],
+      default: [],
+    },
 
     ciftciler: { type: [ciftciSchema], default: [] },
     genelToplamBBHB: { type: Number, default: 0 },

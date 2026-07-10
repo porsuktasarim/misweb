@@ -4,6 +4,7 @@
 
 const TeknikEkip = require('./teknikEkip.model');
 const { imzaKurumMetniOlustur } = require('./personel.kurumlar');
+const { dosyaOku } = require('./teknikEkip.import');
 
 /** Uye listesindeki her uye icin imza kurum metnini (yeniden) hesaplar */
 function uyeleriHesapla(uyeler) {
@@ -35,10 +36,15 @@ async function ekipGetir(id) {
   return kayit;
 }
 
-async function ekipOlustur({ yil, ilce, il }) {
-  const mevcut = await TeknikEkip.findOne({ yil, ilce });
-  if (mevcut) throw new Error(`${yil} yılı için "${ilce}" ekibi zaten var`);
-  return TeknikEkip.create({ yil, ilce, il, uyeler: [] });
+/** "1 Nolu Şile Teknik Ekibi" gibi görüntü adını üretir */
+function ekipAdiOlustur(ekip) {
+  return ekip.ekipNo ? `${ekip.ekipNo} Nolu ${ekip.ilce} Teknik Ekibi` : `${ekip.ilce} Teknik Ekip`;
+}
+
+async function ekipOlustur({ yil, ilce, il, ekipNo }) {
+  const mevcut = await TeknikEkip.findOne({ yil, ilce, ekipNo: ekipNo || null });
+  if (mevcut) throw new Error(`${yil} yılı için bu numaralı "${ilce}" ekibi zaten var`);
+  return TeknikEkip.create({ yil, ilce, il, ekipNo: ekipNo || undefined, uyeler: [] });
 }
 
 async function uyeleriGuncelle(id, uyeler) {
@@ -58,4 +64,26 @@ async function ekipSil(id) {
   return kayit;
 }
 
-module.exports = { hepsiniListele, ekipGetir, ekipOlustur, uyeleriGuncelle, ekipSil };
+/** Dosyadan okunan uyeleri MEVCUT uye listesine EKLER (yerine koymaz). */
+async function topluUyeYukle(id, dosyaYolu) {
+  const yeniUyelerHam = await dosyaOku(dosyaYolu);
+  if (yeniUyelerHam.length === 0) throw new Error('Dosyada geçerli üye satırı bulunamadı');
+
+  const kayit = await TeknikEkip.findById(id);
+  if (!kayit) throw new Error(`Teknik ekip bulunamadı: ${id}`);
+
+  const yeniUyeler = uyeleriHesapla(yeniUyelerHam);
+  kayit.uyeler = [...kayit.uyeler, ...yeniUyeler];
+  await kayit.save();
+  return { kayit, eklenenSayisi: yeniUyeler.length };
+}
+
+module.exports = {
+  hepsiniListele,
+  ekipGetir,
+  ekipOlustur,
+  ekipAdiOlustur,
+  uyeleriGuncelle,
+  ekipSil,
+  topluUyeYukle,
+};

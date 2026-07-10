@@ -648,10 +648,12 @@
           const yil = btn.dataset.yil;
           const ilce = prompt('İlçe adı:');
           if (!ilce || !ilce.trim()) return;
+          const ekipNoHam = prompt('Ekip numarası (birden fazla ekip varsa, örn. 1) - tek ekip ise boş bırak:');
+          const ekipNo = ekipNoHam && ekipNoHam.trim() ? parseInt(ekipNoHam.trim(), 10) : undefined;
           const res = await fetch('/api/teknik-ekip', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ yil: parseInt(yil, 10), ilce: ilce.trim() }),
+            body: JSON.stringify({ yil: parseInt(yil, 10), ilce: ilce.trim(), ekipNo }),
           });
           const json2 = await res.json();
           if (!json2.success) { alert(json2.message); return; }
@@ -667,6 +669,30 @@
           const json2 = await res.json();
           if (json2.success) teknikEkipleriYukle();
           else alert(json2.message);
+        });
+      });
+
+      document.querySelectorAll('.mis-toplu-yukle-btn').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const ekipId = btn.dataset.id;
+          const dosyaInput = document.querySelector(`.mis-toplu-dosya[data-id="${ekipId}"]`);
+          const sonucAlan = document.querySelector(`.mis-toplu-yukle-sonuc[data-id="${ekipId}"]`);
+          if (!dosyaInput.files || dosyaInput.files.length === 0) {
+            sonucAlan.innerHTML = '<span class="text-danger">Önce bir dosya seç.</span>';
+            return;
+          }
+          sonucAlan.innerHTML = 'Yükleniyor...';
+          const formData = new FormData();
+          formData.append('dosya', dosyaInput.files[0]);
+          const res = await fetch(`/api/teknik-ekip/${ekipId}/uyeler/toplu-yukle`, { method: 'POST', body: formData });
+          const json2 = await res.json();
+          if (json2.success) {
+            sonucAlan.innerHTML = `<span class="text-success">${json2.message}</span>`;
+            teknikEkipleriYukle();
+          } else {
+            sonucAlan.innerHTML = `<span class="text-danger">${json2.message}</span>`;
+          }
         });
       });
     }
@@ -692,11 +718,12 @@
     }
 
     function ekipAccordionHtml(ekip) {
+      const ekipAdi = ekip.ekipNo ? `${ekip.ekipNo} Nolu ${ekip.ilce} Teknik Ekibi` : `${ekip.ilce} Teknik Ekip`;
       return `
         <div class="accordion-item">
           <h2 class="accordion-header d-flex align-items-center">
             <button class="accordion-button collapsed flex-grow-1" type="button" data-bs-toggle="collapse" data-bs-target="#ekip-collapse-${ekip._id}">
-              ${ekip.ilce} Teknik Ekip <span class="text-muted small ms-2">(${ekip.uyeler.length} üye)</span>
+              ${ekipAdi} <span class="text-muted small ms-2">(${ekip.uyeler.length} üye)</span>
             </button>
             <button type="button" class="btn btn-sm btn-outline-danger mis-ekip-sil-btn me-2" data-id="${ekip._id}">Sil</button>
           </h2>
@@ -706,6 +733,19 @@
               <button type="button" class="btn btn-sm btn-outline-secondary mt-2 mis-uye-ekle-btn" data-id="${ekip._id}">+ Üye Ekle</button>
               <button type="button" class="btn btn-sm btn-success mt-2 mis-uye-kaydet-btn" data-id="${ekip._id}">Kaydet</button>
               <div class="small mt-2 mis-uye-kaydet-sonuc" data-id="${ekip._id}"></div>
+
+              <hr />
+              <h3 class="h6">Toplu Üye Yükle</h3>
+              <p class="text-muted small mb-1">
+                .xlsx, .xls, .csv veya .json dosyası yükleyerek birden fazla üyeyi
+                tek seferde ekleyebilirsin (mevcut üyelerin ÜSTÜNE eklenir, silinmez).
+                <a href="/sablonlar/teknik-ekip-uye-sablonu.xlsx" target="_blank">Şablonu indir</a>
+              </p>
+              <div class="d-flex gap-2 align-items-center">
+                <input type="file" class="form-control form-control-sm mis-toplu-dosya" data-id="${ekip._id}" accept=".xlsx,.xls,.csv,.json" style="max-width:300px;" />
+                <button type="button" class="btn btn-sm btn-outline-primary mis-toplu-yukle-btn" data-id="${ekip._id}">Yükle</button>
+              </div>
+              <div class="small mt-1 mis-toplu-yukle-sonuc" data-id="${ekip._id}"></div>
             </div>
           </div>
         </div>`;
@@ -851,10 +891,12 @@
       if (!yil) return;
       const ilce = prompt('İlk ilçe ekibinin adı (örn. Adalar):');
       if (!ilce || !ilce.trim()) return;
+      const ekipNoHam = prompt('Ekip numarası (birden fazla ekip varsa, örn. 1) - tek ekip ise boş bırak:');
+      const ekipNo = ekipNoHam && ekipNoHam.trim() ? parseInt(ekipNoHam.trim(), 10) : undefined;
       const res = await fetch('/api/teknik-ekip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ yil: parseInt(yil, 10), ilce: ilce.trim() }),
+        body: JSON.stringify({ yil: parseInt(yil, 10), ilce: ilce.trim(), ekipNo }),
       });
       const json = await res.json();
       if (!json.success) { alert(json.message); return; }

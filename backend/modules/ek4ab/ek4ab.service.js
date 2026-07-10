@@ -5,6 +5,7 @@
 const { birlestir } = require('./ek4ab.core');
 const bbhbService = require('../bbhb/bbhb.service');
 const cksService = require('../cks/cks.service');
+const teknikEkipService = require('../personel/teknikEkip.service');
 const Ek4abSonuc = require('./ek4ab.model');
 
 /**
@@ -12,8 +13,9 @@ const Ek4abSonuc = require('./ek4ab.model');
  * @param {string} params.bbhbSonucId
  * @param {number} [params.bbhbBolumIndex=0]
  * @param {string} [params.cksSonucId] - opsiyonel, verilmezse tum CKS alanlari bos kalir
+ * @param {string} [params.teknikEkipId] - opsiyonel, verilirse imza blogu eklenir
  */
-async function onizlemeOlustur({ bbhbSonucId, bbhbBolumIndex = 0, cksSonucId }) {
+async function onizlemeOlustur({ bbhbSonucId, bbhbBolumIndex = 0, cksSonucId, teknikEkipId }) {
   const bbhbSonuc = await bbhbService.sonucuGetir(bbhbSonucId);
   const bbhbBolum = bbhbSonuc.bolumler[bbhbBolumIndex];
   if (!bbhbBolum) throw new Error(`BBHB sonucunda ${bbhbBolumIndex}. bölüm bulunamadı`);
@@ -22,6 +24,14 @@ async function onizlemeOlustur({ bbhbSonucId, bbhbBolumIndex = 0, cksSonucId }) 
 
   const { birlesikListe, eslesmeyenSayisi } = birlestir(bbhbBolum, cksSonuc);
 
+  let teknikEkipAdi = null;
+  let imzacilar = [];
+  if (teknikEkipId) {
+    const ekip = await teknikEkipService.ekipGetir(teknikEkipId);
+    teknikEkipAdi = teknikEkipService.ekipAdiOlustur(ekip);
+    imzacilar = ekip.uyeler.map((u) => ({ adSoyad: u.adSoyad, unvan: u.unvan, imzaKurumMetni: u.imzaKurumMetni }));
+  }
+
   return {
     il: bbhbBolum.il,
     ilce: bbhbBolum.ilce,
@@ -29,6 +39,9 @@ async function onizlemeOlustur({ bbhbSonucId, bbhbBolumIndex = 0, cksSonucId }) 
     uretimYili: cksSonuc ? cksSonuc.uretimYili : undefined,
     bbhbSonucId,
     cksSonucId: cksSonucId || null,
+    teknikEkipId: teknikEkipId || null,
+    teknikEkipAdi,
+    imzacilar,
     ciftciler: birlesikListe,
     genelToplamBBHB: bbhbBolum.bolumToplamBBHB,
     eslesmeyenSayisi,

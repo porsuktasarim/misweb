@@ -2,6 +2,7 @@
  * teknikEkip.controller.js
  */
 
+const fs = require('fs/promises');
 const service = require('./teknikEkip.service');
 const { KURUMLAR } = require('./personel.kurumlar');
 
@@ -59,4 +60,25 @@ async function silHandler(req, res) {
   }
 }
 
-module.exports = { kurumlarHandler, listeHandler, getirHandler, olusturHandler, uyeleriGuncelleHandler, silHandler };
+async function topluYukleHandler(req, res) {
+  const dosya = req.file;
+  try {
+    if (!dosya) return basarisiz(res, 'Dosya bulunamadı');
+    const { kayit, eklenenSayisi } = await service.topluUyeYukle(req.params.id, dosya.path);
+    return basarili(res, kayit, `${eklenenSayisi} üye eklendi`);
+  } catch (err) {
+    return basarisiz(res, err.message);
+  } finally {
+    if (dosya) await fs.unlink(dosya.path).catch(() => {});
+  }
+}
+
+module.exports = {
+  kurumlarHandler,
+  listeHandler,
+  getirHandler,
+  olusturHandler,
+  uyeleriGuncelleHandler,
+  silHandler,
+  topluYukleHandler,
+};

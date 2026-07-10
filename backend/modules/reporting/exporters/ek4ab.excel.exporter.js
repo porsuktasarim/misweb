@@ -219,6 +219,44 @@ async function contractToEk4abExcel(ek4ab) {
   sheet.mergeCells(notRow.number, 1, notRow.number, SON_SUTUN);
   hucreStil(notRow.getCell(1), { align: 'left' });
 
+  // ---- İMZA BLOĞU (Teknik Ekip - yan yana EN FAZLA 4 imzacı, tasarsa yeni satıra gecer) ----
+  if (ek4ab.imzacilar && ek4ab.imzacilar.length > 0) {
+    sheet.addRow([]);
+
+    const ekipAdiRow = sheet.addRow([]);
+    ekipAdiRow.getCell(1).value = (ek4ab.teknikEkipAdi || 'TEKNİK EKİP').toLocaleUpperCase('tr-TR');
+    sheet.mergeCells(ekipAdiRow.number, 1, ekipAdiRow.number, SON_SUTUN);
+    hucreStil(ekipAdiRow.getCell(1), { bold: true, align: 'left' });
+    ekipAdiRow.getCell(1).font = { ...ekipAdiRow.getCell(1).font, size: 10 }; // kalin punto biraz daha buyuk
+
+    const MAX_IMZACI_SATIR_BASI = 4;
+    for (let baslangic = 0; baslangic < ek4ab.imzacilar.length; baslangic += MAX_IMZACI_SATIR_BASI) {
+      const grup = ek4ab.imzacilar.slice(baslangic, baslangic + MAX_IMZACI_SATIR_BASI);
+      const n = grup.length;
+      const filigranRow = sheet.addRow([]);
+      const adRow = sheet.addRow([]);
+      const unvanRow = sheet.addRow([]);
+      const kurumRow = sheet.addRow([]);
+
+      grup.forEach((imzaci, i) => {
+        const baslaSutun = Math.floor((i * SON_SUTUN) / n) + 1;
+        const bitisSutun = Math.max(Math.floor(((i + 1) * SON_SUTUN) / n), baslaSutun);
+
+        birlesikBaslikYaz2(sheet, filigranRow.number, baslaSutun, bitisSutun, 'İMZA', false);
+        birlesikBaslikYaz2(sheet, adRow.number, baslaSutun, bitisSutun, imzaci.adSoyad || '', true);
+        birlesikBaslikYaz2(sheet, unvanRow.number, baslaSutun, bitisSutun, imzaci.unvan || '', false);
+        birlesikBaslikYaz2(sheet, kurumRow.number, baslaSutun, bitisSutun, imzaci.imzaKurumMetni || '', false);
+      });
+    }
+  }
+
+  function birlesikBaslikYaz2(sheet, satirNo, sutunBas, sutunSon, metin, kalin) {
+    const hucre = sheet.getCell(satirNo, sutunBas);
+    hucre.value = metin;
+    hucreStil(hucre, { bold: kalin, align: 'center' });
+    if (sutunBas !== sutunSon) sheet.mergeCells(satirNo, sutunBas, satirNo, sutunSon);
+  }
+
   sheet.eachRow((row) => {
     if (!row.height) row.height = SATIR_YUKSEKLIGI;
   });

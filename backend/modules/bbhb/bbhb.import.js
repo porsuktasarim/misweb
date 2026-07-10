@@ -132,7 +132,16 @@ function basliklariEslestir(hamBaslikSatiri) {
  * @returns {Promise<Array>}
  */
 async function dosyaOku(dosyaYolu, hesaplamaTarihi) {
-  const workbook = XLSX.readFile(dosyaYolu);
+  let workbook;
+  if (path.extname(dosyaYolu).toLowerCase() === '.csv') {
+    // XLSX.readFile CSV'lerde UTF-8'i bazen yanlis algiliyor - dosyayi
+    // acikca UTF-8 metin olarak okuyup string olarak veriyoruz.
+    const fs = require('fs/promises');
+    const metin = await fs.readFile(dosyaYolu, 'utf-8');
+    workbook = XLSX.read(metin, { type: 'string' });
+  } else {
+    workbook = XLSX.readFile(dosyaYolu);
+  }
   const sheetAdi = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetAdi];
 

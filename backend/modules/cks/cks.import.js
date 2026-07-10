@@ -56,7 +56,14 @@ function basliklariEslestir(hamBaslikSatiri) {
  * @returns {Promise<Array>} normalize kayitlar: {isletmeciAdi, tcVkn, il, ilce, koy, adaNo, parselNo, urun, ekiliAlan}
  */
 async function dosyaOku(dosyaYolu) {
-  const workbook = XLSX.readFile(dosyaYolu);
+  let workbook;
+  if (path.extname(dosyaYolu).toLowerCase() === '.csv') {
+    const fs = require('fs/promises');
+    const metin = await fs.readFile(dosyaYolu, 'utf-8');
+    workbook = XLSX.read(metin, { type: 'string' });
+  } else {
+    workbook = XLSX.readFile(dosyaYolu);
+  }
   const sheetAdi = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetAdi];
   const satirlar = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });

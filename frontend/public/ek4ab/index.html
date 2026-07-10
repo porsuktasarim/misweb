@@ -50,6 +50,11 @@
                 <option value="">— Seçilmedi (tüm tarım alanları boş kalacak) —</option>
               </select>
 
+              <h2>3. Teknik Ekip Seç (opsiyonel - imza bloğu için)</h2>
+              <select id="teknikEkipSecici" class="form-select form-select-sm mb-3">
+                <option value="">— Seçilmedi (imza bloğu olmayacak) —</option>
+              </select>
+
               <button type="button" class="btn btn-primary" id="birlestirBtn">Birleştir / Önizle</button>
 
               <div id="ek4abSonucAlani" class="mt-3"></div>
@@ -144,6 +149,19 @@
     bbhbListesiniYukle();
     cksListesiniYukle();
 
+    async function teknikEkipListesiniYukle() {
+      const sel = document.getElementById('teknikEkipSecici');
+      const json = await apiGet('/api/teknik-ekip');
+      if (!json.success || json.data.length === 0) return;
+      json.data.forEach((yilGrup) => {
+        yilGrup.ekipler.forEach((ekip) => {
+          const ad = ekip.ekipNo ? `${ekip.ekipNo} Nolu ${ekip.ilce} Teknik Ekibi` : `${ekip.ilce} Teknik Ekip`;
+          sel.innerHTML += `<option value="${ekip._id}">${yilGrup.yil} — ${ad} (${ekip.uyeler.length} üye)</option>`;
+        });
+      });
+    }
+    teknikEkipListesiniYukle();
+
     let sonBirlesikVeri = null;
 
     document.getElementById('birlestirBtn').addEventListener('click', async () => {
@@ -151,6 +169,7 @@
       const bolumSel = document.getElementById('bolumSecici');
       const bbhbBolumIndex = bolumSel && bolumSel.style.display !== 'none' ? parseInt(document.getElementById('bolumSecici').value || '0', 10) : 0;
       const cksSonucId = document.getElementById('cksSecici').value || undefined;
+      const teknikEkipId = document.getElementById('teknikEkipSecici').value || undefined;
       const sonucAlan = document.getElementById('ek4abSonucAlani');
 
       if (!bbhbSonucId) {
@@ -164,7 +183,7 @@
         const res = await fetch('/api/ek4ab/onizleme', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bbhbSonucId, bbhbBolumIndex, cksSonucId }),
+          body: JSON.stringify({ bbhbSonucId, bbhbBolumIndex, cksSonucId, teknikEkipId }),
         });
         const json = await res.json();
         if (!json.success) {
@@ -178,6 +197,7 @@
           <div class="alert alert-success">
             ${json.data.ciftciler.length} kişi listelendi.
             ${cksSonucId ? `${json.data.eslesmeyenSayisi} kişi ÇKS'de bulunamadı (tarım sütunları boş).` : 'ÇKS seçilmedi, tüm tarım sütunları boş.'}
+            ${json.data.teknikEkipAdi ? `<br>İmza bloğu: <strong>${json.data.teknikEkipAdi}</strong> (${json.data.imzacilar.length} üye)` : ''}
           </div>
           <div class="table-responsive" style="max-height:400px;overflow:auto;">
             <table class="table table-sm">

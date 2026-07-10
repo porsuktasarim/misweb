@@ -34,11 +34,12 @@ const teknikEkipSchema = new mongoose.Schema(
     yil: { type: Number, required: true },
     ilce: { type: String, required: true },
     il: { type: String },
+    ekipNo: { type: Number }, // orn. "1 Nolu Şile Teknik Ekibi" -> ekipNo=1
     uyeler: { type: [uyeSchema], default: [] },
   },
   { timestamps: true }
 );
 
-teknikEkipSchema.index({ yil: 1, ilce: 1 }, { unique: true });
+teknikEkipSchema.index({ yil: 1, ilce: 1, ekipNo: 1 }, { unique: true });
 
 module.exports = mongoose.model('TeknikEkip', teknikEkipSchema);
