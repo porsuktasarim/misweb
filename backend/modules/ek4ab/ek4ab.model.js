@@ -41,6 +41,7 @@ const ek4abSonucSchema = new mongoose.Schema(
         {
           adSoyad: String,
           unvan: String,
+          kurumKod: String,
           imzaKurumMetni: String,
         },
       ],

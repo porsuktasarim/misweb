@@ -29,7 +29,25 @@ async function onizlemeOlustur({ bbhbSonucId, bbhbBolumIndex = 0, cksSonucId, te
   if (teknikEkipId) {
     const ekip = await teknikEkipService.ekipGetir(teknikEkipId);
     teknikEkipAdi = teknikEkipService.ekipAdiOlustur(ekip);
-    imzacilar = ekip.uyeler.map((u) => ({ adSoyad: u.adSoyad, unvan: u.unvan, imzaKurumMetni: u.imzaKurumMetni }));
+
+    // ONEMLI: Muhtar/Mahalli Bilirkisi TUM ilce ekibinde bulunabilir ama
+    // SADECE bu raporun kendi koyune/mahallesine ait olanlar imzaci
+    // olmali - diger koylerin muhtar/bilirkisisi bu raporda YER ALMAZ.
+    const raporMahallesi = (bbhbBolum.mahalle || '').trim().toLocaleLowerCase('tr-TR');
+    const koyDuzeyindeKurumlar = new Set(['muhtarlik', 'mahalliBilirkisi']);
+
+    const uygunUyeler = ekip.uyeler.filter((u) => {
+      if (!koyDuzeyindeKurumlar.has(u.kurumKod)) return true; // diger kurumlar (teknik ekip, belediye vb.) her zaman dahil
+      const uyeMahallesi = (u.secilenYer && u.secilenYer.mahalle || '').trim().toLocaleLowerCase('tr-TR');
+      return uyeMahallesi === raporMahallesi;
+    });
+
+    imzacilar = uygunUyeler.map((u) => ({
+      adSoyad: u.adSoyad,
+      unvan: u.unvan,
+      kurumKod: u.kurumKod,
+      imzaKurumMetni: u.imzaKurumMetni,
+    }));
   }
 
   return {

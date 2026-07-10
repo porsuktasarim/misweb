@@ -3,19 +3,24 @@
  *
  * Ek-4ab "Tespit ve Tahdit Çalışmalarına Esas Olan Çiftçi Aile, Geçim
  * Kaynağı ve Hayvan Varlığı Bildirim Cetveli" - BBHB (Ek-4/b) ve CKS
- * (Ek-4/a) verilerinin TEK tabloda birlesimi.
+ * (Ek-4/a) verilerinin TEK tabloda birlesimi + Teknik Ekip imza blogu.
  *
- * GORUNUM: renklendirme YOK, sadece kenar cizgisi (kullanicinin acik
- * istegi) - klasik siyah-beyaz resmi form gorunumu.
+ * GORUNUM: tablo govdesinde kenar cizgisi VAR, ama BASLIK (satir 1-2),
+ * NOT satiri ve IMZA BLOGU'NDA kenar cizgisi YOK (kullanicinin acik
+ * istegi).
  *
  * Satir duzeni:
- *   1: Baslik
- *   2: Ili / Ilcesi / Koyu-Mahalle (12'ser sutun)
- *   3-4: UST grup basliklari (2 satir birlesik - tek satirda metin
- *        sigmiyordu, kullanicinin acik istegiyle yukseltildi)
- *   5-6: ORTA katman (Yem Bitkisi(da) vb. + 7 hayvan grubu adi)
- *   6:   ALT katman (16 hayvan alt kategori adi)
- *   7+:  Veri satirlari
+ *   1     : Baslik (kenarliksiz)
+ *   2     : Ili / Ilcesi / Koyu-Mahalle (12'ser sutun, kenarliksiz)
+ *   3     : BOS satir (2. satirdan sonra ayirici bosluk)
+ *   4-5   : UST grup basliklari (2 satir birlesik)
+ *   6-7   : ORTA+ALT katman (Yem Bitkisi(da) vb. + hayvan kategorileri)
+ *   8+    : Veri satirlari
+ *   ...   : TOPLAM satiri
+ *   ...   : NOT satiri (kenarliksiz)
+ *   ...   : IMZA BLOGU (kenarliksiz - ekip adi + 4'erli imzaci gruplari,
+ *           her grup oncesi 3 satirlik imza boslugu, ortadaki satirda
+ *           %25 opaklik gri "İMZA" filigrani)
  */
 
 const ExcelJS = require('exceljs');
@@ -27,6 +32,7 @@ const YAZI_BOYUTU = 7;
 const SATIR_YUKSEKLIGI = cmSatirYuksekligiPuan(0.45);
 const SUTUN_GENISLIGI = cmSutunGenisligi(1);
 const BIR_CM_INC = 1 / 2.54;
+const IMZA_FILIGRAN_RENK = 'FFBFBFBF'; // ~%25 opaklik siyah (beyaz zemin uzerinde)
 
 const SIRA_NO = 1;
 const AD_SOYAD_BAS = 2;
@@ -48,25 +54,41 @@ const TOPLAM_BBHB_BAS = HAYVAN_SON + 1;      // 35 (AI)
 const TOPLAM_BBHB_SON = TOPLAM_BBHB_BAS + 1; // 36 (AJ)
 const SON_SUTUN = TOPLAM_BBHB_SON;           // 36
 
+// Satir numaralari (2. satirdan sonraki 1 bos satir dahil edilerek)
+const SATIR_BASLIK = 1;
+const SATIR_KONUM = 2;
+const SATIR_BOSLUK = 3;
+const SATIR_UST_BAS = 4;
+const SATIR_UST_SON = 5;
+const SATIR_ORTA_BAS = 6;
+const SATIR_ORTA_SON = 7;
+const VERI_BASLANGIC_SATIR = 8;
+
 const KENAR = { style: 'thin', color: { argb: 'FF000000' } };
 const TUM_KENARLAR = { top: KENAR, left: KENAR, bottom: KENAR, right: KENAR };
 
-function hucreStil(hucre, { bold = false, align = 'center', kaydir = true, numFormat } = {}) {
-  hucre.font = { name: YAZI_TIPI, size: YAZI_BOYUTU, bold, color: { argb: 'FF1C1E1B' } };
-  hucre.border = TUM_KENARLAR;
+function hucreStil(hucre, { bold = false, align = 'center', kaydir = true, numFormat, kenarsiz = false, renk } = {}) {
+  hucre.font = { name: YAZI_TIPI, size: YAZI_BOYUTU, bold, color: { argb: renk || 'FF1C1E1B' } };
+  if (!kenarsiz) hucre.border = TUM_KENARLAR;
   if (numFormat) hucre.numFmt = numFormat;
   hucre.alignment = { vertical: 'middle', horizontal: align, wrapText: kaydir };
 }
 
 /** Baslangic-bitis (satir+sutun) araligini birlestirip TEK stil uygular (master hucre ezilme hatasindan kacinir) */
-function birlesikBaslikYaz(sheet, { satirBas, satirSon = satirBas, sutunBas, sutunSon = sutunBas, metin, bold = true }) {
+function birlesikYaz(sheet, { satirBas, satirSon = satirBas, sutunBas, sutunSon = sutunBas, metin, bold = true, align = 'center', kenarsiz = false, renk }) {
   const hucre = sheet.getCell(satirBas, sutunBas);
   hucre.value = metin;
-  hucreStil(hucre, { bold });
+  hucreStil(hucre, { bold, align, kenarsiz, renk });
   if (satirBas !== satirSon || sutunBas !== sutunSon) {
     sheet.mergeCells(satirBas, sutunBas, satirSon, sutunSon);
   }
 }
+
+/** Iki kurum icin kurum adinin ALTINA eklenen sabit unvan satiri */
+const EK_UNVAN_HARITASI = {
+  ilTarimOrman: 'Merkez Teknik Ekip Başkanı',
+  ilceTarimOrman: 'İlçe Teknik Ekip Başkanı',
+};
 
 async function contractToEk4abExcel(ek4ab) {
   const workbook = new ExcelJS.Workbook();
@@ -84,46 +106,45 @@ async function contractToEk4abExcel(ek4ab) {
   const bilgi = `${ek4ab.il} ${ek4ab.ilce} ${ek4ab.koyMahalle}`;
   sheet.headerFooter.oddFooter = `&8&C${bilgi}\n&P/&N`;
 
-  // ---- SATIR 1: BAŞLIK ----
-  birlesikBaslikYaz(sheet, {
-    satirBas: 1, sutunBas: 1, sutunSon: SON_SUTUN,
+  // ---- SATIR 1: BAŞLIK (kenarlıksız) ----
+  birlesikYaz(sheet, {
+    satirBas: SATIR_BASLIK, sutunBas: 1, sutunSon: SON_SUTUN,
     metin: 'TESPİT VE TAHDİT ÇALIŞMALARINA ESAS OLAN ÇİFTÇİ AİLE, GEÇİM KAYNAĞI VE HAYVAN VARLIĞI BİLDİRİM CETVELİ',
+    kenarsiz: true,
   });
 
-  // ---- SATIR 2: İli / İlçesi / Köyü-Mahalle (12'şer sütun) ----
-  birlesikBaslikYaz(sheet, { satirBas: 2, sutunBas: 1, sutunSon: 12, metin: `İli: ${ek4ab.il}`, bold: true });
-  sheet.getCell(2, 1).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
-  birlesikBaslikYaz(sheet, { satirBas: 2, sutunBas: 13, sutunSon: 24, metin: `İlçesi: ${ek4ab.ilce}`, bold: true });
-  sheet.getCell(2, 13).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
-  birlesikBaslikYaz(sheet, { satirBas: 2, sutunBas: 25, sutunSon: 36, metin: `Köyü/Mahalle: ${ek4ab.koyMahalle}`, bold: true });
-  sheet.getCell(2, 25).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+  // ---- SATIR 2: İli / İlçesi / Köyü-Mahalle (12'şer sütun, kenarlıksız) ----
+  birlesikYaz(sheet, { satirBas: SATIR_KONUM, sutunBas: 1, sutunSon: 12, metin: `İli: ${ek4ab.il}`, align: 'left', kenarsiz: true });
+  birlesikYaz(sheet, { satirBas: SATIR_KONUM, sutunBas: 13, sutunSon: 24, metin: `İlçesi: ${ek4ab.ilce}`, align: 'left', kenarsiz: true });
+  birlesikYaz(sheet, { satirBas: SATIR_KONUM, sutunBas: 25, sutunSon: 36, metin: `Köyü/Mahalle: ${ek4ab.koyMahalle}`, align: 'left', kenarsiz: true });
 
-  // ---- SATIR 3-4: ÜST katman (2 satır birleşik - metin görünsün diye yükseltildi) ----
-  // Sira No, Adi Soyadi, Toplam BBHB: butun basligin dibine (satir 6) kadar dikey birlesik
-  birlesikBaslikYaz(sheet, { satirBas: 3, satirSon: 6, sutunBas: SIRA_NO, metin: 'Sıra\nNo' });
-  birlesikBaslikYaz(sheet, { satirBas: 3, satirSon: 6, sutunBas: AD_SOYAD_BAS, sutunSon: AD_SOYAD_SON, metin: 'Adı Soyadı\n(Çiftçi Ailesi)' });
-  birlesikBaslikYaz(sheet, { satirBas: 3, satirSon: 6, sutunBas: TOPLAM_BBHB_BAS, sutunSon: TOPLAM_BBHB_SON, metin: 'Toplam\nBBHB' });
+  // ---- SATIR 3: BOŞ (2. satırdan sonra ayırıcı) ----
+  sheet.getRow(SATIR_BOSLUK).height = SATIR_YUKSEKLIGI;
 
-  birlesikBaslikYaz(sheet, { satirBas: 3, satirSon: 4, sutunBas: YEM_BITKISI_BAS, sutunSon: HUBUBAT_SON, metin: '(Ek-4/a)\nÇİFTÇİ AİLE BİLDİRİM CETVELİ' });
-  birlesikBaslikYaz(sheet, { satirBas: 3, satirSon: 4, sutunBas: TARIM, sutunSon: HAYVANCILIK, metin: '(Ek-4/a)\nGEÇİM KAYNAĞI' });
-  birlesikBaslikYaz(sheet, { satirBas: 3, satirSon: 4, sutunBas: TOPLAM_HAYVAN, sutunSon: HAYVAN_SON, metin: '(Ek-4/b)\nBÜYÜKBAŞ VE KÜÇÜKBAŞ HAYVAN VARLIĞI' });
+  // ---- SATIR 4-5: ÜST katman ----
+  birlesikYaz(sheet, { satirBas: SATIR_UST_BAS, satirSon: SATIR_ORTA_SON, sutunBas: SIRA_NO, metin: 'Sıra\nNo' });
+  birlesikYaz(sheet, { satirBas: SATIR_UST_BAS, satirSon: SATIR_ORTA_SON, sutunBas: AD_SOYAD_BAS, sutunSon: AD_SOYAD_SON, metin: 'Adı Soyadı\n(Çiftçi Ailesi)' });
+  birlesikYaz(sheet, { satirBas: SATIR_UST_BAS, satirSon: SATIR_ORTA_SON, sutunBas: TOPLAM_BBHB_BAS, sutunSon: TOPLAM_BBHB_SON, metin: 'Toplam\nBBHB' });
 
-  // ---- SATIR 5-6: ORTA katman (kendi alt kirilimi olmayanlar 5-6 birlesik, olanlar sadece 5) ----
-  birlesikBaslikYaz(sheet, { satirBas: 5, satirSon: 6, sutunBas: YEM_BITKISI_BAS, sutunSon: YEM_BITKISI_SON, metin: 'Yem Bitkisi\n(da)' });
-  birlesikBaslikYaz(sheet, { satirBas: 5, satirSon: 6, sutunBas: SEBZE_BAG_BAS, sutunSon: SEBZE_BAG_SON, metin: 'Sebze-Bağ\n(da)' });
-  birlesikBaslikYaz(sheet, { satirBas: 5, satirSon: 6, sutunBas: HUBUBAT_BAS, sutunSon: HUBUBAT_SON, metin: 'Hububat\n(da)' });
-  birlesikBaslikYaz(sheet, { satirBas: 5, satirSon: 6, sutunBas: TARIM, metin: 'Tarım\n(X)' });
-  birlesikBaslikYaz(sheet, { satirBas: 5, satirSon: 6, sutunBas: HAYVANCILIK, metin: 'Hayvancılık\n(X)' });
-  birlesikBaslikYaz(sheet, { satirBas: 5, satirSon: 6, sutunBas: TOPLAM_HAYVAN, metin: 'Toplam\nHayvan\nVarlığı\n(adet)' });
+  birlesikYaz(sheet, { satirBas: SATIR_UST_BAS, satirSon: SATIR_UST_SON, sutunBas: YEM_BITKISI_BAS, sutunSon: HUBUBAT_SON, metin: '(Ek-4/a)\nÇİFTÇİ AİLE BİLDİRİM CETVELİ' });
+  birlesikYaz(sheet, { satirBas: SATIR_UST_BAS, satirSon: SATIR_UST_SON, sutunBas: TARIM, sutunSon: HAYVANCILIK, metin: '(Ek-4/a)\nGEÇİM KAYNAĞI' });
+  birlesikYaz(sheet, { satirBas: SATIR_UST_BAS, satirSon: SATIR_UST_SON, sutunBas: TOPLAM_HAYVAN, sutunSon: HAYVAN_SON, metin: '(Ek-4/b)\nBÜYÜKBAŞ VE KÜÇÜKBAŞ HAYVAN VARLIĞI' });
 
-  // 7 hayvan grubu basligi (satir 5 - alt kategoriler satir 6'da)
+  // ---- SATIR 6-7: ORTA+ALT katman ----
+  birlesikYaz(sheet, { satirBas: SATIR_ORTA_BAS, satirSon: SATIR_ORTA_SON, sutunBas: YEM_BITKISI_BAS, sutunSon: YEM_BITKISI_SON, metin: 'Yem Bitkisi\n(da)' });
+  birlesikYaz(sheet, { satirBas: SATIR_ORTA_BAS, satirSon: SATIR_ORTA_SON, sutunBas: SEBZE_BAG_BAS, sutunSon: SEBZE_BAG_SON, metin: 'Sebze-Bağ\n(da)' });
+  birlesikYaz(sheet, { satirBas: SATIR_ORTA_BAS, satirSon: SATIR_ORTA_SON, sutunBas: HUBUBAT_BAS, sutunSon: HUBUBAT_SON, metin: 'Hububat\n(da)' });
+  birlesikYaz(sheet, { satirBas: SATIR_ORTA_BAS, satirSon: SATIR_ORTA_SON, sutunBas: TARIM, metin: 'Tarım\n(X)' });
+  birlesikYaz(sheet, { satirBas: SATIR_ORTA_BAS, satirSon: SATIR_ORTA_SON, sutunBas: HAYVANCILIK, metin: 'Hayvancılık\n(X)' });
+  birlesikYaz(sheet, { satirBas: SATIR_ORTA_BAS, satirSon: SATIR_ORTA_SON, sutunBas: TOPLAM_HAYVAN, metin: 'Toplam\nHayvan\nVarlığı\n(adet)' });
+
   let sutunIndex = HAYVAN_BAS;
   for (const grup of SUTUN_HARITASI) {
     const baslaIndex = sutunIndex;
     const bitisIndex = sutunIndex + grup.altlar.length - 1;
-    birlesikBaslikYaz(sheet, { satirBas: 5, sutunBas: baslaIndex, sutunSon: bitisIndex, metin: grup.baslik });
+    birlesikYaz(sheet, { satirBas: SATIR_ORTA_BAS, sutunBas: baslaIndex, sutunSon: bitisIndex, metin: grup.baslik });
     for (const alt of grup.altlar) {
-      birlesikBaslikYaz(sheet, { satirBas: 6, sutunBas: sutunIndex, metin: alt.etiket });
+      birlesikYaz(sheet, { satirBas: SATIR_ORTA_SON, sutunBas: sutunIndex, metin: alt.etiket });
       sutunIndex += 1;
     }
   }
@@ -212,57 +233,57 @@ async function contractToEk4abExcel(ek4ab) {
   sheet.mergeCells(toplamRow.number, TOPLAM_BBHB_BAS, toplamRow.number, TOPLAM_BBHB_SON);
   hucreStil(toplamRow.getCell(TOPLAM_BBHB_BAS), { bold: true, align: 'center', numFormat: '0.00' });
 
-  // ---- NOT ----
+  // ---- NOT (kenarlıksız) ----
   const notRow = sheet.addRow([]);
   const yilMetni = ek4ab.uretimYili ? `${ek4ab.uretimYili} yılı` : 'ilgili yıl';
   notRow.getCell(1).value = `Not: Yukarıdaki hayvan sayıları ve ekiliş alanı verileri ${yilMetni} ÇKS (Çiftçi Kayıt Sistemi) ve Türkvet kayıtlarından alınmıştır.`;
   sheet.mergeCells(notRow.number, 1, notRow.number, SON_SUTUN);
-  hucreStil(notRow.getCell(1), { align: 'left' });
+  hucreStil(notRow.getCell(1), { align: 'left', kenarsiz: true });
 
-  // ---- İMZA BLOĞU (Teknik Ekip - yan yana EN FAZLA 4 imzacı, tasarsa yeni satıra gecer) ----
+  // ---- İMZA BLOĞU (kenarlıksız) ----
   if (ek4ab.imzacilar && ek4ab.imzacilar.length > 0) {
     sheet.addRow([]);
 
     const ekipAdiRow = sheet.addRow([]);
     ekipAdiRow.getCell(1).value = (ek4ab.teknikEkipAdi || 'TEKNİK EKİP').toLocaleUpperCase('tr-TR');
     sheet.mergeCells(ekipAdiRow.number, 1, ekipAdiRow.number, SON_SUTUN);
-    hucreStil(ekipAdiRow.getCell(1), { bold: true, align: 'left' });
-    ekipAdiRow.getCell(1).font = { ...ekipAdiRow.getCell(1).font, size: 10 }; // kalin punto biraz daha buyuk
+    hucreStil(ekipAdiRow.getCell(1), { bold: true, align: 'left', kenarsiz: true });
+    ekipAdiRow.getCell(1).font = { ...ekipAdiRow.getCell(1).font, size: 10 };
 
     const MAX_IMZACI_SATIR_BASI = 4;
     for (let baslangic = 0; baslangic < ek4ab.imzacilar.length; baslangic += MAX_IMZACI_SATIR_BASI) {
       const grup = ek4ab.imzacilar.slice(baslangic, baslangic + MAX_IMZACI_SATIR_BASI);
       const n = grup.length;
-      const filigranRow = sheet.addRow([]);
+
+      // 3 satirlik imza boslugu - ORTADAKI satirda %25 opaklik gri "İMZA"
+      const bosluk1 = sheet.addRow([]);
+      const bosluk2 = sheet.addRow([]);
+      const bosluk3 = sheet.addRow([]);
       const adRow = sheet.addRow([]);
       const unvanRow = sheet.addRow([]);
       const kurumRow = sheet.addRow([]);
+      const ekUnvanRow = sheet.addRow([]);
 
       grup.forEach((imzaci, i) => {
         const baslaSutun = Math.floor((i * SON_SUTUN) / n) + 1;
         const bitisSutun = Math.max(Math.floor(((i + 1) * SON_SUTUN) / n), baslaSutun);
 
-        birlesikBaslikYaz2(sheet, filigranRow.number, baslaSutun, bitisSutun, 'İMZA', false);
-        birlesikBaslikYaz2(sheet, adRow.number, baslaSutun, bitisSutun, imzaci.adSoyad || '', true);
-        birlesikBaslikYaz2(sheet, unvanRow.number, baslaSutun, bitisSutun, imzaci.unvan || '', false);
-        birlesikBaslikYaz2(sheet, kurumRow.number, baslaSutun, bitisSutun, imzaci.imzaKurumMetni || '', false);
+        birlesikYaz(sheet, { satirBas: bosluk1.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: '', kenarsiz: true });
+        birlesikYaz(sheet, { satirBas: bosluk2.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: 'İMZA', kenarsiz: true, renk: IMZA_FILIGRAN_RENK, bold: true });
+        birlesikYaz(sheet, { satirBas: bosluk3.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: '', kenarsiz: true });
+        birlesikYaz(sheet, { satirBas: adRow.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: imzaci.adSoyad || '', kenarsiz: true, bold: true });
+        birlesikYaz(sheet, { satirBas: unvanRow.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: imzaci.unvan || '', kenarsiz: true, bold: false });
+        birlesikYaz(sheet, { satirBas: kurumRow.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: imzaci.imzaKurumMetni || '', kenarsiz: true, bold: false });
+
+        const ekUnvan = EK_UNVAN_HARITASI[imzaci.kurumKod] || '';
+        birlesikYaz(sheet, { satirBas: ekUnvanRow.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: ekUnvan, kenarsiz: true, bold: false });
       });
     }
-  }
-
-  function birlesikBaslikYaz2(sheet, satirNo, sutunBas, sutunSon, metin, kalin) {
-    const hucre = sheet.getCell(satirNo, sutunBas);
-    hucre.value = metin;
-    hucreStil(hucre, { bold: kalin, align: 'center' });
-    if (sutunBas !== sutunSon) sheet.mergeCells(satirNo, sutunBas, satirNo, sutunSon);
   }
 
   sheet.eachRow((row) => {
     if (!row.height) row.height = SATIR_YUKSEKLIGI;
   });
-  // Ust katman (satir 3-4) ve orta katman (satir 5-6) 2 satir birlesik oldugu
-  // icin toplam yukseklikleri otomatik yeterli olur (2 x 0.45cm) - ayrica
-  // mudahale gerekmez.
 
   return workbook.xlsx.writeBuffer();
 }

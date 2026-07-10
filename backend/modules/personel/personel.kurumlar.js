@@ -66,12 +66,12 @@ function imzaKurumMetniOlustur(kurumKod, girdi = {}) {
       return kurum.ad;
 
     case 'muhtarlik':
-      if (!girdi.secilenYer) return 'Muhtarlığı';
-      return `${girdi.secilenYer.mahalle} Muhtarlığı`;
+      if (!girdi.secilenYer) return 'Köyü/Mahallesi Muhtarlığı';
+      return `${girdi.secilenYer.mahalle} Köyü/Mahallesi Muhtarlığı`;
 
     case 'mahalliBilirkisi':
-      if (!girdi.secilenYer) return 'Mahalli Bilirkişisi';
-      return `${girdi.secilenYer.mahalle} Mahallesi/Köyü Mahalli Bilirkişisi`;
+      if (!girdi.secilenYer) return 'Köyü/Mahallesi Mahalli Bilirkişisi';
+      return `${girdi.secilenYer.mahalle} Köyü/Mahallesi Mahalli Bilirkişisi`;
 
     case 'belediyeBaskanligi': {
       if (!girdi.secilenYer) return 'Belediyesi';
