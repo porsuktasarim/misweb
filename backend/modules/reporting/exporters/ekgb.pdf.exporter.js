@@ -1,10 +1,15 @@
 /**
  * ekgb.pdf.exporter.js
  *
- * EKGB raporu - 2 sayfa (addPage ile ayrilir). Turkce karakter destegi
- * icin gomulu DejaVu Serif fontu kullanilir (bkz. bbhb pdf.exporter.js
- * ile ayni gerekce - PDFKit'in yerlesik Times-Roman fontu Turkce
- * karakterleri desteklemiyor).
+ * EKGB raporu - 2 sayfa. Turkce karakter destegi icin gomulu DejaVu
+ * Serif fontu kullanilir (Excel/Word'de gercek Times New Roman
+ * kullanilabiliyor cunku onlar sadece font ADI yaziyor - PDF'te
+ * gomme gerekiyor, Times New Roman gomulmez/Turkce desteklemez).
+ *
+ * - Kenar bosluklari: 1cm
+ * - Footer (her sayfada): ust satir konum bilgisi, alt satir X/Y sayfa no
+ * - Imza blogu: gercek %20 opaklikla "İMZA" filigrani (PDFKit opacity
+ *   destekliyor - Excel/Word'de bu ancak acik gri renkle simule edilir)
  */
 
 const PDFDocument = require('pdfkit');
@@ -13,10 +18,21 @@ const path = require('path');
 const FONT_NORMAL = path.join(__dirname, '../sablonlar/fontlar/DejaVuSerif.ttf');
 const FONT_KALIN = path.join(__dirname, '../sablonlar/fontlar/DejaVuSerif-Bold.ttf');
 const CM = 28.3465;
+const FOOTER_YUKSEKLIK = CM * 0.9; // footer, alt 1cm kenar boslugu icinde
+
+function detayAciklamaOlustur(k) {
+  if (k.oran !== undefined) return `${(k.oran * 100).toFixed(0)}% karışım, ${k.miktarKgDa} kg/da`;
+  if (k.miktarKgDa !== undefined && k.yilCarpani !== undefined) return `${k.miktarKgDa} kg/da × ${k.yilCarpani} yıl`;
+  return k.aciklama || '';
+}
 
 async function contractToEkgbPdf(ekgb) {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margins: { top: CM, bottom: CM, left: CM, right: CM }, bufferPages: true });
+    const doc = new PDFDocument({
+      size: 'A4',
+      margins: { top: CM, bottom: CM + FOOTER_YUKSEKLIK, left: CM, right: CM },
+      bufferPages: true,
+    });
     const parcalar = [];
     doc.on('data', (p) => parcalar.push(p));
     doc.on('end', () => resolve(Buffer.concat(parcalar)));
@@ -37,7 +53,7 @@ async function contractToEkgbPdf(ekgb) {
     }
     function kalemSatiri(k) {
       doc.font(FONT_NORMAL).fontSize(8.5).text(
-        `${k.ad}${k.aciklama ? ' — ' + k.aciklama : ''}${k.birimFiyat !== undefined ? ' | Birim: ' + k.birimFiyat : ''} | Toplam: ${k.maliyet.toLocaleString('tr-TR')} TL`
+        `${k.ad || k.kod}${k.aciklama ? ' — ' + k.aciklama : ''}${k.birimFiyat !== undefined ? ' | Birim: ' + k.birimFiyat : ''} | Toplam: ${k.maliyet.toLocaleString('tr-TR')} TL`
       );
     }
     function toplamSatiri(etiket, deger, buyuk = false) {
@@ -50,7 +66,7 @@ async function contractToEkgbPdf(ekgb) {
     doc.moveDown();
 
     altBaslik('Mütecaviz Bilgisi');
-    bilgiSatiri('Adı Soyadı / Tüzel Kişilik Adı', ekgb.mutecavizAdSoyad);
+    bilgiSatiri('Adı Soyadı / Tüzel Kişilik Adı', ekgb.mutecavizAdSoyad || '-');
     bilgiSatiri('T.C. / VKN', ekgb.mutecavizTcVkn || '-');
 
     altBaslik('İşgal Edilen Yerin Bilgisi');
@@ -65,11 +81,11 @@ async function contractToEkgbPdf(ekgb) {
     toplamSatiri('İşçilik Toplam', ekgb.iscilik.toplam);
 
     altBaslik('Tohum Maliyetleri');
-    ekgb.tohum.detaylar.forEach((t) => kalemSatiri({ ad: t.kod, aciklama: `${(t.oran * 100).toFixed(0)}%`, birimFiyat: t.birimFiyat, maliyet: t.maliyet }));
+    ekgb.tohum.detaylar.forEach((t) => kalemSatiri({ ad: t.ad || t.kod, aciklama: detayAciklamaOlustur(t), birimFiyat: t.birimFiyat, maliyet: t.maliyet }));
     toplamSatiri('Tohum Toplam', ekgb.tohum.toplam);
 
     altBaslik('Gübreleme Maliyetleri');
-    ekgb.gubreleme.detaylar.forEach((g) => kalemSatiri({ ad: g.kod, aciklama: `${g.miktarKgDa} kg/da × ${g.yilCarpani} yıl`, birimFiyat: g.birimFiyat, maliyet: g.maliyet }));
+    ekgb.gubreleme.detaylar.forEach((g) => kalemSatiri({ ad: g.ad || g.kod, aciklama: detayAciklamaOlustur(g), birimFiyat: g.birimFiyat, maliyet: g.maliyet }));
     toplamSatiri('Gübreleme Toplam', ekgb.gubreleme.toplam);
 
     doc.moveDown();
@@ -78,13 +94,29 @@ async function contractToEkgbPdf(ekgb) {
 
     altBaslik('Hazırlayanlar');
     const imzacilar = ekgb.imzacilar && ekgb.imzacilar.length > 0 ? ekgb.imzacilar : [{ adSoyad: '', unvan: '' }];
-    const sutunGenislik = genislik / imzacilar.length;
-    const y0 = doc.y + 30; // imza icin bosluk birak
+    const tekKisi = imzacilar.length === 1;
+    const y0 = doc.y + 10;
+
     imzacilar.forEach((im, i) => {
-      const x = doc.page.margins.left + i * sutunGenislik;
-      doc.font(FONT_NORMAL).fontSize(8).text('İmzası: ____________________', x, y0, { width: sutunGenislik, align: 'center' });
-      doc.font(FONT_KALIN).fontSize(9).text(im.adSoyad || '', x, y0 + 20, { width: sutunGenislik, align: 'center' });
-      doc.font(FONT_NORMAL).fontSize(8).text(im.unvan || '', x, y0 + 34, { width: sutunGenislik, align: 'center' });
+      let x, w, align;
+      if (tekKisi) {
+        x = doc.page.margins.left;
+        w = genislik / 3;
+        align = 'left';
+      } else {
+        w = genislik / imzacilar.length;
+        x = doc.page.margins.left + i * w;
+        align = 'center';
+      }
+
+      // "İMZA" filigrani - GERCEK %20 opaklik (PDFKit destekliyor)
+      doc.save();
+      doc.opacity(0.2);
+      doc.font(FONT_KALIN).fontSize(16).fillColor('#000000').text('İMZA', x, y0, { width: w, align });
+      doc.restore();
+
+      doc.font(FONT_KALIN).fontSize(9).fillColor('#1C1E1B').text(im.adSoyad || '', x, y0 + 22, { width: w, align });
+      doc.font(FONT_NORMAL).fontSize(8).text(im.unvan || '', x, y0 + 36, { width: w, align });
     });
 
     // ---- SAYFA 2: AÇIKLAMALAR ----
@@ -117,6 +149,29 @@ async function contractToEkgbPdf(ekgb) {
       doc.font(FONT_KALIN).fontSize(9.5).text(b);
       doc.font(FONT_NORMAL).fontSize(9).text(a, { width: genislik });
       doc.moveDown(0.5);
+    }
+
+    // ---- FOOTER (her sayfaya, sonradan tum sayfalar uzerinde geziliyor) ----
+    const bilgiMetni = `${ekgb.il} ${ekgb.ilce} ${ekgb.mahalle} — Ada: ${ekgb.ada || '-'} Parsel: ${ekgb.parsel || '-'} — ${ekgb.mutecavizAdSoyad || ''}`;
+    const sayfaAraligi = doc.bufferedPageRange();
+    const toplamSayfa = sayfaAraligi.count;
+
+    for (let i = 0; i < toplamSayfa; i++) {
+      doc.switchToPage(i);
+      // ONEMLI: doc.text() normalde alt kenar boslugunu asinca OTOMATIK
+      // yeni sayfa acar - footer tam da o bosluk icine yazildigi icin
+      // gecici olarak alt kenar boslugunu 0'a cekip bunu engelliyoruz.
+      const eskiAltBosluk = doc.page.margins.bottom;
+      doc.page.margins.bottom = 0;
+
+      const footerY = doc.page.height - CM - FOOTER_YUKSEKLIK + 6;
+      doc.font(FONT_NORMAL).fontSize(7).fillColor('#6E6E68')
+        .text(bilgiMetni, doc.page.margins.left, footerY, { width: genislik, align: 'center', lineBreak: false });
+      doc.font(FONT_NORMAL).fontSize(7)
+        .text(`${i + 1}/${toplamSayfa}`, doc.page.margins.left, footerY + 12, { width: genislik, align: 'center', lineBreak: false });
+      doc.fillColor('#1C1E1B');
+
+      doc.page.margins.bottom = eskiAltBosluk;
     }
 
     doc.end();

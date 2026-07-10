@@ -10,7 +10,16 @@
 const mongoose = require('mongoose');
 
 const kalemDetaySchema = new mongoose.Schema(
-  { kod: String, ad: String, aciklama: String, birimFiyat: Number, maliyet: Number },
+  {
+    kod: String,
+    ad: String,
+    aciklama: String,
+    birimFiyat: Number,
+    maliyet: Number,
+    oran: Number,        // tohum kalemleri icin karisim orani
+    miktarKgDa: Number,   // tohum/gubre kalemleri icin miktar
+    yilCarpani: Number,   // gubre kalemleri icin uygulama yili carpani
+  },
   { _id: false }
 );
 

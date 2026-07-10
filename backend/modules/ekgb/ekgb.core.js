@@ -16,6 +16,7 @@ const {
   EKGB_TOHUM_ORANLARI,
   EKGB_GUBRE_PARAMETRELERI,
   EKGB_SABIT_PARAMETRELER,
+  kalemBul,
 } = require('./ekgb.kalemler');
 
 function yuvarla(sayi) {
@@ -104,7 +105,7 @@ function hesapla(alanBilgileri, fiyatHaritasi) {
     const miktarKgDa = yuvarla(P.dekaraTohumMiktariKg * t.oran);
     const birimFiyat = fiyat(t.kalemKod);
     const maliyet = yuvarla(miktarKgDa * birimFiyat * toplamIslahAlaniDa);
-    return { kod: t.kalemKod, oran: t.oran, miktarKgDa, birimFiyat, maliyet };
+    return { kod: t.kalemKod, ad: kalemBul(t.kalemKod).ad, oran: t.oran, miktarKgDa, birimFiyat, maliyet };
   });
   const tohumToplam = yuvarla(tohumDetaylari.reduce((t, k) => t + k.maliyet, 0));
 
@@ -112,7 +113,7 @@ function hesapla(alanBilgileri, fiyatHaritasi) {
   const gubreDetaylari = EKGB_GUBRE_PARAMETRELERI.map((g) => {
     const birimFiyat = fiyat(g.kalemKod);
     const maliyet = yuvarla(birimFiyat * g.miktarKgDa * toplamIslahAlaniDa * g.yilCarpani);
-    return { kod: g.kalemKod, miktarKgDa: g.miktarKgDa, yilCarpani: g.yilCarpani, birimFiyat, maliyet };
+    return { kod: g.kalemKod, ad: kalemBul(g.kalemKod).ad, miktarKgDa: g.miktarKgDa, yilCarpani: g.yilCarpani, birimFiyat, maliyet };
   });
   const gubreToplam = yuvarla(gubreDetaylari.reduce((t, k) => t + k.maliyet, 0));
 

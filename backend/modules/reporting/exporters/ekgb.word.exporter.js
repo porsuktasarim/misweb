@@ -1,21 +1,30 @@
 /**
  * ekgb.word.exporter.js
  *
- * EKGB raporu - Excel ile ayni icerik, 2 sayfa (page break ile ayrilir).
+ * EKGB raporu - Excel ile ayni icerik/gorunum, 2 sayfa (page break).
+ * Footer: ust satirda konum bilgisi, alt satirda gercek sayfa
+ * numarasi (X/Y - docx'un native PageNumber alanlariyla).
  */
 
 const {
   Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun,
   HeadingLevel, WidthType, ShadingType, AlignmentType, PageBreak,
-  convertMillimetersToTwip,
+  Footer, PageNumber, convertMillimetersToTwip, BorderStyle,
 } = require('docx');
 
-const RENK = { koyu: '3F3F3C', orta: '6E6E68', seritKoyu: 'F4F4F2', toplam: 'DCDCD7' };
+const RENK = { koyu: '3F3F3C', orta: '6E6E68', seritKoyu: 'F4F4F2', imzaFiligran: 'CCCCCC' };
+const CERCEVESIZ = {
+  top: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+  bottom: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+  left: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+  right: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+};
 
-function hucre(metin, { kalin = false, renk, beyazYazi = false, align = AlignmentType.LEFT } = {}) {
+function hucre(metin, { kalin = false, renk, beyazYazi = false, align = AlignmentType.LEFT, renkYazi } = {}) {
   return new TableCell({
+    borders: CERCEVESIZ,
     shading: renk ? { type: ShadingType.SOLID, color: renk, fill: renk } : undefined,
-    children: [new Paragraph({ alignment: align, children: [new TextRun({ text: String(metin), bold: kalin, color: beyazYazi ? 'FFFFFF' : undefined, font: 'Times New Roman', size: 18 })] })],
+    children: [new Paragraph({ alignment: align, children: [new TextRun({ text: String(metin), bold: kalin, color: renkYazi || (beyazYazi ? 'FFFFFF' : undefined), font: 'Times New Roman', size: 18 })] })],
   });
 }
 
@@ -36,10 +45,32 @@ function kalemTablosu(kalemler, basliklar) {
   });
 }
 
+function detayAciklamaOlustur(k) {
+  if (k.oran !== undefined) return `${(k.oran * 100).toFixed(0)}% karışım, ${k.miktarKgDa} kg/da`;
+  if (k.miktarKgDa !== undefined && k.yilCarpani !== undefined) return `${k.miktarKgDa} kg/da × ${k.yilCarpani} yıl`;
+  return k.aciklama || '';
+}
+
 function toplamParagrafi(etiket, deger, buyuk = false) {
   return new Paragraph({
     alignment: AlignmentType.RIGHT,
     children: [new TextRun({ text: `${etiket}: ${deger.toLocaleString('tr-TR')} TL`, bold: true, size: buyuk ? 28 : 20, font: 'Times New Roman' })],
+  });
+}
+
+/** Imza blogu: cerceve YOK, tek kisi solA yasli, birden fazla kisi esit sutunlara bolunup ORTALANIR */
+function imzaBlokuTablosu(imzacilarGirdi) {
+  const imzacilar = imzacilarGirdi && imzacilarGirdi.length > 0 ? imzacilarGirdi : [{ adSoyad: '', unvan: '' }];
+  const align = imzacilar.length === 1 ? AlignmentType.LEFT : AlignmentType.CENTER;
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: { top: CERCEVESIZ.top, bottom: CERCEVESIZ.bottom, left: CERCEVESIZ.left, right: CERCEVESIZ.right, insideHorizontal: CERCEVESIZ.top, insideVertical: CERCEVESIZ.left },
+    rows: [
+      new TableRow({ children: imzacilar.map(() => hucre('İMZA', { align, renkYazi: RENK.imzaFiligran, kalin: true })) }),
+      new TableRow({ children: imzacilar.map((i) => hucre(i.adSoyad || '', { align, kalin: true })) }),
+      new TableRow({ children: imzacilar.map((i) => hucre(i.unvan || '', { align })) }),
+    ],
   });
 }
 
@@ -51,7 +82,7 @@ async function contractToEkgbWord(ekgb) {
   cocuklar.push(new Paragraph({ text: '' }));
 
   cocuklar.push(new Paragraph({ text: 'Mütecaviz Bilgisi', heading: HeadingLevel.HEADING_2 }));
-  cocuklar.push(bilgiSatiri('Adı Soyadı / Tüzel Kişilik Adı', ekgb.mutecavizAdSoyad));
+  cocuklar.push(bilgiSatiri('Adı Soyadı / Tüzel Kişilik Adı', ekgb.mutecavizAdSoyad || '-'));
   cocuklar.push(bilgiSatiri('T.C. / VKN', ekgb.mutecavizTcVkn || '-'));
   cocuklar.push(new Paragraph({ text: '' }));
 
@@ -69,12 +100,12 @@ async function contractToEkgbWord(ekgb) {
   cocuklar.push(new Paragraph({ text: '' }));
 
   cocuklar.push(new Paragraph({ text: 'Tohum Maliyetleri', heading: HeadingLevel.HEADING_2 }));
-  cocuklar.push(kalemTablosu(ekgb.tohum.detaylar.map((t) => ({ ad: t.kod, aciklama: `${(t.oran * 100).toFixed(0)}%`, birimFiyat: t.birimFiyat, maliyet: t.maliyet })), ['Bitki', 'Oran', 'Birim Fiyat', 'Toplam Maliyet']));
+  cocuklar.push(kalemTablosu(ekgb.tohum.detaylar.map((t) => ({ ad: t.ad || t.kod, aciklama: detayAciklamaOlustur(t), birimFiyat: t.birimFiyat, maliyet: t.maliyet })), ['Bitki', 'Açıklama', 'Birim Fiyat', 'Toplam Maliyet']));
   cocuklar.push(toplamParagrafi('Tohum Toplam', ekgb.tohum.toplam));
   cocuklar.push(new Paragraph({ text: '' }));
 
   cocuklar.push(new Paragraph({ text: 'Gübreleme Maliyetleri', heading: HeadingLevel.HEADING_2 }));
-  cocuklar.push(kalemTablosu(ekgb.gubreleme.detaylar.map((g) => ({ ad: g.kod, aciklama: `${g.miktarKgDa} kg/da × ${g.yilCarpani} yıl`, birimFiyat: g.birimFiyat, maliyet: g.maliyet })), ['Gübre', 'Açıklama', 'Birim Fiyat', 'Toplam Maliyet']));
+  cocuklar.push(kalemTablosu(ekgb.gubreleme.detaylar.map((g) => ({ ad: g.ad || g.kod, aciklama: detayAciklamaOlustur(g), birimFiyat: g.birimFiyat, maliyet: g.maliyet })), ['Gübre', 'Açıklama', 'Birim Fiyat', 'Toplam Maliyet']));
   cocuklar.push(toplamParagrafi('Gübreleme Toplam', ekgb.gubreleme.toplam));
   cocuklar.push(new Paragraph({ text: '' }));
 
@@ -82,19 +113,8 @@ async function contractToEkgbWord(ekgb) {
   cocuklar.push(new Paragraph({ text: '' }));
   cocuklar.push(new Paragraph({ text: '' }));
 
-  // İmza bloğu - sayfa sonunda, kisi sayisi kadar sutun
   cocuklar.push(new Paragraph({ text: 'Hazırlayanlar', heading: HeadingLevel.HEADING_2 }));
-  const imzacilar = ekgb.imzacilar && ekgb.imzacilar.length > 0 ? ekgb.imzacilar : [{ adSoyad: '', unvan: '' }];
-  cocuklar.push(
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        new TableRow({ children: imzacilar.map(() => hucre('İmzası:', { align: AlignmentType.CENTER })) }),
-        new TableRow({ children: imzacilar.map((i) => hucre(i.adSoyad || '', { kalin: true, align: AlignmentType.CENTER })) }),
-        new TableRow({ children: imzacilar.map((i) => hucre(i.unvan || '', { align: AlignmentType.CENTER })) }),
-      ],
-    })
-  );
+  cocuklar.push(imzaBlokuTablosu(ekgb.imzacilar));
 
   // ---- SAYFA 2: AÇIKLAMALAR ----
   cocuklar.push(new Paragraph({ children: [new PageBreak()] }));
@@ -124,6 +144,22 @@ async function contractToEkgbWord(ekgb) {
     cocuklar.push(new Paragraph({ children: [new TextRun({ text: aciklama, font: 'Times New Roman', size: 18 })] }));
   }
 
+  const bilgiMetni = `${ekgb.il} ${ekgb.ilce} ${ekgb.mahalle} — Ada: ${ekgb.ada || '-'} Parsel: ${ekgb.parsel || '-'} — ${ekgb.mutecavizAdSoyad || ''}`;
+
+  const footer = new Footer({
+    children: [
+      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: bilgiMetni, size: 14, font: 'Times New Roman' })] }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: [
+          new TextRun({ children: [PageNumber.CURRENT], size: 14, font: 'Times New Roman' }),
+          new TextRun({ text: '/', size: 14, font: 'Times New Roman' }),
+          new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 14, font: 'Times New Roman' }),
+        ],
+      }),
+    ],
+  });
+
   const doc = new Document({
     sections: [
       {
@@ -135,6 +171,7 @@ async function contractToEkgbWord(ekgb) {
             },
           },
         },
+        footers: { default: footer },
         children: cocuklar,
       },
     ],

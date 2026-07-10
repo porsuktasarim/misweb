@@ -41,7 +41,7 @@
               <h2>Mütecaviz Bilgisi</h2>
               <div class="row g-2 mb-3">
                 <div class="col-md-6">
-                  <input class="form-control form-control-sm" id="mutecavizAdSoyad" placeholder="Adı Soyadı / Tüzel Kişilik Adı" required />
+                  <input class="form-control form-control-sm" id="mutecavizAdSoyad" placeholder="Adı Soyadı / Tüzel Kişilik Adı (hesaplama için zorunlu değil, kayıt için zorunlu)" />
                 </div>
                 <div class="col-md-6">
                   <input class="form-control form-control-sm" id="mutecavizTcVkn" placeholder="T.C. / VKN" />
@@ -213,10 +213,7 @@
         return;
       }
       const mutecavizAdSoyad = document.getElementById('mutecavizAdSoyad').value.trim();
-      if (!mutecavizAdSoyad) {
-        alert('Lütfen mütecaviz adı soyadı girin.');
-        return;
-      }
+      // NOT: mütecaviz adı HESAPLAMA için zorunlu değil, sadece KAYDETME için zorunlu (aşağıda kontrol ediliyor)
 
       const alanBilgileri = {
         surulenAlanM2: parseFloat(document.getElementById('surulenAlanM2').value) || 0,
@@ -262,10 +259,16 @@
             Genel Toplam: <strong>${json.data.genelToplam.toLocaleString('tr-TR')} TL</strong>
             (İşçilik: ${json.data.iscilik.toplam.toLocaleString('tr-TR')} · Tohum: ${json.data.tohum.toplam.toLocaleString('tr-TR')} · Gübreleme: ${json.data.gubreleme.toplam.toLocaleString('tr-TR')})
           </div>
+          ${!mutecavizAdSoyad ? '<div class="alert alert-warning small py-1">Kaydetmek için Mütecaviz Adı Soyadı girmelisin.</div>' : ''}
           <button id="ekgbKaydetBtn" class="btn btn-success">Kaydet</button>
         `;
 
         document.getElementById('ekgbKaydetBtn').addEventListener('click', async () => {
+          if (!sonHesapVerisi.mutecavizAdSoyad) {
+            alert('Kaydetmek için Mütecaviz Adı Soyadı girmelisin.');
+            document.getElementById('mutecavizAdSoyad').focus();
+            return;
+          }
           const kaydetRes = await fetch('/api/ekgb/kaydet', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
