@@ -75,7 +75,7 @@ async function contractToCksWord(cks) {
 
   const grupBaslikSatiri = [
     hucre('Sıra No', { kalin: true, renk: RENK.koyu, beyazYazi: true }),
-    hucre('Adı Soyadı', { kalin: true, renk: RENK.koyu, beyazYazi: true }),
+    hucre('İkamet Eden Aile Temsilcisinin Adı Soyadı (Aile)', { kalin: true, renk: RENK.koyu, beyazYazi: true }),
     hucre('Ekilişi (da) ve Hayvan Varlığı (BBHB)', { kalin: true, renk: RENK.orta, beyazYazi: true, span: 4 }),
     hucre('Geçim Kaynağı', { kalin: true, renk: RENK.orta, beyazYazi: true, span: 2 }),
   ];

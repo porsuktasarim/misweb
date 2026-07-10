@@ -14,7 +14,7 @@ const CM = 28.3465;
 const RENK = { koyu: '#3F3F3C', orta: '#6E6E68', seritKoyu: '#F4F4F2', beyazYazi: '#FFFFFF', koyuYazi: '#1C1E1B' };
 const FOOTER_YUKSEKLIK = CM * 0.9;
 
-const SUTUN_ETIKETLERI = ['Sıra\nNo', 'Adı Soyadı', 'Hayvan\nVarlığı', 'Yem\nBitkisi', 'Sebze/\nMeyve', 'Hububat/\nYağlı Tohumlar', 'Tarım', 'Hayvancılık'];
+const SUTUN_ETIKETLERI = ['Sıra\nNo', 'İkamet Eden Aile Temsilcisinin\nAdı Soyadı (Aile)', 'Hayvan\nVarlığı', 'Yem\nBitkisi', 'Sebze/\nMeyve', 'Hububat/\nYağlı Tohumlar', 'Tarım', 'Hayvancılık'];
 const SUTUN_ORANLARI = [0.6, 2.6, 1, 1, 1, 1.3, 0.8, 1]; // toplam ~9.3 birim
 
 function hucreCiz(doc, { x, y, w, h, metin, fill, kalin = false, renkYazi = RENK.koyuYazi, align = 'center', boyut = 8 }) {

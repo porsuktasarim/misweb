@@ -77,7 +77,7 @@ async function contractToCksExcel(cks) {
   hucreStil(grupRow.getCell(1), { fill: RENK.koyu, bold: true, renkBeyaz: true });
   sheet.mergeCells(`A${grupRow.number}:A${altRow.number}`);
 
-  grupRow.getCell(2).value = 'Adı Soyadı';
+  grupRow.getCell(2).value = 'İkamet Eden Aile Temsilcisinin Adı Soyadı (Aile)';
   hucreStil(grupRow.getCell(2), { fill: RENK.koyu, bold: true, renkBeyaz: true });
   sheet.mergeCells(`B${grupRow.number}:B${altRow.number}`);
   altRow.getCell(2).value = ''; // tek sutun - kullanicinin karariyla "Aile"+"Çiftçi Ailesi" birlestirildi

@@ -35,9 +35,10 @@ const RENK = {
 };
 
 const YAZI_TIPI = 'Times New Roman';
-const YAZI_BOYUTU = 8;
-const SATIR_YUKSEKLIGI = 15;
+const YAZI_BOYUTU = 7;
+const SATIR_YUKSEKLIGI = 13;
 const BIR_CM_INC = 1 / 2.54;
+const SUTUN_GENISLIGI = 4.3;
 
 const ISLETMECI_ADI_BASLANGIC = 2; // B
 const ISLETMECI_ADI_BITIS = 1 + ISLETMECI_ADI_SUTUN_SAYISI; // I (9)
@@ -52,7 +53,7 @@ function isletmeciAlaniniBirlestir(sheet, satirNo1, satirNo2 = satirNo1) {
   );
 }
 
-function hucreStil(hucre, { fill, bold = false, renkBeyaz = false, align = 'center' } = {}) {
+function hucreStil(hucre, { fill, bold = false, renkBeyaz = false, align = 'center', kaydir = true, numFormat } = {}) {
   hucre.font = {
     name: YAZI_TIPI,
     size: YAZI_BOYUTU,
@@ -62,7 +63,10 @@ function hucreStil(hucre, { fill, bold = false, renkBeyaz = false, align = 'cent
   if (fill) {
     hucre.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fill } };
   }
-  hucre.alignment = { vertical: 'middle', horizontal: align, wrapText: true };
+  if (numFormat) {
+    hucre.numFmt = numFormat;
+  }
+  hucre.alignment = { vertical: 'middle', horizontal: align, wrapText: kaydir };
 }
 
 /** [siraNo, isletmeciAdi, ...bosluklar(7), ...pivotDegerler, toplam] - 26 hucrelik satir dizisi kurar */
@@ -83,7 +87,8 @@ function bolumYaz(sheet, bolum, hesaplamaTarihi) {
   hucreStil(r2.getCell(1), { fill: RENK.koyu, bold: true, renkBeyaz: true, align: 'center' });
 
   const r3 = sheet.addRow([`Hesaplama Tarihi: ${new Date(hesaplamaTarihi).toLocaleDateString('tr-TR')}`]);
-  hucreStil(r3.getCell(1), {});
+  sheet.mergeCells(`A${r3.number}:${sutunHarfi(sheet, TOPLAM_SUTUN_INDEX)}${r3.number}`);
+  hucreStil(r3.getCell(1), { align: 'left' });
 
   // Baslik satirlari (grup adlari + alt kategoriler)
   const grupBaslikRow = sheet.addRow([]);
@@ -144,10 +149,17 @@ function bolumYaz(sheet, bolum, hesaplamaTarihi) {
 
     const zeminRenk = siraNo % 2 === 0 ? RENK.seritKoyu : RENK.seritAcik;
     row.eachCell({ includeEmpty: true }, (hucre, sutunNo) => {
+      // ONEMLI: B:I birlestirilmis TEK hucre - dongude her sutuna AYRI
+      // stil yazmak ayni paylasilan stil nesnesini EZER (son yazilan
+      // kazanir). Bu yuzden merge alaninda SADECE master hucreyi (B)
+      // isliyoruz, digerlerini atliyoruz.
+      if (sutunNo > ISLETMECI_ADI_BASLANGIC && sutunNo <= ISLETMECI_ADI_BITIS) return;
       hucreStil(hucre, {
         fill: zeminRenk,
         bold: sutunNo === TOPLAM_SUTUN_INDEX,
         align: sutunNo === ISLETMECI_ADI_BASLANGIC ? 'left' : 'center',
+        kaydir: sutunNo !== ISLETMECI_ADI_BASLANGIC,
+        numFormat: sutunNo === TOPLAM_SUTUN_INDEX ? '0.00' : undefined,
       });
     });
 
@@ -157,11 +169,19 @@ function bolumYaz(sheet, bolum, hesaplamaTarihi) {
     siraNo += 1;
   }
 
-  // TOPLAM satiri
-  const toplamRow = sheet.addRow(veriSatiriDizisi('TOPLAM', '', sutunToplamlari.map((t) => t || ''), bolum.bolumToplami));
-  isletmeciAlaniniBirlestir(sheet, toplamRow.number);
-  toplamRow.eachCell({ includeEmpty: true }, (hucre) => {
-    hucreStil(hucre, { fill: RENK.toplam, bold: true });
+  // TOPLAM satiri - "TOPLAM" etiketi Sira No + Isletmeci Adi alanlariyla
+  // (A:I) TEK hucre olarak birlestirilip SAGA yaslanir.
+  const toplamRow = sheet.addRow(veriSatiriDizisi('', '', sutunToplamlari.map((t) => t || ''), bolum.bolumToplami));
+  sheet.mergeCells(`A${toplamRow.number}:${sutunHarfi(sheet, ISLETMECI_ADI_BITIS)}${toplamRow.number}`);
+  toplamRow.getCell(1).value = 'TOPLAM';
+  toplamRow.eachCell({ includeEmpty: true }, (hucre, sutunNo) => {
+    if (sutunNo > 1 && sutunNo <= ISLETMECI_ADI_BITIS) return; // A:I birlesik - sadece master (A)
+    hucreStil(hucre, {
+      fill: RENK.toplam,
+      bold: true,
+      align: sutunNo === 1 ? 'right' : 'center',
+      numFormat: sutunNo === TOPLAM_SUTUN_INDEX ? '0.00' : undefined,
+    });
   });
 
   sheet.addRow([]);
@@ -182,7 +202,10 @@ function bolumYaz(sheet, bolum, hesaplamaTarihi) {
     const row = sheet.addRow([etiket]);
     hucreStil(row.getCell(1), { fill: RENK.ozetEtiket, bold: true, align: 'left' });
     sheet.mergeCells(`A${row.number}:${sutunHarfi(sheet, ISLETMECI_ADI_BITIS)}${row.number}`);
-    const degerHucre = row.getCell(ISLETMECI_ADI_BITIS + 1);
+    const degerBaslangic = ISLETMECI_ADI_BITIS + 1;
+    const degerBitis = ISLETMECI_ADI_BITIS + 2;
+    sheet.mergeCells(`${sutunHarfi(sheet, degerBaslangic)}${row.number}:${sutunHarfi(sheet, degerBitis)}${row.number}`);
+    const degerHucre = row.getCell(degerBaslangic);
     degerHucre.value = deger;
     hucreStil(degerHucre, { align: 'left' });
   }
@@ -195,21 +218,22 @@ async function contractToExcel(contract) {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(contract.modulAdi);
 
-  // Sayfa duzeni: yatay, kenar bosluklari 1cm
+  // Sayfa duzeni: yatay, kenar bosluklari 1cm, yazdirirken yatay ortali
   sheet.pageSetup = {
     orientation: 'landscape',
     fitToPage: true,
     fitToWidth: 1,
     fitToHeight: 0,
+    horizontalCentered: true,
     margins: {
       left: BIR_CM_INC, right: BIR_CM_INC, top: BIR_CM_INC, bottom: BIR_CM_INC,
       header: 0, footer: 0,
     },
   };
 
-  // Sutun genislikleri: Sira No + Isletmeci Adi alani (8x) + veri sutunlari hepsi 3.75
+  // Sutun genislikleri: Sira No + Isletmeci Adi alani (8x) + veri sutunlari hepsi 4.3
   for (let i = 1; i <= TOPLAM_SUTUN_INDEX; i++) {
-    sheet.getColumn(i).width = 3.75;
+    sheet.getColumn(i).width = SUTUN_GENISLIGI;
   }
 
   for (const bolum of contract.bolumler) {

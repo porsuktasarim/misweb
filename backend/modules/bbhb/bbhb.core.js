@@ -74,6 +74,9 @@ function isletmeciBazindaHesapla(kayitlar, versiyon) {
     genelToplamBBHB += toplamBBHB;
   }
 
+  // Ciftci ailesi adinin bas harfine gore (Turkce alfabetik) sirala
+  isletmeciSonuclari.sort((a, b) => a.isletmeciAdi.localeCompare(b.isletmeciAdi, 'tr-TR'));
+
   return {
     isletmeciSonuclari,
     genelToplamBBHB: Number(genelToplamBBHB.toFixed(2)),
