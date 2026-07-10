@@ -31,6 +31,45 @@ async function mahalleleriGetir(il, ilce) {
     .sort((a, b) => a.mahalle.localeCompare(b.mahalle, 'tr-TR'));
 }
 
+/**
+ * Koy/mahalle adinda ARAMA (ulke geneli, il/ilce onceden secilmeden).
+ * Ornek: "bekirli" -> Istanbul/Silivri/Bekirli, Edirne/Merkez/Bekirli vb.
+ * Muhtarlik/Mahalli Bilirkisi kurum secimi icin kullanilir.
+ */
+async function koyMahalleAra(sorgu, limit = 50) {
+  if (!sorgu || sorgu.trim().length < 2) return [];
+  const kayitlar = await YerlesimYeri.find({ mahalle: { $regex: sorgu.trim(), $options: 'i' } })
+    .select('il ilce mahalle')
+    .limit(limit)
+    .lean();
+  return kayitlar
+    .map((k) => ({ il: k.il, ilce: k.ilce, mahalle: k.mahalle }))
+    .sort((a, b) => a.mahalle.localeCompare(b.mahalle, 'tr-TR'));
+}
+
+/**
+ * Il VEYA ilce adinda ARAMA (ulke geneli) - Belediye Baskanligi kurum
+ * secimi icin. Sonucta hem il-seviyesi hem ilce-seviyesi eslesmeler
+ * ayri ayri (tip: 'il' | 'ilce') donebilir.
+ */
+async function ilVeyaIlceAra(sorgu, limit = 50) {
+  if (!sorgu || sorgu.trim().length < 2) return [];
+  const regex = { $regex: sorgu.trim(), $options: 'i' };
+
+  const ilEslesmeleri = await YerlesimYeri.distinct('il', { il: regex });
+  const ilceKayitlari = await YerlesimYeri.find({ ilce: regex }).select('il ilce').limit(limit).lean();
+  const ilceEslesmeleriHaritasi = new Map();
+  for (const k of ilceKayitlari) {
+    ilceEslesmeleriHaritasi.set(`${k.il}::${k.ilce}`, { il: k.il, ilce: k.ilce });
+  }
+
+  const sonuc = [
+    ...ilEslesmeleri.map((il) => ({ tip: 'il', il })),
+    ...Array.from(ilceEslesmeleriHaritasi.values()).map((k) => ({ tip: 'ilce', il: k.il, ilce: k.ilce })),
+  ];
+  return sonuc.slice(0, limit);
+}
+
 async function ekle({ il, ilce, mahalle }) {
   return YerlesimYeri.create({ il: il.trim(), ilce: ilce.trim(), mahalle: mahalle.trim() });
 }
@@ -114,6 +153,8 @@ module.exports = {
   illeriGetir,
   ilceleriGetir,
   mahalleleriGetir,
+  koyMahalleAra,
+  ilVeyaIlceAra,
   ekle,
   guncelle,
   sil,

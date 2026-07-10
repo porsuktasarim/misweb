@@ -35,6 +35,22 @@ async function mahallelerHandler(req, res) {
   }
 }
 
+async function koyMahalleAraHandler(req, res) {
+  try {
+    return basarili(res, await service.koyMahalleAra(req.query.q));
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function ilVeyaIlceAraHandler(req, res) {
+  try {
+    return basarili(res, await service.ilVeyaIlceAra(req.query.q));
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 async function ekleHandler(req, res) {
   try {
     const { il, ilce, mahalle } = req.body;
@@ -121,6 +137,8 @@ module.exports = {
   illerHandler,
   ilcelerHandler,
   mahallelerHandler,
+  koyMahalleAraHandler,
+  ilVeyaIlceAraHandler,
   ekleHandler,
   guncelleHandler,
   silHandler,

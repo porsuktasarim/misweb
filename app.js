@@ -15,6 +15,7 @@ const ekgbRoutes = require('./backend/modules/ekgb/ekgb.routes');
 const ekgbDonemService = require('./backend/modules/ekgb/ekgb.donem.service');
 const cksRoutes = require('./backend/modules/cks/cks.routes');
 const ek4abRoutes = require('./backend/modules/ek4ab/ek4ab.routes');
+const teknikEkipRoutes = require('./backend/modules/personel/teknikEkip.routes');
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use('/api/yerlesim', yerlesimRoutes);
 app.use('/api/ekgb', ekgbRoutes);
 app.use('/api/cks', cksRoutes);
 app.use('/api/ek4ab', ek4abRoutes);
+app.use('/api/teknik-ekip', teknikEkipRoutes);
 
 const PORT = process.env.PORT || 4342;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/mis';

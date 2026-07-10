@@ -10,6 +10,8 @@ const router = express.Router();
 router.get('/iller', controller.illerHandler);
 router.get('/ilceler/:il', controller.ilcelerHandler);
 router.get('/mahalleler/:il/:ilce', controller.mahallelerHandler);
+router.get('/koy-ara', controller.koyMahalleAraHandler);
+router.get('/yer-ara', controller.ilVeyaIlceAraHandler);
 router.post('/', controller.ekleHandler);
 router.put('/:id', controller.guncelleHandler);
 router.delete('/:id', controller.silHandler);

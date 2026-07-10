@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
   <link href="/assets/css/layout.css?v=12" rel="stylesheet" />
   <style>
     .mis-yerlesim-sutun {
@@ -66,7 +67,9 @@
             <li class="nav-item">
               <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ekgb-birim-fiyat-tab">EKGB Birim Fiyatlar</button>
             </li>
-            <!-- Ileride eklenecek ayar sekmeleri buraya - orn: Personel, Kullanicilar vb. -->
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#personel-tab" id="personelTabBtn">Personel Yönetimi</button>
+            </li>
           </ul>
 
           <div class="tab-content">
@@ -139,6 +142,34 @@
 
               <div id="donemFormAlani" class="mt-3" style="display:none;"></div>
             </div>
+
+            <div class="tab-pane fade" id="personel-tab">
+              <ul class="nav nav-pills mb-3">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#kullanicilar-alt-tab">Kullanıcılar</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#teknik-ekip-alt-tab" id="teknikEkipAltTabBtn">Teknik Ekip Üyeleri</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#il-mera-komisyonu-alt-tab">İl Mera Komisyonu Üyeleri</button></li>
+              </ul>
+
+              <div class="tab-content">
+                <div class="tab-pane fade show active" id="kullanicilar-alt-tab">
+                  <p class="text-muted small">Bu bölüm henüz yapılmadı.</p>
+                </div>
+
+                <div class="tab-pane fade" id="teknik-ekip-alt-tab">
+                  <p class="text-muted small">
+                    Teknik ekipler yıla ve ilçeye göre değişir. Her yıl için ayrı,
+                    her ilçe için ayrı bir ekip kaydı açılır. Kurum seçimine göre
+                    imza satırındaki kurum metni otomatik oluşturulur.
+                  </p>
+                  <button type="button" class="btn btn-sm btn-primary mb-3" id="yeniYilEkleBtn">+ Yeni Yıl Ekle</button>
+                  <div id="teknikEkipYillariAccordion" class="accordion"></div>
+                </div>
+
+                <div class="tab-pane fade" id="il-mera-komisyonu-alt-tab">
+                  <p class="text-muted small">Bu bölüm henüz yapılmadı.</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -174,6 +205,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js"></script>
   <script src="/assets/js/mis-menu.js?v=12"></script>
   <script src="/assets/js/shell.js?v=12"></script>
   <script>
@@ -569,6 +601,268 @@
 
     document.querySelector('[data-bs-target="#ekgb-birim-fiyat-tab"]').addEventListener('shown.bs.tab', () => {
       donemleriYukle();
+    });
+
+    // ================= PERSONEL YÖNETİMİ: TEKNİK EKİP =================
+    let kurumlarCache = [];
+    let acikTomSelectler = {}; // uyeKey -> TomSelect instance (detay alanı için)
+
+    async function kurumlariYukle() {
+      if (kurumlarCache.length > 0) return kurumlarCache;
+      const json = await apiGet('/api/teknik-ekip/kurumlar');
+      if (json.success) kurumlarCache = json.data;
+      return kurumlarCache;
+    }
+
+    function kurumBul(kod) {
+      return kurumlarCache.find((k) => k.kod === kod);
+    }
+
+    async function teknikEkipleriYukle() {
+      await kurumlariYukle();
+      const alan = document.getElementById('teknikEkipYillariAccordion');
+      const json = await apiGet('/api/teknik-ekip');
+      if (!json.success) {
+        alan.innerHTML = `<div class="alert alert-danger">${json.message}</div>`;
+        return;
+      }
+      if (json.data.length === 0) {
+        alan.innerHTML = '<div class="text-muted small">Henüz kayıtlı yıl yok. "+ Yeni Yıl Ekle" ile başla.</div>';
+        return;
+      }
+
+      alan.innerHTML = json.data.map((yilGrup) => yilAccordionHtml(yilGrup)).join('');
+
+      // Her ilçe ekibi açıldığında (shown.bs.collapse) o ekibin uye formunu kur
+      json.data.forEach((yilGrup) => {
+        yilGrup.ekipler.forEach((ekip) => {
+          const collapseEl = document.getElementById(`ekip-collapse-${ekip._id}`);
+          if (collapseEl) {
+            collapseEl.addEventListener('shown.bs.collapse', () => uyeFormunuKur(ekip), { once: true });
+          }
+        });
+      });
+
+      document.querySelectorAll('.mis-yeni-ekip-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const yil = btn.dataset.yil;
+          const ilce = prompt('İlçe adı:');
+          if (!ilce || !ilce.trim()) return;
+          const res = await fetch('/api/teknik-ekip', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ yil: parseInt(yil, 10), ilce: ilce.trim() }),
+          });
+          const json2 = await res.json();
+          if (!json2.success) { alert(json2.message); return; }
+          teknikEkipleriYukle();
+        });
+      });
+
+      document.querySelectorAll('.mis-ekip-sil-btn').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm('Bu ekip kaydını silmek istediğine emin misin?')) return;
+          const res = await fetch(`/api/teknik-ekip/${btn.dataset.id}`, { method: 'DELETE' });
+          const json2 = await res.json();
+          if (json2.success) teknikEkipleriYukle();
+          else alert(json2.message);
+        });
+      });
+    }
+
+    function yilAccordionHtml(yilGrup) {
+      const yilId = `yil-${yilGrup.yil}`;
+      return `
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${yilId}-collapse">
+              ${yilGrup.yil} Yılı Teknik Ekipleri
+            </button>
+          </h2>
+          <div id="${yilId}-collapse" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <button type="button" class="btn btn-sm btn-outline-primary mb-2 mis-yeni-ekip-btn" data-yil="${yilGrup.yil}">+ Yeni İlçe Ekibi Ekle</button>
+              <div class="accordion">
+                ${yilGrup.ekipler.map((ekip) => ekipAccordionHtml(ekip)).join('')}
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function ekipAccordionHtml(ekip) {
+      return `
+        <div class="accordion-item">
+          <h2 class="accordion-header d-flex align-items-center">
+            <button class="accordion-button collapsed flex-grow-1" type="button" data-bs-toggle="collapse" data-bs-target="#ekip-collapse-${ekip._id}">
+              ${ekip.ilce} Teknik Ekip <span class="text-muted small ms-2">(${ekip.uyeler.length} üye)</span>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger mis-ekip-sil-btn me-2" data-id="${ekip._id}">Sil</button>
+          </h2>
+          <div id="ekip-collapse-${ekip._id}" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <div id="uye-listesi-${ekip._id}"></div>
+              <button type="button" class="btn btn-sm btn-outline-secondary mt-2 mis-uye-ekle-btn" data-id="${ekip._id}">+ Üye Ekle</button>
+              <button type="button" class="btn btn-sm btn-success mt-2 mis-uye-kaydet-btn" data-id="${ekip._id}">Kaydet</button>
+              <div class="small mt-2 mis-uye-kaydet-sonuc" data-id="${ekip._id}"></div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function detayAlaniGerekliMi(kurumKod) {
+      const kurum = kurumBul(kurumKod);
+      return kurum ? kurum.elleGirisTipi : null;
+    }
+
+    function uyeSatiriHtml(ekipId, index, uye) {
+      const kurumOptions = kurumlarCache.map((k) => `<option value="${k.kod}" ${uye.kurumKod === k.kod ? 'selected' : ''}>${k.ad}</option>`).join('');
+      return `
+        <div class="border rounded p-2 mb-2 mis-uye-satiri" data-ekip="${ekipId}" data-index="${index}">
+          <div class="row g-2 align-items-start">
+            <div class="col-md-3">
+              <input class="form-control form-control-sm mis-uye-ad" placeholder="Adı Soyadı" value="${uye.adSoyad || ''}" />
+            </div>
+            <div class="col-md-2">
+              <input class="form-control form-control-sm mis-uye-unvan" placeholder="Unvanı" value="${uye.unvan || ''}" />
+            </div>
+            <div class="col-md-3">
+              <select class="form-select form-select-sm mis-uye-kurum">${kurumOptions}</select>
+            </div>
+            <div class="col-md-3 mis-uye-detay-alani"></div>
+            <div class="col-md-1">
+              <button type="button" class="btn btn-sm btn-outline-danger mis-uye-satiri-sil">✕</button>
+            </div>
+          </div>
+          ${uye.imzaKurumMetni ? `<div class="small text-muted mt-1">İmza satırı: <strong>${uye.imzaKurumMetni}</strong></div>` : ''}
+        </div>`;
+    }
+
+    function uyeDetayAlaniniKur(satirEl, uye) {
+      const kurumSel = satirEl.querySelector('.mis-uye-kurum');
+      const detayAlan = satirEl.querySelector('.mis-uye-detay-alani');
+      const tip = detayAlaniGerekliMi(kurumSel.value);
+      const benzersizId = `detay-${Math.random().toString(36).slice(2)}`;
+
+      if (!tip) {
+        detayAlan.innerHTML = '';
+        return;
+      }
+      if (tip === 'serbest') {
+        detayAlan.innerHTML = `<input class="form-control form-control-sm mis-uye-serbest-metin" placeholder="Kurum öncesi metin (örn. İstanbul)" value="${uye.serbestMetin || ''}" />`;
+        return;
+      }
+      // 'koyMahalle' veya 'ilVeyaIlce' -> aranabilir secim
+      detayAlan.innerHTML = `<select id="${benzersizId}" class="mis-uye-yer-secim"></select>`;
+      const selectEl = detayAlan.querySelector('select');
+      const aramaUrl = tip === 'koyMahalle' ? '/api/yerlesim/koy-ara' : '/api/yerlesim/yer-ara';
+
+      const ts = new TomSelect(selectEl, {
+        valueField: 'anahtar',
+        labelField: 'etiket',
+        searchField: ['etiket'],
+        create: false,
+        load: function (query, callback) {
+          if (query.length < 2) return callback();
+          fetch(`${aramaUrl}?q=${encodeURIComponent(query)}`)
+            .then((r) => r.json())
+            .then((json) => {
+              if (!json.success) return callback();
+              const secenekler = json.data.map((y) => {
+                if (tip === 'koyMahalle') {
+                  return { anahtar: JSON.stringify({ tip: 'mahalle', il: y.il, ilce: y.ilce, mahalle: y.mahalle }), etiket: `${y.mahalle} — ${y.il}/${y.ilce}` };
+                }
+                if (y.tip === 'il') return { anahtar: JSON.stringify({ tip: 'il', il: y.il }), etiket: `${y.il} (İl)` };
+                return { anahtar: JSON.stringify({ tip: 'ilce', il: y.il, ilce: y.ilce }), etiket: `${y.ilce} — ${y.il} (İlçe)` };
+              });
+              callback(secenekler);
+            })
+            .catch(() => callback());
+        },
+      });
+
+      if (uye.secilenYer) {
+        const anahtar = JSON.stringify(uye.secilenYer);
+        const etiket = uye.secilenYer.tip === 'mahalle'
+          ? `${uye.secilenYer.mahalle} — ${uye.secilenYer.il}/${uye.secilenYer.ilce}`
+          : uye.secilenYer.tip === 'il' ? `${uye.secilenYer.il} (İl)` : `${uye.secilenYer.ilce} — ${uye.secilenYer.il} (İlçe)`;
+        ts.addOption({ anahtar, etiket });
+        ts.setValue(anahtar);
+      }
+    }
+
+    function uyeFormunuKur(ekip) {
+      const alan = document.getElementById(`uye-listesi-${ekip._id}`);
+      const uyeler = ekip.uyeler.length > 0 ? ekip.uyeler : [];
+      alan.innerHTML = uyeler.map((u, i) => uyeSatiriHtml(ekip._id, i, u)).join('');
+
+      alan.querySelectorAll('.mis-uye-satiri').forEach((satirEl, i) => {
+        uyeDetayAlaniniKur(satirEl, uyeler[i]);
+        satirEl.querySelector('.mis-uye-kurum').addEventListener('change', () => uyeDetayAlaniniKur(satirEl, {}));
+        satirEl.querySelector('.mis-uye-satiri-sil').addEventListener('click', () => satirEl.remove());
+      });
+
+      const ekleBtn = document.querySelector(`.mis-uye-ekle-btn[data-id="${ekip._id}"]`);
+      ekleBtn.onclick = () => {
+        const yeniIndex = alan.querySelectorAll('.mis-uye-satiri').length;
+        alan.insertAdjacentHTML('beforeend', uyeSatiriHtml(ekip._id, yeniIndex, {}));
+        const yeniSatir = alan.querySelector(`.mis-uye-satiri[data-index="${yeniIndex}"]`);
+        uyeDetayAlaniniKur(yeniSatir, {});
+        yeniSatir.querySelector('.mis-uye-kurum').addEventListener('change', () => uyeDetayAlaniniKur(yeniSatir, {}));
+        yeniSatir.querySelector('.mis-uye-satiri-sil').addEventListener('click', () => yeniSatir.remove());
+      };
+
+      const kaydetBtn = document.querySelector(`.mis-uye-kaydet-btn[data-id="${ekip._id}"]`);
+      kaydetBtn.onclick = async () => {
+        const sonucAlan = document.querySelector(`.mis-uye-kaydet-sonuc[data-id="${ekip._id}"]`);
+        const guncelUyeler = Array.from(alan.querySelectorAll('.mis-uye-satiri')).map((satirEl) => {
+          const kurumKod = satirEl.querySelector('.mis-uye-kurum').value;
+          const serbestInput = satirEl.querySelector('.mis-uye-serbest-metin');
+          const yerSelect = satirEl.querySelector('.mis-uye-yer-secim');
+          let secilenYer;
+          if (yerSelect && yerSelect.value) {
+            try { secilenYer = JSON.parse(yerSelect.value); } catch (e) { /* yoksay */ }
+          }
+          return {
+            adSoyad: satirEl.querySelector('.mis-uye-ad').value.trim(),
+            unvan: satirEl.querySelector('.mis-uye-unvan').value.trim(),
+            kurumKod,
+            serbestMetin: serbestInput ? serbestInput.value.trim() : undefined,
+            secilenYer,
+          };
+        }).filter((u) => u.adSoyad);
+
+        const res = await fetch(`/api/teknik-ekip/${ekip._id}/uyeler`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uyeler: guncelUyeler }),
+        });
+        const json = await res.json();
+        sonucAlan.innerHTML = json.success
+          ? '<span class="text-success">Kaydedildi.</span>'
+          : `<span class="text-danger">${json.message}</span>`;
+        if (json.success) teknikEkipleriYukle();
+      };
+    }
+
+    document.getElementById('yeniYilEkleBtn').addEventListener('click', async () => {
+      const yil = prompt('Yıl:', new Date().getFullYear());
+      if (!yil) return;
+      const ilce = prompt('İlk ilçe ekibinin adı (örn. Adalar):');
+      if (!ilce || !ilce.trim()) return;
+      const res = await fetch('/api/teknik-ekip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ yil: parseInt(yil, 10), ilce: ilce.trim() }),
+      });
+      const json = await res.json();
+      if (!json.success) { alert(json.message); return; }
+      teknikEkipleriYukle();
+    });
+
+    document.getElementById('teknikEkipAltTabBtn').addEventListener('shown.bs.tab', () => {
+      teknikEkipleriYukle();
     });
   </script>
 </body>
