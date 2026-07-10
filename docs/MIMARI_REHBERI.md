@@ -174,3 +174,63 @@ Sıradaki adaylar: EKGB'nin ikinci hesaplama yöntemi, Tahmini Canlı
 Ağırlık/Kaba Yem/Mera Miktarı bölümleri, Personel ekleme ayar sayfası
 (EKGB/ÇKS imza bloklarının oradan seçime çevrilmesi için), Tahsis
 modülü.
+
+## 11. Güncel Durum Notu (32. paket sonrası)
+
+Önceki notta "sıradaki adaylar" olarak sayılan Personel modülü ve
+Tahsis'in temeli (Ek-4ab) tamamlandı; ayrıca yeni bir Mevzuat modülü
+eklendi.
+
+- **Ek-4ab** (`backend/modules/ek4ab/`) — BBHB + ÇKS'yi isim
+  eşleştirmeyle birleştiren ilk modül. `ek4ab.core.js` saf birleştirme
+  mantığını, `personel/imza-gruplama.js` ve `personel/personel.kurumlar.js`
+  imza sıralama/gruplama kurallarını içerir. Bu üçü TEK BAŞINA test
+  edilebilir (DB gerektirmez) - yeni bir raporlama modülü eklenirken
+  aynı ayrıştırma örnek alınmalı.
+
+- **Personel Yönetimi** (`backend/modules/personel/`) — Teknik Ekip
+  Üyeleri tamamlandı (Kullanıcılar ve İl Mera Komisyonu Üyeleri HENÜZ
+  YOK, Ayarlar sayfasında placeholder olarak duruyor). Kurum bazlı
+  imza metni üretimi (`imzaKurumMetniOlustur`) ve toplu üye yükleme
+  (`teknikEkip.import.js`) ayrı fonksiyonlarda - CSV YÜKLEMESİNDE
+  ÖNEMLİ BİR HATA bulundu ve düzeltildi: `XLSX.readFile` CSV'lerde
+  Türkçe karakterleri (UTF-8) yanlış algılıyordu - CSV için dosya
+  ÖNCE UTF-8 metin olarak okunup `XLSX.read(metin, {type:'string'})`
+  ile veriliyor artık (bbhb.import.js ve cks.import.js'te de aynı
+  düzeltme yapıldı).
+
+- **Mevzuat** (`backend/modules/mevzuat/`) — mevzuat.gov.tr'den
+  otomatik içerik çekme, PDF yükleme, haftalık (Pazartesi 04:00)
+  değişiklik kontrolü, sürüm geçmişi, jsdiff ile kelime-bazlı fark
+  görünümü. **KRİTİK ÖĞRENİLEN DERS:** bedesten.adalet.gov.tr API'si
+  bazı belgeleri HTML değil HAM PDF baytları olarak döndürüyor -
+  `mevzuat.gov-cek.js` içeriği "%PDF-" imzasına göre kontrol eder,
+  PDF ise diske kaydedip `pdf-parse`(v2 - sınıf tabanlı API,
+  `new PDFParse({data}).getText()`) ile metin çıkarır. Bu kontrol
+  YAPILMADAN önce icerik doğrudan UTF-8'e çevriliyordu ve okunmaz
+  çöp üretiyordu.
+
+- **Türkçe arama kök nedeni** (`yerlesim.service.js`) — MongoDB'nin
+  `$regex` + `'i'` seçeneği Türkçe karakterlerde (ı/İ/ş/ğ) TAM
+  Unicode büyük-küçük harf katlaması YAPMIYOR (PCRE varsayılan olarak
+  sadece ASCII katlıyor). Bu yüzden Türkçe metin araması gereken HER
+  YERDE MongoDB regex yerine, veriyi belleğe alıp
+  `toLocaleLowerCase('tr-TR')` ile JS tarafında filtrelemek gerekiyor
+  (bkz. `aramaOnbellegi` deseni). Gelecekte benzer bir arama
+  eklenirse bu deseni tekrar kullan, Mongo regex'e güvenme.
+
+- **Dosya adı standardı** — `reporting/sablonlar/rapor-dosya-adi.js`
+  artık BBHB/ÇKS/Ek-4ab'nin TÜMÜNDE kullanılıyor. Yeni bir rapor
+  modülü eklenirken bu dosyadaki `raporDosyaAdiOlustur`/
+  `contentDispositionDegeri` fonksiyonları kullanılmalı, elle
+  Content-Disposition yazılmamalı (Türkçe karakter/RFC 5987 kodlaması
+  zaten çözülmüş durumda).
+
+**Test edilemeyen kısım:** `mevzuat.gov-cek.js`'nin gerçek
+bedesten.adalet.gov.tr çağrıları - geliştirme kum havuzunun ağ
+erişimi bu alan adına kapalı, sadece taklit edilmiş (mock) fetch
+yanıtlarıyla test edildi. Canlı ortamda ilk kullanımda doğrulanmalı.
+
+Sıradaki adaylar: Personel Yönetimi'nde Kullanıcılar + İl Mera
+Komisyonu Üyeleri bölümleri, Ek-4ab'nin Word/PDF çıktısı, Tahsis
+modülünün geri kalanı (Ek-4ab zaten temelini attı).
