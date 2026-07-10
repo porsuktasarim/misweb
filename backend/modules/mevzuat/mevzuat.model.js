@@ -20,6 +20,7 @@ const surumSchema = new mongoose.Schema(
   {
     icerik: String,           // o anki (degisiklikten ONCEKI) duz metin
     htmlIcerik: String,
+    pdfDosyaYolu: String,      // eger o surum PDF formatindaysa (bkz. mevzuat.gov-cek.js PDF tespiti)
     kaynakHash: String,
     degisiklikNotu: String,
     kontrolTarihi: Date,

@@ -4,8 +4,24 @@
 
 const crypto = require('crypto');
 const fs = require('fs/promises');
+const path = require('path');
 const Mevzuat = require('./mevzuat.model');
 const { mevzuatGovCek } = require('./mevzuat.gov-cek');
+
+const PDF_KLASORU = 'uploads/mevzuat';
+
+/**
+ * mevzuat.gov.tr'den PDF FORMATINDA gelen icerigi (bkz. mevzuat.gov-cek.js
+ * PDF tespiti) yerel diske kaydeder - established multer/uploads deseniyle
+ * AYNI klasor kullanilir.
+ */
+async function pdfBufferıDiskeKaydet(buffer, ad) {
+  await fs.mkdir(PDF_KLASORU, { recursive: true });
+  const dosyaAdi = `${Date.now()}-${Math.round(Math.random() * 1e9)}.pdf`;
+  const dosyaYolu = path.join(PDF_KLASORU, dosyaAdi);
+  await fs.writeFile(dosyaYolu, buffer);
+  return dosyaYolu;
+}
 
 async function listele({ tur, ara } = {}) {
   const filtre = { aktif: true };
@@ -24,6 +40,12 @@ async function getir(id) {
 
 async function ekleMevzuatGov({ ad, tur, konu, etiketler, mevzuatGovUrl }) {
   const cekilen = await mevzuatGovCek(mevzuatGovUrl);
+
+  let pdfDosyaYolu;
+  if (cekilen.pdfBuffer) {
+    pdfDosyaYolu = await pdfBufferıDiskeKaydet(cekilen.pdfBuffer, ad || cekilen.ad);
+  }
+
   return Mevzuat.create({
     ad: ad || cekilen.ad,
     tur,
@@ -38,6 +60,7 @@ async function ekleMevzuatGov({ ad, tur, konu, etiketler, mevzuatGovUrl }) {
     resmiGazeteSayisi: cekilen.resmiGazeteSayisi,
     kaynakHash: cekilen.hash,
     sonKontrol: new Date(),
+    ...(pdfDosyaYolu ? { pdfDosyaYolu } : {}),
   });
 }
 
@@ -83,15 +106,26 @@ async function tekKayitKontrolEt(kayit, degisiklikNotu) {
   const yeniHash = cekilen.hash;
 
   if (yeniHash && yeniHash !== kayit.kaynakHash) {
+    // Eski surumu (PDF dosyasi dahil) arsivle - dosya SILINMEZ, referans tasinir
     kayit.surumler.push({
       icerik: kayit.icerik,
       htmlIcerik: kayit.htmlIcerik,
+      pdfDosyaYolu: kayit.pdfDosyaYolu,
       kaynakHash: kayit.kaynakHash,
       degisiklikNotu,
       kontrolTarihi: new Date(),
     });
-    kayit.icerik = cekilen.metinIcerik;
-    kayit.htmlIcerik = cekilen.htmlIcerik;
+
+    if (cekilen.pdfBuffer) {
+      kayit.pdfDosyaYolu = await pdfBufferıDiskeKaydet(cekilen.pdfBuffer, kayit.ad);
+      kayit.icerik = cekilen.metinIcerik; // PDF'ten cikarilan metin (arama/fark icin)
+      kayit.htmlIcerik = '';
+    } else {
+      kayit.icerik = cekilen.metinIcerik;
+      kayit.htmlIcerik = cekilen.htmlIcerik;
+      kayit.pdfDosyaYolu = undefined;
+    }
+
     kayit.kaynakHash = yeniHash;
     kayit.guncellemeBekliyor = true;
     kayit.guncellemeTarihi = new Date();

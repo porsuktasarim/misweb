@@ -105,9 +105,14 @@ async function mevzuatGovCek(url) {
   const resmiGazeteTarihi = belge.resmiGazeteTarihi ? new Date(belge.resmiGazeteTarihi) : null;
   if (!mevzuatId) throw new Error('Mevzuat kimliği (ID) bulunamadı.');
 
-  // 2. Adim: icerigi cek (base64 HTML)
+  // 2. Adim: icerigi cek. ONEMLI: bedesten API bazi belgeleri (orn.
+  // bazi Yonetmelik/Teblig turleri) HTML DEGIL, HAM PDF baytlari
+  // olarak donduruyor. Bunu HTML sanip dogrudan UTF-8'e cevirmek
+  // BOZUK/OKUNMAZ metin uretiyordu (kullanicinin karsilastigi sorun).
+  // Bu yuzden once PDF imzasini ("%PDF" ile baslar mi) kontrol ediyoruz.
   let htmlIcerik = '';
   let metinIcerik = '';
+  let pdfBuffer = null;
   const icerikYaniti = await fetch(`${BEDESTEN_BASE}/getDocumentContent`, {
     method: 'POST', headers: HEADERS,
     body: JSON.stringify({ data: { documentType: 'MEVZUAT', id: mevzuatId }, applicationName: 'UyapMevzuat' }),
@@ -117,17 +122,39 @@ async function mevzuatGovCek(url) {
     const icerikSonucu = await icerikYaniti.json();
     const base64Icerik = icerikSonucu?.data?.content;
     if (base64Icerik) {
-      htmlIcerik = Buffer.from(base64Icerik, 'base64').toString('utf-8');
-      metinIcerik = htmldenMetneCevir(htmlIcerik);
+      const hamBuffer = Buffer.from(base64Icerik, 'base64');
+      const pdfMi = hamBuffer.slice(0, 5).toString('ascii') === '%PDF-';
+
+      if (pdfMi) {
+        pdfBuffer = hamBuffer;
+        // PDF'ten METIN CIKAR (fark/diff karsilastirmasi ve arama icin) -
+        // ham PDF baytlarini asla dogrudan metin gibi kullanma.
+        // NOT: pdf-parse v2+ sinif tabanli API kullanir (eski surumdeki
+        // dogrudan fonksiyon cagrisi ARTIK CALISMAZ).
+        try {
+          const { PDFParse } = require('pdf-parse');
+          const parser = new PDFParse({ data: hamBuffer });
+          const ayiklanan = await parser.getText();
+          metinIcerik = (ayiklanan.text || '').replace(/\s+/g, ' ').trim().slice(0, 200000);
+        } catch (e) {
+          console.error('[Mevzuat] PDF metin çıkarma hatası:', e.message);
+        }
+      } else {
+        htmlIcerik = hamBuffer.toString('utf-8');
+        metinIcerik = htmldenMetneCevir(htmlIcerik);
+      }
     }
   }
   // Icerik cekilemese bile ad/tarih varsa devam - en azindan kayit olusturulabilsin
 
-  const hash = crypto.createHash('md5').update(metinIcerik || mevzuatId).digest('hex');
+  // Hash: METIN varsa ondan, yoksa (metin cikarma basarisiz oldugunda)
+  // PDF baytlarindan hesaplanir - degisiklik tespiti her durumda calisir.
+  const hashKaynagi = metinIcerik || (pdfBuffer ? pdfBuffer.toString('base64') : mevzuatId);
+  const hash = crypto.createHash('md5').update(hashKaynagi).digest('hex');
 
   return {
     ad, htmlIcerik: htmlIcerik.slice(0, 500000), metinIcerik, hash,
-    resmiGazeteTarihi, resmiGazeteSayisi, mevzuatNo,
+    resmiGazeteTarihi, resmiGazeteSayisi, mevzuatNo, pdfBuffer,
   };
 }
 

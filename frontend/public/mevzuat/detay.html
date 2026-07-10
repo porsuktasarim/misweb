@@ -123,7 +123,10 @@
 
     function renderIcerik() {
       const el = document.getElementById('icerikAlani');
-      if (mevzuat.icerikTipi === 'pdf') {
+      // ONEMLI: icerikTipi='mevzuat_gov' olsa bile belge PDF formatinda
+      // gelmis olabilir (bkz. mevzuat.gov-cek.js PDF tespiti) - bu yuzden
+      // once pdfDosyaYolu varligina bakiyoruz, icerikTipi'ne degil.
+      if (mevzuat.pdfDosyaYolu) {
         el.innerHTML = `<iframe id="pdf-viewer" src="${API}/${id}/pdf" title="${mevzuat.ad}"></iframe>`;
       } else if (mevzuat.htmlIcerik) {
         el.innerHTML = `<div class="metin-icerik">${mevzuat.htmlIcerik}</div>`;

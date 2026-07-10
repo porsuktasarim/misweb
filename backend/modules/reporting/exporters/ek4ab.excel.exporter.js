@@ -252,12 +252,15 @@ async function contractToEk4abExcel(ek4ab) {
     ekipAdiRow.getCell(1).font = { ...ekipAdiRow.getCell(1).font, size: 10 };
 
     const gruplar = imzaGruplariniOlustur(ek4ab.imzacilar);
-    const SUTUN_GENISLIGI_TEK_KISI = Math.round(SON_SUTUN / 4); // sola yaslı tekil imzaci icin dar alan
+    const SUTUN_GENISLIGI_TEK_KISI = Math.round(SON_SUTUN / 4); // tekil imzaci icin 4 esit parcadan İLKİ
 
     gruplar.forEach((grup, grupIndex) => {
       const n = grup.length;
       const sonGrupMu = grupIndex === gruplar.length - 1;
-      const tekKisiSolaYasli = sonGrupMu && n === 1;
+      // DUZELTME: "sola yaslı" ilk basta yanlis anlasilmisti - dogrusu:
+      // 4 esit parcaya bolunen alanin ILK CEYREGINDE, o ceyrek icinde
+      // ORTALANARAK gosterilsin (tam kenara yapismasin).
+      const tekKisiIlkCeyrekte = sonGrupMu && n === 1;
 
       // 3 satirlik imza boslugu - ORTADAKI satirda %25 opaklik gri "İMZA"
       const bosluk1 = sheet.addRow([]);
@@ -269,16 +272,15 @@ async function contractToEk4abExcel(ek4ab) {
       const ekUnvanRow = sheet.addRow([]);
 
       grup.forEach((imzaci, i) => {
-        let baslaSutun, bitisSutun, align;
-        if (tekKisiSolaYasli) {
+        let baslaSutun, bitisSutun;
+        if (tekKisiIlkCeyrekte) {
           baslaSutun = 1;
           bitisSutun = SUTUN_GENISLIGI_TEK_KISI;
-          align = 'left';
         } else {
           baslaSutun = Math.floor((i * SON_SUTUN) / n) + 1;
           bitisSutun = Math.max(Math.floor(((i + 1) * SON_SUTUN) / n), baslaSutun);
-          align = 'center';
         }
+        const align = 'center'; // her iki durumda da kendi alaninin ortasinda
 
         birlesikYaz(sheet, { satirBas: bosluk1.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: '', kenarsiz: true });
         birlesikYaz(sheet, { satirBas: bosluk2.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: 'İMZA', kenarsiz: true, renk: IMZA_FILIGRAN_RENK, bold: true, align });
