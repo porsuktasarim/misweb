@@ -264,7 +264,6 @@ async function contractToExcel(contract) {
     const row = sheet.addRow([paragraf]);
     sheet.mergeCells(`A${row.number}:${sutunHarfi(sheet, TOPLAM_SUTUN_INDEX)}${row.number}`);
     hucreStil(row.getCell(1), { align: 'left' });
-    row.height = 24;
   }
 
   sheet.eachRow((row) => {

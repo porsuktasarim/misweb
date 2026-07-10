@@ -64,6 +64,7 @@ async function contractToCksExcel(cks) {
 
   // ---- BAŞLIK ----
   const r1 = sheet.addRow(['( Ek-4/a )']);
+  sheet.mergeCells(`A${r1.number}:${sutunHarfi(sheet, TOPLAM_SUTUN)}${r1.number}`);
   hucreStil(r1.getCell(1), { align: 'left', bold: true });
   const r2 = sheet.addRow(['TESPİT VE TAHDİT ÇALIŞMALARINA ESAS OLAN']);
   sheet.mergeCells(`A${r2.number}:${sutunHarfi(sheet, TOPLAM_SUTUN)}${r2.number}`);
@@ -75,7 +76,9 @@ async function contractToCksExcel(cks) {
 
   [['İli', cks.il], ['İlçesi', cks.ilce], ['Köyü/Mahalle', cks.koyMahalle], ...(cks.uretimYili ? [['Üretim Yılı', cks.uretimYili]] : [])].forEach(([etiket, deger]) => {
     const row = sheet.addRow([etiket, '', deger]);
+    sheet.mergeCells(`A${row.number}:B${row.number}`);
     hucreStil(row.getCell(1), { bold: true, align: 'left' });
+    sheet.mergeCells(`C${row.number}:${sutunHarfi(sheet, TOPLAM_SUTUN)}${row.number}`);
     hucreStil(row.getCell(3), { align: 'left' });
   });
   sheet.addRow([]);
