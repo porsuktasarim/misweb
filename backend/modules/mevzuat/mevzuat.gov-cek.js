@@ -60,22 +60,45 @@ async function mevzuatGovCek(url) {
 
   const bedestenTur = mevzuatTur ? TUR_HARITASI[mevzuatTur] : null;
 
-  // 1. Adim: mevzuat no ile ara -> ID bul
-  const aramaGovdesi = {
-    data: { mevzuatNo, pageSize: 5, pageNumber: 1, sortFields: ['RESMI_GAZETE_TARIHI'], sortDirection: 'desc', ...(bedestenTur ? { mevzuatTurList: [bedestenTur] } : {}) },
-    applicationName: 'UyapMevzuat',
-    paging: true,
-  };
+  /** searchDocuments cagrisini yapar, {data:{mevzuatList}} icindeki listeyi dondurur */
+  async function ara(turFiltresiUygula) {
+    const govde = {
+      data: {
+        mevzuatNo, pageSize: 10, pageNumber: 1,
+        sortFields: ['RESMI_GAZETE_TARIHI'], sortDirection: 'desc',
+        ...(turFiltresiUygula && bedestenTur ? { mevzuatTurList: [bedestenTur] } : {}),
+      },
+      applicationName: 'UyapMevzuat',
+      paging: true,
+    };
+    const yanit = await fetch(`${BEDESTEN_BASE}/searchDocuments`, {
+      method: 'POST', headers: HEADERS, body: JSON.stringify(govde), signal: AbortSignal.timeout(20000),
+    });
+    if (!yanit.ok) throw new Error(`mevzuat.gov.tr araması başarısız (HTTP ${yanit.status})`);
+    const sonuc = await yanit.json();
+    return sonuc?.data?.mevzuatList || [];
+  }
 
-  const aramaYaniti = await fetch(`${BEDESTEN_BASE}/searchDocuments`, {
-    method: 'POST', headers: HEADERS, body: JSON.stringify(aramaGovdesi), signal: AbortSignal.timeout(20000),
-  });
-  if (!aramaYaniti.ok) throw new Error(`mevzuat.gov.tr araması başarısız (HTTP ${aramaYaniti.status})`);
-  const aramaSonucu = await aramaYaniti.json();
-  const belgeler = aramaSonucu?.data?.mevzuatList || [];
+  // 1. Adim: mevzuat no + tur ile ara. TUR KODU ESLEMESI HER ZAMAN
+  // GUVENILIR OLMAYABILIR (mevzuat.gov.tr'nin ic tur siniflandirmasi
+  // URL'deki MevzuatTur parametresiyle birebir orusmeyebilir) - bu
+  // yuzden sonuc BOS gelirse, TUR FILTRESI OLMADAN (sadece mevzuat no
+  // ile) genis bir aramayla TEKRAR deneniyor.
+  let belgeler = bedestenTur ? await ara(true) : await ara(false);
+  if (belgeler.length === 0 && bedestenTur) {
+    belgeler = await ara(false);
+  }
   if (belgeler.length === 0) throw new Error(`${mevzuatNo} numaralı mevzuat bulunamadı.`);
 
-  const belge = belgeler[0];
+  // Birden fazla sonuc varsa (turSuz genis aramada olabilir), URL'deki
+  // turle ESLESEN kaydi ONCELIKLENDIR - yoksa ilkini (tarihe gore en
+  // guncel) kullan.
+  let belge = belgeler[0];
+  if (belgeler.length > 1 && bedestenTur) {
+    const turEslesen = belgeler.find((b) => (b.mevzuatTur || b.tur || '').toString().toUpperCase() === bedestenTur);
+    if (turEslesen) belge = turEslesen;
+  }
+
   const mevzuatId = belge.id || belge.mevzuatId;
   const ad = belge.mevzuatAdi || belge.ad || '';
   const resmiGazeteSayisi = belge.resmiGazeteSayisi || '';
