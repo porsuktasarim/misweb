@@ -6,12 +6,14 @@ const { raporUret } = require('./report.builder');
 const bbhbService = require('../bbhb/bbhb.service');
 const ekgbService = require('../ekgb/ekgb.service');
 const cksService = require('../cks/cks.service');
+const ek4abService = require('../ek4ab/ek4ab.service');
 const { contractToEkgbExcel } = require('./exporters/ekgb.excel.exporter');
 const { contractToEkgbWord } = require('./exporters/ekgb.word.exporter');
 const { contractToEkgbPdf } = require('./exporters/ekgb.pdf.exporter');
 const { contractToCksExcel } = require('./exporters/cks.excel.exporter');
 const { contractToCksWord } = require('./exporters/cks.word.exporter');
 const { contractToCksPdf } = require('./exporters/cks.pdf.exporter');
+const { contractToEk4abExcel } = require('./exporters/ek4ab.excel.exporter');
 const lang = require('../../../config/lang/tr');
 
 const ICERIK_TIPLERI = {
@@ -108,4 +110,23 @@ async function cksRaporHandler(req, res) {
   }
 }
 
-module.exports = { bbhbRaporHandler, ekgbRaporHandler, cksRaporHandler };
+async function ek4abRaporHandler(req, res) {
+  try {
+    const { id, format } = req.params;
+    if (format !== 'excel') {
+      return res.status(400).json({ success: false, data: null, message: 'Şu an sadece Excel formatı destekleniyor' });
+    }
+    const ek4abSonuc = await ek4abService.sonucuGetir(id);
+    const buffer = await contractToEk4abExcel(ek4abSonuc);
+
+    res.setHeader('Content-Type', ICERIK_TIPLERI.excel.contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="Ek4ab-${id}.xlsx"`);
+    return res.send(buffer);
+  } catch (err) {
+    return res
+      .status(400)
+      .json({ success: false, data: null, message: err.message || lang.ortak.hataOlustu });
+  }
+}
+
+module.exports = { bbhbRaporHandler, ekgbRaporHandler, cksRaporHandler, ek4abRaporHandler };
