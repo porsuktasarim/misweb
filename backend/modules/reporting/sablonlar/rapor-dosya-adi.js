@@ -3,10 +3,9 @@
  *
  * Indirilen rapor dosyalarinin adini TEK KAYNAKTAN uretir.
  * Format: {onEk}_{il}_{ilce}_{koyMahalle}_{tarih}_{rastgele}.{uzanti}
- *   - BBHB   -> onEk = "bbhb"   (TEK alt cizgi)
- *   - CKS    -> onEk = "cks_"   (bilerek CIFT alt cizgi - kullanicinin
- *                                acik talebi, TUM raporlarda birebir uygulandi)
- *   - Ek-4ab -> onEk = "4ab_"   (ayni sekilde CIFT alt cizgi)
+ *   - BBHB   -> onEk = "bbhb"  (TEK alt cizgi)
+ *   - CKS    -> onEk = "cks"   (TEK alt cizgi)
+ *   - Ek-4ab -> onEk = "4ab"   (TEK alt cizgi)
  *
  * Tarihten sonra rastgele bir parca eklenir (ayni raporun birden fazla
  * kez indirilmesinde dosya adi CAKISMASIN diye).
@@ -50,7 +49,7 @@ function tarihParcasi() {
  * @returns {{ascii: string, utf8: string}} - Content-Disposition icin iki varyant
  */
 function raporDosyaAdiOlustur(tip, konum, uzanti) {
-  const onEkHaritasi = { bbhb: 'bbhb', cks: 'cks_', '4ab': '4ab_' };
+  const onEkHaritasi = { bbhb: 'bbhb', cks: 'cks', '4ab': '4ab' };
   const onEk = onEkHaritasi[tip] || tip;
 
   const parcalar = [onEk, parcaTemizle(konum.il), parcaTemizle(konum.ilce), parcaTemizle(konum.koyMahalle), tarihParcasi(), rastgeleParca()];

@@ -6,6 +6,7 @@ const { birlestir } = require('./ek4ab.core');
 const bbhbService = require('../bbhb/bbhb.service');
 const cksService = require('../cks/cks.service');
 const teknikEkipService = require('../personel/teknikEkip.service');
+const { imzaSirasinaDiz } = require('../personel/personel.kurumlar');
 const Ek4abSonuc = require('./ek4ab.model');
 
 /**
@@ -42,7 +43,12 @@ async function onizlemeOlustur({ bbhbSonucId, bbhbBolumIndex = 0, cksSonucId, te
       return uyeMahallesi === raporMahallesi;
     });
 
-    imzacilar = uygunUyeler.map((u) => ({
+    // Belediye Baskanligi'nin BUYUKSEHIR/ZIRAAT MUHENDISI durumuna gore
+    // erken/gec siraya konabilmesi icin secilenYer/unvan burada tasinir
+    // (siralama sonrasi ciktida sadece adSoyad/unvan/kurumKod/imzaKurumMetni kalir).
+    const siraliUyeler = imzaSirasinaDiz(uygunUyeler);
+
+    imzacilar = siraliUyeler.map((u) => ({
       adSoyad: u.adSoyad,
       unvan: u.unvan,
       kurumKod: u.kurumKod,

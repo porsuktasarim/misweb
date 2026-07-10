@@ -26,6 +26,7 @@
 const ExcelJS = require('exceljs');
 const { SUTUN_HARITASI } = require('../sablonlar/bbhb-tablo-semasi');
 const { cmSutunGenisligi, cmSatirYuksekligiPuan } = require('../sablonlar/excel-birimler');
+const { imzaGruplariniOlustur } = require('../../personel/imza-gruplama');
 
 const YAZI_TIPI = 'Times New Roman';
 const YAZI_BOYUTU = 7;
@@ -250,10 +251,13 @@ async function contractToEk4abExcel(ek4ab) {
     hucreStil(ekipAdiRow.getCell(1), { bold: true, align: 'left', kenarsiz: true });
     ekipAdiRow.getCell(1).font = { ...ekipAdiRow.getCell(1).font, size: 10 };
 
-    const MAX_IMZACI_SATIR_BASI = 4;
-    for (let baslangic = 0; baslangic < ek4ab.imzacilar.length; baslangic += MAX_IMZACI_SATIR_BASI) {
-      const grup = ek4ab.imzacilar.slice(baslangic, baslangic + MAX_IMZACI_SATIR_BASI);
+    const gruplar = imzaGruplariniOlustur(ek4ab.imzacilar);
+    const SUTUN_GENISLIGI_TEK_KISI = Math.round(SON_SUTUN / 4); // sola yaslı tekil imzaci icin dar alan
+
+    gruplar.forEach((grup, grupIndex) => {
       const n = grup.length;
+      const sonGrupMu = grupIndex === gruplar.length - 1;
+      const tekKisiSolaYasli = sonGrupMu && n === 1;
 
       // 3 satirlik imza boslugu - ORTADAKI satirda %25 opaklik gri "İMZA"
       const bosluk1 = sheet.addRow([]);
@@ -265,20 +269,28 @@ async function contractToEk4abExcel(ek4ab) {
       const ekUnvanRow = sheet.addRow([]);
 
       grup.forEach((imzaci, i) => {
-        const baslaSutun = Math.floor((i * SON_SUTUN) / n) + 1;
-        const bitisSutun = Math.max(Math.floor(((i + 1) * SON_SUTUN) / n), baslaSutun);
+        let baslaSutun, bitisSutun, align;
+        if (tekKisiSolaYasli) {
+          baslaSutun = 1;
+          bitisSutun = SUTUN_GENISLIGI_TEK_KISI;
+          align = 'left';
+        } else {
+          baslaSutun = Math.floor((i * SON_SUTUN) / n) + 1;
+          bitisSutun = Math.max(Math.floor(((i + 1) * SON_SUTUN) / n), baslaSutun);
+          align = 'center';
+        }
 
         birlesikYaz(sheet, { satirBas: bosluk1.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: '', kenarsiz: true });
-        birlesikYaz(sheet, { satirBas: bosluk2.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: 'İMZA', kenarsiz: true, renk: IMZA_FILIGRAN_RENK, bold: true });
+        birlesikYaz(sheet, { satirBas: bosluk2.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: 'İMZA', kenarsiz: true, renk: IMZA_FILIGRAN_RENK, bold: true, align });
         birlesikYaz(sheet, { satirBas: bosluk3.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: '', kenarsiz: true });
-        birlesikYaz(sheet, { satirBas: adRow.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: imzaci.adSoyad || '', kenarsiz: true, bold: true });
-        birlesikYaz(sheet, { satirBas: unvanRow.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: imzaci.unvan || '', kenarsiz: true, bold: false });
-        birlesikYaz(sheet, { satirBas: kurumRow.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: imzaci.imzaKurumMetni || '', kenarsiz: true, bold: false });
+        birlesikYaz(sheet, { satirBas: adRow.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: imzaci.adSoyad || '', kenarsiz: true, bold: true, align });
+        birlesikYaz(sheet, { satirBas: unvanRow.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: imzaci.unvan || '', kenarsiz: true, bold: false, align });
+        birlesikYaz(sheet, { satirBas: kurumRow.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: imzaci.imzaKurumMetni || '', kenarsiz: true, bold: false, align });
 
         const ekUnvan = EK_UNVAN_HARITASI[imzaci.kurumKod] || '';
-        birlesikYaz(sheet, { satirBas: ekUnvanRow.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: ekUnvan, kenarsiz: true, bold: false });
+        birlesikYaz(sheet, { satirBas: ekUnvanRow.number, sutunBas: baslaSutun, sutunSon: bitisSutun, metin: ekUnvan, kenarsiz: true, bold: false, align });
       });
-    }
+    });
   }
 
   sheet.eachRow((row) => {

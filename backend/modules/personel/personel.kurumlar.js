@@ -92,4 +92,50 @@ function imzaKurumMetniOlustur(kurumKod, girdi = {}) {
   }
 }
 
-module.exports = { KURUMLAR, BUYUKSEHIR_ILLERI, kurumBul, imzaKurumMetniOlustur };
+function ziraatMuhendisiMi(unvan) {
+  return /ziraat\s*(y[üu]ksek\s*)?m[üu]hendis/i.test(String(unvan || ''));
+}
+
+function buyuksehirMi(il) {
+  return BUYUKSEHIR_ILLERI.includes(String(il || '').toLocaleUpperCase('tr-TR'));
+}
+
+/**
+ * Ek-4ab imza blogu icin ONCELIK SIRASI (kucuk sayi = once gelir):
+ *   0: İl Tarım ve Orman Müdürlüğü
+ *   1: İlçe Tarım ve Orman Müdürlüğü
+ *   2: Büyükşehir Belediyesi'nden katılan ZİRAAT MÜHENDİSİ (varsa erken sırada)
+ *   3: Kadastro Müdürlüğü
+ *   4: Milli Emlak (Dairesi Başkanlığı / Müdürlüğü) + Emlak Müdürlüğü
+ *   5: Orman (Bölge / İşletme Müdürlüğü)
+ *   6: Diğer Belediye Başkanlığı (ilçe belediyesi VEYA büyükşehirden
+ *      katılan ama ziraat mühendisi OLMAYAN kişi)
+ *   7: Muhtarlık
+ *   8: Mahalli Bilirkişi
+ * Ayni oncelikteki kisiler arasinda GIRIS SIRASI korunur (stabil siralama).
+ */
+function imzaOncelikSirasi(uye) {
+  if (uye.kurumKod === 'ilTarimOrman') return 0;
+  if (uye.kurumKod === 'ilceTarimOrman') return 1;
+  if (uye.kurumKod === 'belediyeBaskanligi') {
+    const yer = uye.secilenYer;
+    const erkenBuyuksehirZiraat = yer && yer.tip === 'il' && buyuksehirMi(yer.il) && ziraatMuhendisiMi(uye.unvan);
+    return erkenBuyuksehirZiraat ? 2 : 6;
+  }
+  if (uye.kurumKod === 'kadastroMudurlugu') return 3;
+  if (['milliEmlakDairesi', 'emlakMudurlugu', 'milliEmlakMudurlugu'].includes(uye.kurumKod)) return 4;
+  if (['ormanBolgeMudurlugu', 'ormanIsletmeMudurlugu'].includes(uye.kurumKod)) return 5;
+  if (uye.kurumKod === 'muhtarlik') return 7;
+  if (uye.kurumKod === 'mahalliBilirkisi') return 8;
+  return 9;
+}
+
+/** Uye listesini imza sirasina gore DIZER (stabil - ayni oncelikte giris sirasi korunur) */
+function imzaSirasinaDiz(uyeler) {
+  return [...uyeler]
+    .map((uye, index) => ({ uye, index }))
+    .sort((a, b) => imzaOncelikSirasi(a.uye) - imzaOncelikSirasi(b.uye) || a.index - b.index)
+    .map(({ uye }) => uye);
+}
+
+module.exports = { KURUMLAR, BUYUKSEHIR_ILLERI, kurumBul, imzaKurumMetniOlustur, imzaSirasinaDiz };
