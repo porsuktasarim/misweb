@@ -140,3 +140,37 @@ Yeni eklenen dosyalar:
 Sıradaki adaylar: ÇKS modülü, Tahsis modülü, Tahmini Canlı Ağırlık/Kaba
 Yem/Mera Miktarı hesaplama bölümleri (formülleri henüz tanımlı değil),
 imzalı rapor çıktısı.
+
+## 10. Güncel Durum Notu (20. paket sonrası)
+
+BBHB'ye ek olarak 2 yeni bağımsız modül tamamlandı:
+
+- **EKGB** (`backend/modules/ekgb/`) — Eski Konumuna Getirme Bedeli.
+  `ekgb.kalemler.js` (25 sabit kalem), `ekgb.donem.model.js` +
+  `ekgb.donem.service.js` (dönemsel fiyat - EKLE/DÜZENLE var, SİL YOK),
+  `ekgb.core.js` (Excel formüllerinin birebir portu - gerçek dosyayla
+  santimine kadar doğrulandı). Rapor 2 sayfa: hesap+imza / açıklamalar.
+
+- **ÇKS** (`backend/modules/cks/`) — Çiftçi Kayıt Sistemi listesinden
+  Ek-4/a "Çiftçi Aile ve Geçim Kaynağı Bildirim Cetveli" üretir.
+  `cks.urun-siniflandirma.js` anahtar-kelime tabanlı otomatik
+  kategorilendirme yapar (Yem Bitkisi / Sebze-Meyve / Hububat-Yağlı
+  Tohumlar), bilinmeyen ürünler varsayılan kategoriye düşer ve
+  önizlemede uyarı gösterilir.
+
+- **`reporting/sablonlar/excel-birimler.js`** — Excel'in font-bağımlı
+  "karakter birimi" sütun genişliğini gerçek cm'ye çeviren ortak
+  dönüştürücü (BBHB + ÇKS Excel exporter'ları bunu kullanır, tüm
+  sütunlar 1cm, tüm satırlar 0.45cm standardında).
+
+**Öğrenilen kritik ders (ExcelJS):** Birleştirilmiş (merge) hücrelerde
+TÜM hücreler aynı stil nesnesini paylaşır — bir döngüyle her sütuna
+farklı stil (hizalama vb.) yazmaya çalışmak, son yazılanın öncekileri
+EZMESİNE yol açar. Kural: merge edilmiş bir alanda stil SADECE master
+(ilk/sol üst) hücreye, TEK SEFER uygulanmalı; döngüde diğer hücreler
+atlanmalı.
+
+Sıradaki adaylar: EKGB'nin ikinci hesaplama yöntemi, Tahmini Canlı
+Ağırlık/Kaba Yem/Mera Miktarı bölümleri, Personel ekleme ayar sayfası
+(EKGB/ÇKS imza bloklarının oradan seçime çevrilmesi için), Tahsis
+modülü.

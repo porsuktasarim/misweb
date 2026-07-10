@@ -23,6 +23,7 @@ const {
   kriterParagraflariOlustur,
   bolumBasligiMetni,
 } = require('../sablonlar/bbhb-tablo-semasi');
+const { cmSutunGenisligi, cmSatirYuksekligiPuan } = require('../sablonlar/excel-birimler');
 
 const RENK = {
   koyu: 'FF3F3F3C',
@@ -36,9 +37,9 @@ const RENK = {
 
 const YAZI_TIPI = 'Times New Roman';
 const YAZI_BOYUTU = 7;
-const SATIR_YUKSEKLIGI = 13;
+const SATIR_YUKSEKLIGI = cmSatirYuksekligiPuan(0.45); // "nokta" degil, gercek 0.45cm
 const BIR_CM_INC = 1 / 2.54;
-const SUTUN_GENISLIGI = 4.3;
+const SUTUN_GENISLIGI = cmSutunGenisligi(1); // gercek 1cm (Excel karakter birimine cevrilmis)
 
 const ISLETMECI_ADI_BASLANGIC = 2; // B
 const ISLETMECI_ADI_BITIS = 1 + ISLETMECI_ADI_SUTUN_SAYISI; // I (9)

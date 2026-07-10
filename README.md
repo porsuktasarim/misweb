@@ -11,67 +11,43 @@ cp .env.example .env
 npm run dev
 ```
 
-Docker/Coolify ile: repo kökündeki `docker-compose.yml` kullanılır
-(bkz. "Dağıtım" bölümü).
+Docker/Coolify ile: repo kökündeki `docker-compose.yml` kullanılır.
 
 ## Mimari
 
-Genel tasarım ilkeleri, katman ayrımı ve modül yapısı için bkz.
-[`docs/MIMARI_REHBERI.md`](docs/MIMARI_REHBERI.md).
+Genel tasarım ilkeleri için bkz. [`docs/MIMARI_REHBERI.md`](docs/MIMARI_REHBERI.md).
+Özetle: her hesaplama modülü bağımsız bir yetenek olarak tasarlanır -
+kendi ekranından çalışabilir, başka modüllerden fonksiyon çağrısıyla
+kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
 
-Özetle: her hesaplama modülü (BBHB, ileride ÇKS) bağımsız bir yetenek
-olarak tasarlanır - kendi ekranından çalışabilir, başka modüllerden
-fonksiyon çağrısıyla kullanılabilir, hesaplama mantığı HTTP/controller
-katmanından tamamen ayrıdır.
+## Modüller
 
-## Şu ana kadar tamamlanan: BBHB modülü
+- **BBHB** — Büyükbaş Hayvan Birimi hesaplama (manuel + Türkvet dosyası)
+- **EKGB** — Eski Konumuna Getirme Bedeli (dönemsel birim fiyat listesi,
+  eklenebilir/düzenlenebilir/silinemez)
+- **ÇKS** — Çiftçi Kayıt Sistemi'nden Ek-4/a "Çiftçi Aile ve Geçim
+  Kaynağı Bildirim Cetveli" üretimi (otomatik ürün sınıflandırma)
+- **Yerleşim** — İl/İlçe/Köy-Mahalle listesi (Ayarlar sayfasından
+  yönetilir, tüm modüllerde ZORUNLU seçim kaynağı)
 
-- **Hesaplama motoru** (`backend/modules/bbhb/`): 20 kategori (7 grup),
-  4342 sayılı Kanun esaslarına göre katsayı tablosu, sınıflandırma
-  kuralları (yaş/cinsiyet/ırk bazlı)
-- **Girdi yolları:**
-  - Manuel giriş: kategori başına adet girişi, ekranda her kategorinin
-    altında yaş/cinsiyet kuralı gösterilir
-  - Türkvet dosyası (.xls/.xlsx/.csv, çoklu dosya): sütun adına göre
-    esnek eşleştirme, il/ilçe/mahalle dosyadan otomatik okunur, birden
-    fazla mahalle varsa sonuç bölümlere ayrılır
-  - Yüklenen dosyalar işlem sonrası sunucuda **saklanmaz**
-- **Yaş hesaplama referansı:** hesaplamanın yapıldığı ayın 1. günü
-  (rapor açılış tarihi değil) - kayıtla birlikte sabitlenir, denetlenebilir
-- **Sonuç kayıtları:** immutable (değişmez), "Kayıtlı Sonuçlar"
-  sekmesinden görüntülenebilir/indirilebilir/silinebilir
+## Raporlama
 
-## Raporlama modülü
-
-Ortak bir veri sözleşmesi (`backend/modules/reporting/report.contract.js`)
-üzerinden çalışır - BBHB'ye özel değildir, ileride ÇKS de aynı altyapıyı
-kullanacaktır. Çıktı formatları:
-
-- **Excel** (ExcelJS): resmi Ek-4/ab tarzı tablo, gruplu başlıklar,
-  katsayı satırı, TOPLAM satırı, gri ton renk şeması, Times New Roman
-  8pt, 15pt satır yüksekliği, yatay sayfa, 1cm kenar boşluğu
-- **Word** (docx): Excel ile aynı tablo yapısı
-- **PDF** (PDFKit + gömülü DejaVu Serif font - Türkçe karakter desteği
-  için Times New Roman yerine kullanılıyor, bkz. mimari rehber)
-
-Üç format da `backend/modules/reporting/sablonlar/bbhb-tablo-semasi.js`
-dosyasındaki TEK ortak şemayı kullanır.
+Excel/Word/PDF - gri ton renk şeması, Times New Roman (PDF'te Türkçe
+karakter desteği için gömülü DejaVu Serif), 1cm kenar boşluğu, gerçek
+footer (sayfa numarası + konum bilgisi). Sütun/satır ölçüleri gerçek cm
+cinsinden (`reporting/sablonlar/excel-birimler.js` dönüştürücüsü ile).
 
 ## Arayüz
 
-`frontend/public/` altında statik HTML + Vanilla JS + Bootstrap 5.
-4 bölgeli uygulama kabuğu (marka / üst çubuk / ana menü / içerik + footer)
-`assets/js/shell.js` tarafından `assets/js/mis-menu.js`'teki tek menü
-tanımından otomatik kurulur - yeni bir modül eklendiğinde sadece
-`mis-menu.js`'e satır eklenir, mevcut sayfalara dokunulmaz.
+`frontend/public/` altında statik HTML + Vanilla JS + Bootstrap 5 + Tom
+Select (arama+seçim). 4 bölgeli uygulama kabuğu `assets/js/shell.js` +
+`assets/js/mis-menu.js`'ten otomatik kurulur.
 
 ## Dağıtım
 
-`Dockerfile` + `docker-compose.yml` ile Coolify üzerinde çalışacak
-şekilde yapılandırılmıştır (bkz. `docs/GITHUB_REHBERI.md` GitHub'a
-yükleme adımları için). Port: 4342.
+`Dockerfile` + `docker-compose.yml`, Coolify üzerinde. Port: 4342.
 
 ## Stack
 
 Node.js 20, Express.js, Mongoose 8, MongoDB 7, Bootstrap 5, Vanilla JS,
-ExcelJS, docx, pdfkit, xlsx (SheetJS), multer, Docker/Coolify.
+ExcelJS, docx, pdfkit, xlsx (SheetJS), multer, Tom Select, Docker/Coolify.
