@@ -208,7 +208,11 @@
       try {
         const res = await fetch('/api/mevzuat', { method: 'POST', body: formData });
         const json = await res.json();
-        if (!json.success) { sonucAlan.innerHTML = `<div class="text-danger small">${json.message}</div>`; return; }
+        if (!json.success) {
+          const guvenliMesaj = json.message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          sonucAlan.innerHTML = `<div class="text-danger small" style="white-space:pre-line;">${guvenliMesaj}</div>`;
+          return;
+        }
         sonucAlan.innerHTML = '<div class="text-success small">Eklendi.</div>';
         setTimeout(() => { window.location.href = `/mevzuat/detay.html?id=${json.data._id}`; }, 600);
       } catch (err) {
