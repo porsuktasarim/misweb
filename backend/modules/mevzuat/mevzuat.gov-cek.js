@@ -52,6 +52,10 @@ const HEADERS = {
  * ise, hemen sonrasinda YENI BIR MADDE baslamiyorsa sadece satir
  * kaydirma ARTEFAKTIDIR - BOSLUKLA degistirilip metin DOGAL AKMASI
  * saglanir (Turkce mevzuat yazim kurallarina uygun, akici govde).
+ * AYNI KURAL <p>/<div> BLOK ELEMANLARI ICIN DE UYGULANIR (orn.
+ * basliklarin "<p>MERA</p><p>KANUNU</p>" gibi kelime kelime AYRI
+ * bloklara bolunmesi) - onceki blok NOKTALAMA ILE BITMIYORSA devam
+ * ettigi varsayilip birlestirilir.
  */
 function htmlDuzenle(html) {
   let temiz = html
@@ -73,6 +77,20 @@ function htmlDuzenle(html) {
   });
 
   temiz = temiz.split(PARAGRAF_YERTUTUCU).join('<br/><br/>');
+
+  // --- BLOK ELEMAN (p/div) SINIRLARI: BASLIKLAR gibi kisa metin
+  // parcalarinin AYRI blok elemanlara bolunmesi de AYNI "yapay
+  // kirilma" sorununu yaratiyor (orn. "<p>MERA</p><p>KANUNU</p>" ->
+  // ekranda "MERA" ve "KANUNU" AYRI SATIRLARDA gorunur). Kural: onceki
+  // blogun metni NOKTALAMA ILE BITMIYORSA (., :, ;, !, ?) ayni
+  // cumlenin/basligin DEVAMI kabul edilip BOSLUKLA birlestirilir;
+  // noktalama ile bitiyorsa GERCEK blok sonu oldugu icin DOKUNULMAZ.
+  temiz = temiz.replace(/<\/(p|div)>\s*<\1[^>]*>/gi, (eslesme, etiket, ofset, tumMetin) => {
+    const oncekiMetin = tumMetin.slice(0, ofset).replace(/<[^>]+>/g, '').trimEnd();
+    const sonKarakter = oncekiMetin.slice(-1);
+    const noktalamaVarMi = ['.', ':', ';', '!', '?'].includes(sonKarakter);
+    return noktalamaVarMi ? eslesme : ' ';
+  });
 
   // Hizalama icin eklenmis FAZLA bosluklari (2+) TEK bosluğa indir
   temiz = temiz.replace(/[ \t]{2,}/g, ' ');
