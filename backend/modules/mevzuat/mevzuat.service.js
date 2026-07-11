@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const fs = require('fs/promises');
 const path = require('path');
 const Mevzuat = require('./mevzuat.model');
-const { mevzuatGovCek } = require('./mevzuat.gov-cek');
+const { mevzuatGovAra, mevzuatIcerigiCek } = require('./mevzuat.gov-cek');
 
 const PDF_KLASORU = 'uploads/mevzuat';
 
@@ -21,6 +21,14 @@ async function pdfBufferıDiskeKaydet(buffer, ad) {
   const dosyaYolu = path.join(PDF_KLASORU, dosyaAdi);
   await fs.writeFile(dosyaYolu, buffer);
   return dosyaYolu;
+}
+
+/**
+ * mevzuat.gov.tr'de ARAMA yapar - ICERIK CEKMEZ, aday listesi dondurur.
+ * Frontend bu listeyi kullaniciya gosterip SECIM yaptirir.
+ */
+async function mevzuatGovArama({ url, resmiGazeteSayisi }) {
+  return mevzuatGovAra({ url, resmiGazeteSayisi });
 }
 
 async function listele({ tur, ara } = {}) {
@@ -38,26 +46,32 @@ async function getir(id) {
   return kayit;
 }
 
-async function ekleMevzuatGov({ ad, tur, konu, etiketler, mevzuatGovUrl }) {
-  const cekilen = await mevzuatGovCek(mevzuatGovUrl);
+/**
+ * SECILEN adayin (mevzuatGovId) icerigini cekip kaydeder.
+ * @param {object} veri - {ad, tur, konu, etiketler, mevzuatGovUrl, mevzuatGovId, aday:{ad,resmiGazeteTarihi,resmiGazeteSayisi,mevzuatNo}}
+ */
+async function ekleMevzuatGov({ ad, tur, konu, etiketler, mevzuatGovUrl, mevzuatGovId, aday }) {
+  if (!mevzuatGovId) throw new Error('Önce aday listesinden bir belge seçilmelidir.');
+  const cekilen = await mevzuatIcerigiCek(mevzuatGovId);
 
   let pdfDosyaYolu;
   if (cekilen.pdfBuffer) {
-    pdfDosyaYolu = await pdfBufferıDiskeKaydet(cekilen.pdfBuffer, ad || cekilen.ad);
+    pdfDosyaYolu = await pdfBufferıDiskeKaydet(cekilen.pdfBuffer, ad || (aday && aday.ad));
   }
 
   return Mevzuat.create({
-    ad: ad || cekilen.ad,
+    ad: ad || (aday && aday.ad) || '',
     tur,
     konu,
     etiketler: etiketler || [],
     icerikTipi: 'mevzuat_gov',
     mevzuatGovUrl,
+    mevzuatGovId,
     icerik: cekilen.metinIcerik,
     htmlIcerik: cekilen.htmlIcerik,
-    mevzuatNo: cekilen.mevzuatNo,
-    resmiGazeteTarihi: cekilen.resmiGazeteTarihi,
-    resmiGazeteSayisi: cekilen.resmiGazeteSayisi,
+    mevzuatNo: aday && aday.mevzuatNo,
+    resmiGazeteTarihi: aday && aday.resmiGazeteTarihi ? new Date(aday.resmiGazeteTarihi) : undefined,
+    resmiGazeteSayisi: aday && aday.resmiGazeteSayisi,
     kaynakHash: cekilen.hash,
     sonKontrol: new Date(),
     ...(pdfDosyaYolu ? { pdfDosyaYolu } : {}),
@@ -102,7 +116,13 @@ async function guncellemeyiOnayla(id) {
 
 /** Tek bir mevzuat_gov kaydini kontrol edip degisirse surumu arsivler */
 async function tekKayitKontrolEt(kayit, degisiklikNotu) {
-  const cekilen = await mevzuatGovCek(kayit.mevzuatGovUrl);
+  if (!kayit.mevzuatGovId) {
+    throw new Error('Bu kayıt eski bir sürümden kalma, mevzuatGovId eksik - yeniden eklenmesi gerekiyor.');
+  }
+  // ONEMLI: SECILEN belge kimligi (mevzuatGovId) zaten BILINDIGI icin
+  // burada TEKRAR ARAMA/BELIRSIZLIK YASANMAZ - dogrudan o belgenin
+  // GUNCEL icerigi cekilir.
+  const cekilen = await mevzuatIcerigiCek(kayit.mevzuatGovId);
   const yeniHash = cekilen.hash;
 
   if (yeniHash && yeniHash !== kayit.kaynakHash) {
@@ -152,7 +172,7 @@ async function manuelYenile(id) {
  */
 async function haftalikKontrol() {
   console.log('[Mevzuat] Haftalık kontrol başladı:', new Date().toLocaleString('tr-TR'));
-  const kayitlar = await Mevzuat.find({ icerikTipi: 'mevzuat_gov', aktif: true, mevzuatGovUrl: { $exists: true, $ne: '' } });
+  const kayitlar = await Mevzuat.find({ icerikTipi: 'mevzuat_gov', aktif: true, mevzuatGovId: { $exists: true, $ne: '' } });
 
   let degisenSayisi = 0;
   for (const kayit of kayitlar) {
@@ -181,6 +201,6 @@ async function istatistik() {
 }
 
 module.exports = {
-  listele, getir, ekleMevzuatGov, eklePdf, guncelle, sil,
+  listele, getir, mevzuatGovArama, ekleMevzuatGov, eklePdf, guncelle, sil,
   guncellemeyiOnayla, manuelYenile, haftalikKontrol, istatistik,
 };

@@ -74,33 +74,40 @@
         </div>
 
         <div id="alanMevzuatGov" class="mb-3">
-          <label class="form-label small fw-semibold">mevzuat.gov.tr URL'si *</label>
-          <input type="text" class="form-control form-control-sm" id="eMevzuatUrl" placeholder="https://www.mevzuat.gov.tr/mevzuat?MevzuatNo=4342&amp;MevzuatTur=1" />
-          <div class="form-text small">Ad, tarih ve sayı bilgisi otomatik doldurulmaya çalışılır - boş bırakabilirsin.</div>
+          <label class="form-label small fw-semibold d-block">Arama Şekli</label>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="aramaSekli" id="aramaUrl" value="url" checked />
+            <label class="form-check-label small" for="aramaUrl">mevzuat.gov.tr Bağlantısı</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="aramaSekli" id="aramaRg" value="rg" />
+            <label class="form-check-label small" for="aramaRg">Resmî Gazete Sayısı</label>
+          </div>
+
+          <div id="aramaAlaniUrl" class="mt-2">
+            <input type="text" class="form-control form-control-sm" id="eMevzuatUrl" placeholder="https://www.mevzuat.gov.tr/mevzuat?MevzuatNo=4342&amp;MevzuatTur=1" />
+          </div>
+          <div id="aramaAlaniRg" class="mt-2 d-none">
+            <input type="text" class="form-control form-control-sm" id="eRgSayisiArama" placeholder="Örn: 31234" />
+            <div class="form-text small">O sayıda yayımlanan tüm mevzuat listelenir, aralarından seçersin.</div>
+          </div>
+
+          <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="araBtn">Ara</button>
+          <div id="aramaSonucAlani" class="mt-2"></div>
         </div>
+
+        <div id="secilenBelgeOzeti" class="alert alert-success d-none py-2 small mb-3"></div>
 
         <div id="alanPdf" class="mb-3 d-none">
           <label class="form-label small fw-semibold">PDF Dosyası *</label>
           <input type="file" class="form-control form-control-sm" id="ePdf" accept=".pdf" />
         </div>
 
-        <div class="row g-2">
-          <div class="col-md-8"><label class="form-label small fw-semibold">Adı<span id="adZorunluIsareti"> *</span></label><input type="text" class="form-control form-control-sm" id="eAd" /></div>
-          <div class="col-md-4">
-            <label class="form-label small fw-semibold">Türü *</label>
-            <select class="form-select form-select-sm" id="eTur"></select>
-          </div>
-          <div class="col-md-3"><label class="form-label small fw-semibold">Mevzuat No</label><input type="text" class="form-control form-control-sm" id="eNo" /></div>
-          <div class="col-md-3"><label class="form-label small fw-semibold">R.G. Tarihi</label><input type="date" class="form-control form-control-sm" id="eRgTarih" /></div>
-          <div class="col-md-3"><label class="form-label small fw-semibold">R.G. Sayısı</label><input type="text" class="form-control form-control-sm" id="eRgSayi" /></div>
-          <div class="col-md-3"><label class="form-label small fw-semibold">Etiketler</label><input type="text" class="form-control form-control-sm" id="eEtiketler" placeholder="mera, tahsis" /></div>
-          <div class="col-12"><label class="form-label small fw-semibold">Konu</label><textarea class="form-control form-control-sm" id="eKonu" rows="2"></textarea></div>
-        </div>
-        <div id="ekleSonuc" class="mt-2"></div>
+        <div id="detayAlani" class="d-none"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">İptal</button>
-        <button class="btn btn-sm btn-primary" id="ekleKaydetBtn">Kaydet</button>
+        <button class="btn btn-sm btn-primary d-none" id="ekleKaydetBtn">Kaydet</button>
       </div>
     </div></div>
   </div>
@@ -112,7 +119,6 @@
     misKabuguBaslat('mevzuat', 'Mevzuat');
 
     const TURLER = ['Anayasa', 'Kanun', 'KHK', 'Tüzük', 'Yönetmelik', 'Tebliğ', 'Genelge', 'Yönerge', 'Cumhurbaşkanlığı Kararnamesi', 'Cumhurbaşkanlığı Kararı', 'Mahkeme Kararı', 'Uygulama Talimatı', 'Görüş', 'Diğer'];
-    document.getElementById('eTur').innerHTML = TURLER.map((t) => `<option>${t}</option>`).join('');
     document.getElementById('turFiltre').innerHTML += TURLER.map((t) => `<option>${t}</option>`).join('');
 
     async function apiGet(url) {
@@ -164,61 +170,165 @@
     });
     listeyiYukle();
 
-    // ---- Ekle modal mantığı ----
+    // ================= EKLE MODAL: ARA -> SEÇ -> KAYDET AKIŞI =================
+    let secilenAday = null;      // { id, ad, resmiGazeteTarihi, resmiGazeteSayisi, mevzuatNo }
+    let sonKullanilanUrl = '';   // secilen adayin hangi URL/RG aramasindan geldigi (referans icin)
+
+    function guvenliMetin(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function modalıSıfırla() {
+      secilenAday = null;
+      sonKullanilanUrl = '';
+      document.getElementById('aramaSonucAlani').innerHTML = '';
+      document.getElementById('secilenBelgeOzeti').classList.add('d-none');
+      document.getElementById('detayAlani').classList.add('d-none');
+      document.getElementById('detayAlani').innerHTML = '';
+      document.getElementById('ekleKaydetBtn').classList.add('d-none');
+    }
+
+    // ---- İçerik tipi (mevzuat.gov.tr / PDF) geçişi ----
     document.querySelectorAll('input[name="icerikTipi"]').forEach((r) => {
       r.addEventListener('change', (e) => {
         const mevzuatGov = e.target.value === 'mevzuat_gov';
         document.getElementById('alanMevzuatGov').classList.toggle('d-none', !mevzuatGov);
         document.getElementById('alanPdf').classList.toggle('d-none', mevzuatGov);
-        document.getElementById('adZorunluIsareti').style.display = mevzuatGov ? 'none' : 'inline';
+        modalıSıfırla();
+        if (!mevzuatGov) detayFormunuGoster({ ad: '', zorunluAd: true });
       });
     });
 
+    // ---- Arama şekli (URL / Resmî Gazete Sayısı) geçişi ----
+    document.querySelectorAll('input[name="aramaSekli"]').forEach((r) => {
+      r.addEventListener('change', (e) => {
+        document.getElementById('aramaAlaniUrl').classList.toggle('d-none', e.target.value !== 'url');
+        document.getElementById('aramaAlaniRg').classList.toggle('d-none', e.target.value !== 'rg');
+      });
+    });
+
+    // ---- "Ara" butonu ----
+    document.getElementById('araBtn').addEventListener('click', async () => {
+      const aramaSekli = document.querySelector('input[name="aramaSekli"]:checked').value;
+      const sonucAlan = document.getElementById('aramaSonucAlani');
+      modalıSıfırla();
+
+      const govde = {};
+      if (aramaSekli === 'url') {
+        const url = document.getElementById('eMevzuatUrl').value.trim();
+        if (!url) { sonucAlan.innerHTML = '<div class="text-danger small">Lütfen mevzuat.gov.tr URL\'si girin.</div>'; return; }
+        govde.url = url;
+        sonKullanilanUrl = url;
+      } else {
+        const rg = document.getElementById('eRgSayisiArama').value.trim();
+        if (!rg) { sonucAlan.innerHTML = '<div class="text-danger small">Lütfen Resmî Gazete Sayısı girin.</div>'; return; }
+        govde.resmiGazeteSayisi = rg;
+      }
+
+      sonucAlan.innerHTML = '<div class="text-muted small">Aranıyor...</div>';
+      try {
+        const res = await fetch('/api/mevzuat/mevzuat-gov/ara', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(govde),
+        });
+        const json = await res.json();
+        if (!json.success) {
+          sonucAlan.innerHTML = `<div class="text-danger small" style="white-space:pre-line;">${guvenliMetin(json.message)}</div>`;
+          return;
+        }
+        if (json.data.adaylar.length === 0) {
+          sonucAlan.innerHTML = '<div class="text-muted small">Sonuç bulunamadı.</div>';
+          return;
+        }
+        sonucAlan.innerHTML = `
+          <div class="small text-muted mb-1">${json.data.adaylar.length} sonuç bulundu - doğru olanı seç:</div>
+          ${json.data.adaylar.map((a, i) => `
+            <div class="border rounded p-2 mb-1 d-flex justify-content-between align-items-center">
+              <div class="small">
+                <strong>${guvenliMetin(a.ad)}</strong><br/>
+                <span class="text-muted">R.G. ${tarihFormatla(a.resmiGazeteTarihi)} · Sayı: ${guvenliMetin(a.resmiGazeteSayisi) || '-'}${a.mevzuatNo ? ' · No: ' + guvenliMetin(a.mevzuatNo) : ''}</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-primary mis-aday-sec-btn flex-shrink-0 ms-2" data-idx="${i}">Bu</button>
+            </div>`).join('')}
+          <button type="button" class="btn btn-sm btn-link text-muted p-0 mt-1" id="hicbiriBtn">Bunların hiçbiri, aramayı değiştir</button>
+        `;
+
+        document.querySelectorAll('.mis-aday-sec-btn').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            secilenAday = json.data.adaylar[parseInt(btn.dataset.idx, 10)];
+            document.getElementById('aramaSonucAlani').innerHTML = '';
+            const ozet = document.getElementById('secilenBelgeOzeti');
+            ozet.classList.remove('d-none');
+            ozet.innerHTML = `<i class="bi bi-check-circle me-1"></i>Seçilen: <strong>${guvenliMetin(secilenAday.ad)}</strong> — R.G. ${tarihFormatla(secilenAday.resmiGazeteTarihi)}, Sayı: ${guvenliMetin(secilenAday.resmiGazeteSayisi) || '-'} <button type="button" class="btn btn-sm btn-link p-0 ms-2" id="degistirBtn">Değiştir</button>`;
+            document.getElementById('degistirBtn').addEventListener('click', modalıSıfırla);
+            detayFormunuGoster({ ad: secilenAday.ad, zorunluAd: false });
+          });
+        });
+        const hicbiriBtn = document.getElementById('hicbiriBtn');
+        if (hicbiriBtn) hicbiriBtn.addEventListener('click', modalıSıfırla);
+      } catch (err) {
+        sonucAlan.innerHTML = `<div class="text-danger small">${guvenliMetin(err.message)}</div>`;
+      }
+    });
+
+    // ---- Detay formunu (Ad/Tür/Etiketler/Konu) göster ----
+    function detayFormunuGoster({ ad, zorunluAd }) {
+      const alan = document.getElementById('detayAlani');
+      alan.classList.remove('d-none');
+      alan.innerHTML = `
+        <div class="row g-2">
+          <div class="col-md-8"><label class="form-label small fw-semibold">Adı${zorunluAd ? ' *' : ''}</label><input type="text" class="form-control form-control-sm" id="eAd" value="${guvenliMetin(ad)}" /></div>
+          <div class="col-md-4"><label class="form-label small fw-semibold">Türü *</label><select class="form-select form-select-sm" id="eTur">${TURLER.map((t) => `<option>${t}</option>`).join('')}</select></div>
+          <div class="col-md-6"><label class="form-label small fw-semibold">Etiketler</label><input type="text" class="form-control form-control-sm" id="eEtiketler" placeholder="mera, tahsis" /></div>
+          <div class="col-12"><label class="form-label small fw-semibold">Konu</label><textarea class="form-control form-control-sm" id="eKonu" rows="2"></textarea></div>
+        </div>
+        <div id="ekleSonuc" class="mt-2"></div>
+      `;
+      document.getElementById('ekleKaydetBtn').classList.remove('d-none');
+    }
+
+    // ---- "Kaydet" ----
     document.getElementById('ekleKaydetBtn').addEventListener('click', async () => {
       const tip = document.querySelector('input[name="icerikTipi"]:checked').value;
       const sonucAlan = document.getElementById('ekleSonuc');
       const ad = document.getElementById('eAd').value.trim();
 
       if (tip === 'pdf' && !ad) { sonucAlan.innerHTML = '<div class="text-danger small">PDF için ad zorunludur.</div>'; return; }
-      if (tip === 'mevzuat_gov' && !document.getElementById('eMevzuatUrl').value.trim()) {
-        sonucAlan.innerHTML = '<div class="text-danger small">mevzuat.gov.tr URL\'si zorunludur.</div>'; return;
-      }
-      if (tip === 'pdf' && !document.getElementById('ePdf').files.length) {
-        sonucAlan.innerHTML = '<div class="text-danger small">PDF dosyası seçilmedi.</div>'; return;
-      }
+      if (tip === 'pdf' && !document.getElementById('ePdf').files.length) { sonucAlan.innerHTML = '<div class="text-danger small">PDF dosyası seçilmedi.</div>'; return; }
+      if (tip === 'mevzuat_gov' && !secilenAday) { sonucAlan.innerHTML = '<div class="text-danger small">Önce arama yapıp bir belge seçmelisin.</div>'; return; }
 
       const formData = new FormData();
       formData.append('icerikTipi', tip);
       formData.append('ad', ad);
       formData.append('tur', document.getElementById('eTur').value);
       formData.append('konu', document.getElementById('eKonu').value);
-      formData.append('mevzuatNo', document.getElementById('eNo').value);
-      formData.append('resmiGazeteTarihi', document.getElementById('eRgTarih').value);
-      formData.append('resmiGazeteSayisi', document.getElementById('eRgSayi').value);
       const etiketler = document.getElementById('eEtiketler').value.split(',').map((s) => s.trim()).filter(Boolean);
       formData.append('etiketler', JSON.stringify(etiketler));
 
       if (tip === 'mevzuat_gov') {
-        formData.append('mevzuatGovUrl', document.getElementById('eMevzuatUrl').value.trim());
+        formData.append('mevzuatGovUrl', sonKullanilanUrl);
+        formData.append('mevzuatGovId', secilenAday.id);
+        formData.append('aday', JSON.stringify(secilenAday));
       } else {
         formData.append('pdf', document.getElementById('ePdf').files[0]);
       }
 
-      sonucAlan.innerHTML = '<div class="text-muted small">Kaydediliyor... (mevzuat.gov.tr\'den çekiliyor olabilir, biraz sürebilir)</div>';
+      sonucAlan.innerHTML = '<div class="text-muted small">Kaydediliyor...</div>';
       try {
         const res = await fetch('/api/mevzuat', { method: 'POST', body: formData });
         const json = await res.json();
         if (!json.success) {
-          const guvenliMesaj = json.message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-          sonucAlan.innerHTML = `<div class="text-danger small" style="white-space:pre-line;">${guvenliMesaj}</div>`;
+          sonucAlan.innerHTML = `<div class="text-danger small" style="white-space:pre-line;">${guvenliMetin(json.message)}</div>`;
           return;
         }
         sonucAlan.innerHTML = '<div class="text-success small">Eklendi.</div>';
         setTimeout(() => { window.location.href = `/mevzuat/detay.html?id=${json.data._id}`; }, 600);
       } catch (err) {
-        sonucAlan.innerHTML = `<div class="text-danger small">${err.message}</div>`;
+        sonucAlan.innerHTML = `<div class="text-danger small">${guvenliMetin(err.message)}</div>`;
       }
     });
+
+    // Modal her açıldığında temiz baslasin
+    document.getElementById('ekleModal').addEventListener('show.bs.modal', modalıSıfırla);
   </script>
 </body>
 </html>

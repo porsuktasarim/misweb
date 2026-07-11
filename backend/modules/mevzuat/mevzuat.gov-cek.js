@@ -1,31 +1,30 @@
 /**
  * mevzuat.gov-cek.js
  *
- * mevzuat.gov.tr URL'sinden mevzuat icerigini otomatik ceker.
+ * mevzuat.gov.tr'den mevzuat ARAMA ve ICERIK CEKME islevleri.
  * mevzuat.gov.tr'nin kendisi HTML sayfasi sunuyor olsa da, arka planda
  * bedesten.adalet.gov.tr uzerinden JSON tabanli bir API'den veri
  * cekiyor (mevzuat.gov.tr'nin resmi sayfasinin kendisi de bu API'yi
  * kullaniyor) - bu daha guvenilir, HTML parse etmekten cok daha az
  * kirilgan.
  *
- * ONEMLI (guvenlik/dogruluk karari): URL'deki MevzuatTur sayisal kodu
- * ("...&MevzuatTur=7" gibi) hangi belge turune karsilik geldigi
- * mevzuat.gov.tr tarafindan RESMI OLARAK BELGELENMEMIS ve GOZLEMLERE
- * GORE TUTARSIZ. Daha once bu kod bir tahmin tablosuyla (KANUN,
- * YONETMELIK vb.) aramayi daraltmak icin kullaniliyordu, ama bu YANLIS
- * turde bir belgeyi (orn. istenen Yonetmelik yerine ayni numarali bir
- * Cumhurbaskani Karari) SESSIZCE getirebiliyordu - mevzuat takibi gibi
- * hassas bir islev icin bu kabul edilemez bir risk. Bu yuzden artik
- * TAHMIN EDILMIYOR: ayni mevzuat numarasina birden fazla FARKLI turde
- * belge cikarsa, hangisi oldugu netlesene kadar HATA VERILIP
- * kullaniciya adaylar listelenir.
+ * IKI ASAMALI AKIS (kullanicinin acik istegi uzerine):
+ *   1) mevzuatGovAra(kaynak)   -> ADAY LISTESI dondurur, icerik CEKMEZ.
+ *      Aday birden fazlaysa kullanici HANGISI oldugunu SECER (veya
+ *      "bunlar degil" deyip farkli arar) - sistem ARTIK TAHMIN ETMIYOR.
+ *   2) mevzuatIcerigiCek(id)   -> kullanicinin SECTIGI adayin tam
+ *      icerigini ceker (HTML/PDF ayrimi + Turkce metin temizligi dahil).
  *
- * ONEMLI: Bu dosyadaki dis servis cagrisi, gelistirme kum havuzunda
- * (sandbox) agin bu alan adina KAPALI olmasi nedeniyle buradan
- * GERCEK ISTEKLERLE test EDILEMEDI - sadece taklit edilmis (mock)
- * fetch yanitlariyla test edildi. Mantik dogru kuruldu ve hata
- * yakalama saglam ama canli sunucuda ilk kullanimda dogrulanmasi
- * onerilir.
+ * ARAMA KAYNAGI: URL (MevzuatNo+MevzuatTur) VEYA Resmi Gazete Sayisi.
+ * Resmi Gazete Sayisi ile arama, o SAYIDA yayimlanan TUM mevzuati
+ * getirir (bir gazete sayisinda birden fazla mevzuat olabilir).
+ *
+ * ONEMLI: Bu dosyadaki dis servis cagrilari, gelistirme kum havuzunda
+ * (sandbox) agin bu alan adina KAPALI olmasi nedeniyle GERCEK
+ * ISTEKLERLE test EDILEMEDI - sadece taklit edilmis (mock) fetch
+ * yanitlariyla test edildi. Canli sunucuda ilk kullanimda
+ * dogrulanmasi onerilir - ozellikle Resmi Gazete Sayisi arama
+ * govdesindeki alan adi (`resmiGazeteSayisi`) TEYIT EDILMEDI.
  */
 
 const crypto = require('crypto');
@@ -39,10 +38,53 @@ const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
 };
 
-function htmldenMetneCevir(html) {
-  return html
+/**
+ * Ham HTML'i TEMIZLER (goruntuleme icin, ETIKETLER KORUNUR).
+ *
+ * mevzuat.gov.tr kaynagi, SABIT GENISLIKTE (eski basim/PDF duzenine
+ * gore) bicimlendirilmis HTML doner: cumlelerin ORTASINDA bile <br/>
+ * ile satir kaydiriliyor, hizalama icin onlarca bosluk ekleniyor
+ * (orn. "numarası          :    4342"). Bunu OLDUGU GIBI gostermek,
+ * modern (degisken genislikte) bir kutuda metnin sag tarafinda bosluk
+ * birakip garip kirilmalara yol aciyordu (kullanicinin bildirdigi sorun).
+ *
+ * Kural: ARDISIK 2+ <br/> = GERCEK paragraf sonu (korunur). TEK <br/>
+ * ise, hemen sonrasinda YENI BIR MADDE baslamiyorsa sadece satir
+ * kaydirma ARTEFAKTIDIR - BOSLUKLA degistirilip metin DOGAL AKMASI
+ * saglanir (Turkce mevzuat yazim kurallarina uygun, akici govde).
+ */
+function htmlDuzenle(html) {
+  let temiz = html
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+
+  const PARAGRAF_YERTUTUCU = '\u0000PARA\u0000';
+
+  // Ardisik 2+ <br/> (aralarinda sadece bosluk olabilir) -> paragraf sonu
+  temiz = temiz.replace(/(?:<br\s*\/?>\s*){2,}/gi, PARAGRAF_YERTUTUCU);
+
+  // Kalan TEK <br/>'ler: hemen sonrasi "MADDE"/"GEÇİCİ MADDE"/"EK
+  // MADDE" ile basliyorsa GERCEK paragraf sonu, degilse sadece
+  // satir-kaydirma artefakti (boslukla birlestir).
+  temiz = temiz.replace(/<br\s*\/?>\s*/gi, (eslesme, ofset, tumMetin) => {
+    const sonrasi = tumMetin.slice(ofset + eslesme.length, ofset + eslesme.length + 40);
+    const yeniMaddeMi = /^(MADDE|Madde|GEÇİCİ MADDE|Geçici Madde|EK MADDE|Ek Madde)\s/.test(sonrasi);
+    return yeniMaddeMi ? PARAGRAF_YERTUTUCU : ' ';
+  });
+
+  temiz = temiz.split(PARAGRAF_YERTUTUCU).join('<br/><br/>');
+
+  // Hizalama icin eklenmis FAZLA bosluklari (2+) TEK bosluğa indir
+  temiz = temiz.replace(/[ \t]{2,}/g, ' ');
+  // Noktalama ONCESI bosluk artiklarini temizle ("numarası :" -> "numarası:")
+  temiz = temiz.replace(/ +([:.,;])/g, '$1');
+
+  return temiz.trim();
+}
+
+/** Temizlenmis HTML'den (etiketler kaldirilarak) DUZ METIN uretir - arama/fark/hash icin. */
+function htmldenMetneCevir(temizHtml) {
+  return temizHtml
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/(p|div|tr|li)>/gi, '\n')
     .replace(/<[^>]+>/g, ' ')
@@ -57,89 +99,73 @@ function htmldenMetneCevir(html) {
     .slice(0, 200000);
 }
 
-/**
- * mevzuat.gov.tr URL'sindeki MevzuatTur sayisal kodunun hangi belge
- * turune karsilik geldigi RESMI OLARAK BELGELENMEMIS ve GOZLEMLERE
- * GORE TUTARSIZ (ayni kod farkli zamanlarda farkli turlere denk
- * gelebiliyor). Bu yuzden bu kod ARTIK ARAMAYI DARALTMAK ICIN
- * KULLANILMIYOR - sadece, birden fazla sonuc arasinda hangisinin
- * dogru oldugunu SEC MEK icin bir ipucu olarak, arama sonucundaki
- * HAM alanlarla (cevrilmeden) karsilastiriliyor. Boylece yanlis bir
- * eslestirme tablosu yuzunden BASKA BIR TURDEKI belgeyi (orn. Kanun
- * yerine Cumhurbaskani Karari) SESSIZCE getirme riski ortadan kalkar.
- */
-function hamTurAlanlariEslesiyorMu(belge, hamMevzuatTur) {
-  const adaylar = [belge.mevzuatTur, belge.tur, belge.mevzuatTurId, belge.mevzuatTurKodu, belge.mevzuatTurNo];
-  return adaylar.some((deger) => deger !== undefined && deger !== null && String(deger) === String(hamMevzuatTur));
+function belgeOzetiCikar(b) {
+  return {
+    id: b.id || b.mevzuatId,
+    ad: b.mevzuatAdi || b.ad || '(adsız)',
+    resmiGazeteTarihi: b.resmiGazeteTarihi || null,
+    resmiGazeteSayisi: b.resmiGazeteSayisi || '',
+    mevzuatNo: b.mevzuatNo || '',
+  };
 }
 
 /**
- * @param {string} url - mevzuat.gov.tr URL'si (orn. .../mevzuat?MevzuatNo=4342&MevzuatTur=1)
- * @returns {Promise<{ad, htmlIcerik, metinIcerik, hash, resmiGazeteTarihi, resmiGazeteSayisi, mevzuatNo}>}
+ * Arama - ICERIK CEKMEZ, sadece ADAY LISTESI dondurur. Kullanici
+ * (frontend) bu listeden DOGRU olani SECER; sistem TAHMIN ETMEZ.
+ *
+ * @param {object} kaynak
+ * @param {string} [kaynak.url] - mevzuat.gov.tr URL'si (MevzuatNo cikarilir)
+ * @param {string} [kaynak.resmiGazeteSayisi] - Resmi Gazete Sayisi ile arama
+ * @returns {Promise<{adaylar: Array}>}
  */
-async function mevzuatGovCek(url) {
-  const urlObj = new URL(url);
-  const mevzuatNo = urlObj.searchParams.get('MevzuatNo');
-  const hamMevzuatTur = urlObj.searchParams.get('MevzuatTur');
-  if (!mevzuatNo) throw new Error('Geçersiz mevzuat.gov.tr URL\'si: MevzuatNo parametresi bulunamadı.');
+async function mevzuatGovAra({ url, resmiGazeteSayisi }) {
+  let govde;
 
-  // ONEMLI: MevzuatTur ile ARAMAYI DARALTMIYORUZ (yukaridaki aciklamaya
-  // bak) - sadece mevzuat no ile GENIS arama yapip, birden fazla sonuc
-  // varsa HAM tur koduyla eslesen tek adayi sec, eslesen yoksa/belirsizse
-  // KULLANICIYA ACIKCA SOR (sessizce yanlis belgeyi getirme).
-  const govde = {
-    data: { mevzuatNo, pageSize: 20, pageNumber: 1, sortFields: ['RESMI_GAZETE_TARIHI'], sortDirection: 'desc' },
-    applicationName: 'UyapMevzuat',
-    paging: true,
-  };
+  if (resmiGazeteSayisi) {
+    govde = {
+      data: { resmiGazeteSayisi: String(resmiGazeteSayisi).trim(), pageSize: 50, pageNumber: 1, sortFields: ['RESMI_GAZETE_TARIHI'], sortDirection: 'desc' },
+      applicationName: 'UyapMevzuat',
+      paging: true,
+    };
+  } else if (url) {
+    const urlObj = new URL(url);
+    const mevzuatNo = urlObj.searchParams.get('MevzuatNo');
+    if (!mevzuatNo) throw new Error('Geçersiz mevzuat.gov.tr URL\'si: MevzuatNo parametresi bulunamadı.');
+    govde = {
+      data: { mevzuatNo, pageSize: 20, pageNumber: 1, sortFields: ['RESMI_GAZETE_TARIHI'], sortDirection: 'desc' },
+      applicationName: 'UyapMevzuat',
+      paging: true,
+    };
+  } else {
+    throw new Error('Arama için mevzuat.gov.tr URL\'si veya Resmi Gazete Sayısı gerekli.');
+  }
+
   const aramaYaniti = await fetch(`${BEDESTEN_BASE}/searchDocuments`, {
     method: 'POST', headers: HEADERS, body: JSON.stringify(govde), signal: AbortSignal.timeout(20000),
   });
   if (!aramaYaniti.ok) throw new Error(`mevzuat.gov.tr araması başarısız (HTTP ${aramaYaniti.status})`);
   const aramaSonucu = await aramaYaniti.json();
   const belgeler = aramaSonucu?.data?.mevzuatList || [];
-  if (belgeler.length === 0) throw new Error(`${mevzuatNo} numaralı mevzuat bulunamadı.`);
 
-  let belge;
-  if (belgeler.length === 1) {
-    belge = belgeler[0];
-  } else if (hamMevzuatTur) {
-    const turEslesenler = belgeler.filter((b) => hamTurAlanlariEslesiyorMu(b, hamMevzuatTur));
-    if (turEslesenler.length === 1) {
-      belge = turEslesenler[0];
-    } else {
-      // BELIRSIZ - sessizce yanlis belgeyi almak yerine, adaylari
-      // listeleyip kullanicidan netlestirmesini iste.
-      const adaylarListesi = belgeler
-        .map((b, i) => `${i + 1}. "${b.mevzuatAdi || b.ad || '(adsız)'}" — R.G. ${b.resmiGazeteTarihi || '?'}, Sayı: ${b.resmiGazeteSayisi || '?'}`)
-        .join('\n');
-      throw new Error(
-        `"${mevzuatNo}" numarası birden fazla farklı türde belgeye ait, hangisi olduğu netleştirilemedi:\n${adaylarListesi}\n` +
-        `Lütfen doğru belgenin tam URL'sini (mevzuat.gov.tr'de belgeyi açıp adres çubuğundan) veya adını belirtin.`
-      );
-    }
-  } else {
-    // MevzuatTur URL'de yoktu ve birden fazla sonuc var - yine belirsiz.
-    const adaylarListesi = belgeler
-      .map((b, i) => `${i + 1}. "${b.mevzuatAdi || b.ad || '(adsız)'}" — R.G. ${b.resmiGazeteTarihi || '?'}, Sayı: ${b.resmiGazeteSayisi || '?'}`)
-      .join('\n');
-    throw new Error(`"${mevzuatNo}" numarası birden fazla belgeye ait:\n${adaylarListesi}\nLütfen tam mevzuat.gov.tr URL'sini (MevzuatTur dahil) kullanın.`);
-  }
+  return { adaylar: belgeler.map(belgeOzetiCikar) };
+}
 
-  const mevzuatId = belge.id || belge.mevzuatId;
-  const ad = belge.mevzuatAdi || belge.ad || '';
-  const resmiGazeteSayisi = belge.resmiGazeteSayisi || '';
-  const resmiGazeteTarihi = belge.resmiGazeteTarihi ? new Date(belge.resmiGazeteTarihi) : null;
-  if (!mevzuatId) throw new Error('Mevzuat kimliği (ID) bulunamadı.');
+/**
+ * Kullanicinin SECTIGI belirli bir mevzuatId icin TAM ICERIGI ceker.
+ * @param {string} mevzuatId
+ * @returns {Promise<{htmlIcerik, metinIcerik, hash, pdfBuffer}>}
+ */
+async function mevzuatIcerigiCek(mevzuatId) {
+  if (!mevzuatId) throw new Error('Mevzuat kimliği (ID) gerekli.');
 
-  // 2. Adim: icerigi cek. ONEMLI: bedesten API bazi belgeleri (orn.
-  // bazi Yonetmelik/Teblig turleri) HTML DEGIL, HAM PDF baytlari
-  // olarak donduruyor. Bunu HTML sanip dogrudan UTF-8'e cevirmek
-  // BOZUK/OKUNMAZ metin uretiyordu (kullanicinin karsilastigi sorun).
-  // Bu yuzden once PDF imzasini ("%PDF" ile baslar mi) kontrol ediyoruz.
   let htmlIcerik = '';
   let metinIcerik = '';
   let pdfBuffer = null;
+
+  // ONEMLI: bedesten API bazi belgeleri (orn. bazi Yonetmelik/Teblig
+  // turleri) HTML DEGIL, HAM PDF baytlari olarak donduruyor. Bunu HTML
+  // sanip dogrudan UTF-8'e cevirmek BOZUK/OKUNMAZ metin uretiyordu.
+  // Bu yuzden once PDF imzasini ("%PDF" ile baslar mi) kontrol ediyoruz.
   const icerikYaniti = await fetch(`${BEDESTEN_BASE}/getDocumentContent`, {
     method: 'POST', headers: HEADERS,
     body: JSON.stringify({ data: { documentType: 'MEVZUAT', id: mevzuatId }, applicationName: 'UyapMevzuat' }),
@@ -156,8 +182,7 @@ async function mevzuatGovCek(url) {
         pdfBuffer = hamBuffer;
         // PDF'ten METIN CIKAR (fark/diff karsilastirmasi ve arama icin) -
         // ham PDF baytlarini asla dogrudan metin gibi kullanma.
-        // NOT: pdf-parse v2+ sinif tabanli API kullanir (eski surumdeki
-        // dogrudan fonksiyon cagrisi ARTIK CALISMAZ).
+        // NOT: pdf-parse v2+ sinif tabanli API kullanir.
         try {
           const { PDFParse } = require('pdf-parse');
           const parser = new PDFParse({ data: hamBuffer });
@@ -167,22 +192,20 @@ async function mevzuatGovCek(url) {
           console.error('[Mevzuat] PDF metin çıkarma hatası:', e.message);
         }
       } else {
-        htmlIcerik = hamBuffer.toString('utf-8');
+        // ONEMLI: ham HTML'i DOGRUDAN kullanmadan once htmlDuzenle ile
+        // temizle - kaynaktaki sabit-genislik <br/>/bosluk artiklarini
+        // temizleyip metnin DOGAL AKMASINI saglar (bkz. htmlDuzenle).
+        const hamHtml = hamBuffer.toString('utf-8');
+        htmlIcerik = htmlDuzenle(hamHtml);
         metinIcerik = htmldenMetneCevir(htmlIcerik);
       }
     }
   }
-  // Icerik cekilemese bile ad/tarih varsa devam - en azindan kayit olusturulabilsin
 
-  // Hash: METIN varsa ondan, yoksa (metin cikarma basarisiz oldugunda)
-  // PDF baytlarindan hesaplanir - degisiklik tespiti her durumda calisir.
   const hashKaynagi = metinIcerik || (pdfBuffer ? pdfBuffer.toString('base64') : mevzuatId);
   const hash = crypto.createHash('md5').update(hashKaynagi).digest('hex');
 
-  return {
-    ad, htmlIcerik: htmlIcerik.slice(0, 500000), metinIcerik, hash,
-    resmiGazeteTarihi, resmiGazeteSayisi, mevzuatNo, pdfBuffer,
-  };
+  return { htmlIcerik: htmlIcerik.slice(0, 500000), metinIcerik, hash, pdfBuffer };
 }
 
-module.exports = { mevzuatGovCek };
+module.exports = { mevzuatGovAra, mevzuatIcerigiCek, htmlDuzenle, htmldenMetneCevir };

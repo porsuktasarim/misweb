@@ -19,6 +19,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
 
 router.get('/istatistik', controller.istatistikHandler);
+router.post('/mevzuat-gov/ara', controller.mevzuatGovAramaHandler);
 router.get('/', controller.listeHandler);
 router.post('/', upload.single('pdf'), controller.ekleHandler);
 router.get('/:id', controller.getirHandler);

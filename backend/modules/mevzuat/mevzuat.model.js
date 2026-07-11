@@ -51,6 +51,9 @@ const mevzuatSchema = new mongoose.Schema(
 
     // 'mevzuat_gov' icin:
     mevzuatGovUrl: String,
+    mevzuatGovId: String,  // bedesten API'nin dahili kimligi - SECILEN aday
+                            // KESIN olarak saklanir, haftalik kontrolde
+                            // TEKRAR ARAMA/BELIRSIZLIK YASANMAZ
     icerik: String,       // duz metin (arama + fark karsilastirma icin)
     htmlIcerik: String,    // bicimlendirilmis goruntu icin
 

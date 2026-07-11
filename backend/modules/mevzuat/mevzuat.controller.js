@@ -28,9 +28,22 @@ async function getirHandler(req, res) {
   }
 }
 
+async function mevzuatGovAramaHandler(req, res) {
+  try {
+    const { url, resmiGazeteSayisi } = req.body;
+    return basarili(res, await service.mevzuatGovArama({ url, resmiGazeteSayisi }));
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 async function ekleHandler(req, res) {
   try {
-    const govde = { ...req.body, etiketler: req.body.etiketler ? JSON.parse(req.body.etiketler) : [] };
+    const govde = {
+      ...req.body,
+      etiketler: req.body.etiketler ? JSON.parse(req.body.etiketler) : [],
+      aday: req.body.aday ? JSON.parse(req.body.aday) : undefined,
+    };
     let kayit;
     if (req.body.icerikTipi === 'pdf') {
       kayit = await service.eklePdf(govde, req.file);
@@ -42,9 +55,6 @@ async function ekleHandler(req, res) {
     return basarili(res, kayit, 'Mevzuat eklendi');
   } catch (err) {
     return basarisiz(res, err.message);
-  } finally {
-    // PDF disariya BASARILI sekilde kaydedildiyse dosya kalir (pdfDosyaYolu
-    // olarak referans veriliyor); hata durumunda gecici dosyayi temizle.
   }
 }
 
@@ -105,6 +115,6 @@ async function istatistikHandler(req, res) {
 }
 
 module.exports = {
-  listeHandler, getirHandler, ekleHandler, guncelleHandler, silHandler,
+  listeHandler, getirHandler, mevzuatGovAramaHandler, ekleHandler, guncelleHandler, silHandler,
   pdfGetirHandler, manuelYenileHandler, guncellemeyiOnaylaHandler, istatistikHandler,
 };
