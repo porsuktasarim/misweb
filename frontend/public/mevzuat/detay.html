@@ -13,12 +13,19 @@
     .detay-tab { display: none; } .detay-tab.active { display: block; }
     .detay-topbar { display: flex; align-items: center; overflow-x: auto; border-bottom: 1px solid #e2e8e4; margin-bottom: 1rem; }
     #pdf-viewer { width: 100%; height: 78vh; border: none; border-radius: 8px; }
-    .metin-icerik { white-space: pre-wrap; font-size: 14px; line-height: 1.8; padding: 1rem; background: #f8faf8; border-radius: 8px; max-height: 75vh; overflow-y: auto; }
+    .metin-icerik { font-size: 14px; line-height: 1.85; padding: 1rem; background: #f8faf8; border-radius: 8px; max-height: 78vh; overflow-y: auto; }
+    .metin-icerik p { margin: 0; }
     .surum-kart { border: 1px solid #e2e8e4; border-radius: 8px; padding: .85rem 1rem; margin-bottom: .65rem; }
     .guncelleme-banner { background: #fff8e1; border: 1px solid #ffc107; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; }
     .diff-eklenen { background: #d4f4dd; color: #1a5c33; padding: 0 1px; border-radius: 2px; }
     .diff-silinen { background: #fbdada; color: #8a1f1f; text-decoration: line-through; padding: 0 1px; border-radius: 2px; }
     .diff-icerik { white-space: pre-wrap; font-size: 14px; line-height: 1.9; padding: 1rem; background: #f8faf8; border-radius: 8px; max-height: 75vh; overflow-y: auto; }
+    .yan-blok { border-bottom: 1px solid #e2e8e4; padding-bottom: 1rem; margin-bottom: 1rem; }
+    .yan-blok:last-child { border-bottom: none; margin-bottom: 0; }
+    .yan-blok h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .03em; color: #6b8578; margin-bottom: .6rem; }
+    .son-surum-linki { display: block; font-size: 13px; padding: .3rem 0; color: inherit; text-decoration: none; border-bottom: 1px dashed #e2e8e4; }
+    .son-surum-linki:last-child { border-bottom: none; }
+    .son-surum-linki:hover { color: #0F6E56; }
   </style>
 </head>
 <body>
@@ -29,6 +36,7 @@
     <nav class="mis-anamenu" id="mis-anamenu"></nav>
 
     <div class="mis-icerik">
+
       <div class="mis-icerik-birincil">
         <div class="mis-panel">
           <div class="d-flex justify-content-between align-items-center mb-2">
@@ -55,29 +63,12 @@
 
           <div class="detay-topbar">
             <button class="detay-sekme active" data-tab="icerik">İçerik</button>
-            <button class="detay-sekme" data-tab="bilgi">Bilgiler</button>
             <button class="detay-sekme" data-tab="surumler">Eski Sürümler <span class="badge bg-secondary ms-1" id="surumSayisi">0</span></button>
             <button class="detay-sekme d-none" data-tab="degisiklikler" id="sekmeDegisiklikler">Değişiklikler</button>
           </div>
 
           <div class="detay-tab active" id="tab-icerik">
             <div id="icerikAlani"></div>
-          </div>
-
-          <div class="detay-tab" id="tab-bilgi">
-            <table class="table table-sm">
-              <tbody>
-                <tr><th style="width:180px;">Adı</th><td id="biAd"></td></tr>
-                <tr><th>Türü</th><td id="biTur"></td></tr>
-                <tr><th>Mevzuat No</th><td id="biNo"></td></tr>
-                <tr><th>R.G. Tarihi</th><td id="biRgTarih"></td></tr>
-                <tr><th>R.G. Sayısı</th><td id="biRgSayi"></td></tr>
-                <tr><th>Konu</th><td id="biKonu"></td></tr>
-                <tr><th>Etiketler</th><td id="biEtiketler"></td></tr>
-                <tr><th>Kaynak</th><td id="biKaynak"></td></tr>
-                <tr><th>Son Kontrol</th><td id="biSonKontrol"></td></tr>
-              </tbody>
-            </table>
           </div>
 
           <div class="detay-tab" id="tab-surumler">
@@ -93,6 +84,42 @@
           </div>
         </div>
       </div>
+
+      <div class="mis-icerik-ikincil">
+        <div class="mis-panel">
+
+          <div class="yan-blok">
+            <h3>Kanun Bilgileri</h3>
+            <table class="table table-sm mb-0">
+              <tbody>
+                <tr><th style="width:90px;" class="small text-muted fw-normal">Türü</th><td id="biTur" class="small"></td></tr>
+                <tr><th class="small text-muted fw-normal">Mevzuat No</th><td id="biNo" class="small"></td></tr>
+                <tr><th class="small text-muted fw-normal">R.G. Tarihi</th><td id="biRgTarih" class="small"></td></tr>
+                <tr><th class="small text-muted fw-normal">R.G. Sayısı</th><td id="biRgSayi" class="small"></td></tr>
+                <tr><th class="small text-muted fw-normal">Konu</th><td id="biKonu" class="small"></td></tr>
+                <tr><th class="small text-muted fw-normal">Etiketler</th><td id="biEtiketler" class="small"></td></tr>
+                <tr><th class="small text-muted fw-normal">Kaynak</th><td id="biKaynak" class="small text-break"></td></tr>
+                <tr><th class="small text-muted fw-normal">Son Kontrol</th><td id="biSonKontrol" class="small"></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="yan-blok" id="cikitBlogu">
+            <h3>Çıktı İşlemleri</h3>
+            <div class="d-flex flex-column gap-2">
+              <a class="btn btn-sm btn-outline-secondary" id="wordIndirBtn" href="#"><i class="bi bi-file-earmark-word me-1"></i>Word olarak indir</a>
+              <a class="btn btn-sm btn-outline-secondary" id="pdfIndirBtn" href="#"><i class="bi bi-file-earmark-pdf me-1"></i>PDF olarak indir</a>
+            </div>
+          </div>
+
+          <div class="yan-blok" id="sonSurumlerBlogu">
+            <h3>Son 5 Sürüm</h3>
+            <div id="sonSurumlerListesi" class="text-muted small">Henüz eski sürüm yok.</div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
 
     <footer class="mis-footer" id="mis-footer"></footer>
@@ -128,17 +155,17 @@
       // once pdfDosyaYolu varligina bakiyoruz, icerikTipi'ne degil.
       if (mevzuat.pdfDosyaYolu) {
         el.innerHTML = `<iframe id="pdf-viewer" src="${API}/${id}/pdf" title="${mevzuat.ad}"></iframe>`;
+        document.getElementById('cikitBlogu').classList.add('d-none'); // yuklenen PDF'in export'a ihtiyaci yok
       } else if (mevzuat.htmlIcerik) {
         el.innerHTML = `<div class="metin-icerik">${mevzuat.htmlIcerik}</div>`;
       } else if (mevzuat.icerik) {
-        el.innerHTML = `<pre class="metin-icerik">${mevzuat.icerik}</pre>`;
+        el.innerHTML = `<div class="metin-icerik" style="white-space:pre-wrap;">${mevzuat.icerik}</div>`;
       } else {
         el.innerHTML = '<p class="text-muted text-center py-4 small">İçerik bulunamadı.</p>';
       }
     }
 
     function renderBilgiler() {
-      document.getElementById('biAd').textContent = mevzuat.ad;
       document.getElementById('biTur').innerHTML = `<span class="badge bg-secondary">${mevzuat.tur}</span>`;
       document.getElementById('biNo').textContent = mevzuat.mevzuatNo || '-';
       document.getElementById('biRgTarih').textContent = tarihFormatla(mevzuat.resmiGazeteTarihi);
@@ -146,17 +173,28 @@
       document.getElementById('biKonu').textContent = mevzuat.konu || '-';
       document.getElementById('biEtiketler').textContent = (mevzuat.etiketler || []).join(', ') || '-';
       document.getElementById('biKaynak').innerHTML = mevzuat.mevzuatGovUrl
-        ? `<a href="${mevzuat.mevzuatGovUrl}" target="_blank">${mevzuat.mevzuatGovUrl}</a>`
+        ? `<a href="${mevzuat.mevzuatGovUrl}" target="_blank">mevzuat.gov.tr</a>`
         : (mevzuat.pdfOrijinalAd || '-');
       document.getElementById('biSonKontrol').textContent = tarihFormatla(mevzuat.sonKontrol, true);
+
+      document.getElementById('wordIndirBtn').href = `${API}/${id}/export/word`;
+      document.getElementById('pdfIndirBtn').href = `${API}/${id}/export/pdf`;
     }
 
     function renderSurumler() {
       const surumler = mevzuat.surumler || [];
       document.getElementById('surumSayisi').textContent = surumler.length;
-      if (!surumler.length) return;
+
+      if (!surumler.length) {
+        document.getElementById('sonSurumlerListesi').innerHTML = '<span class="text-muted">Henüz eski sürüm yok.</span>';
+        return;
+      }
       document.getElementById('sekmeDegisiklikler').classList.remove('d-none');
-      document.getElementById('surumListesi').innerHTML = [...surumler].reverse().map((s, idx) => `
+
+      const tersSirali = [...surumler].reverse();
+
+      // Ana sekme: TÜM sürümler (mevcut konumunda kalır)
+      document.getElementById('surumListesi').innerHTML = tersSirali.map((s, idx) => `
         <div class="surum-kart">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <div><strong class="small">Sürüm ${surumler.length - idx}</strong><span class="text-muted small ms-2">${tarihFormatla(s.createdAt, true)}</span></div>
@@ -164,6 +202,12 @@
           </div>
           ${s.degisiklikNotu ? `<div class="small text-muted">${s.degisiklikNotu}</div>` : ''}
         </div>`).join('');
+
+      // Sağ sütun: SON 5 sürüm bağlantısı (hızlı erişim)
+      document.getElementById('sonSurumlerListesi').innerHTML = tersSirali.slice(0, 5).map((s, idx) => `
+        <a href="#" class="son-surum-linki" onclick="event.preventDefault(); degisiklikleriGosterVeGec(${surumler.length - 1 - idx});">
+          <i class="bi bi-clock-history me-1"></i>Sürüm ${surumler.length - idx} — ${tarihFormatla(s.createdAt)}
+        </a>`).join('');
     }
 
     window.degisiklikleriGoster = (surumIndex) => {
@@ -190,8 +234,8 @@
       }).join('');
     };
 
-    window.degisiklikleriGosterVeGec = () => {
-      degisiklikleriGoster();
+    window.degisiklikleriGosterVeGec = (surumIndex) => {
+      degisiklikleriGoster(surumIndex);
       document.querySelectorAll('.detay-sekme').forEach((b) => b.classList.toggle('active', b.dataset.tab === 'degisiklikler'));
       document.querySelectorAll('.detay-tab').forEach((p) => p.classList.toggle('active', p.id === 'tab-degisiklikler'));
     };

@@ -4,6 +4,18 @@
 
 const fs = require('fs');
 const service = require('./mevzuat.service');
+const { mevzuatWordOlustur, mevzuatPdfOlustur } = require('./mevzuat.export');
+
+const TURKCE_ASCII = { ç: 'c', Ç: 'C', ğ: 'g', Ğ: 'G', ı: 'i', İ: 'I', ö: 'o', Ö: 'O', ş: 's', Ş: 'S', ü: 'u', Ü: 'U' };
+function dosyaAdiUret(ad, uzanti) {
+  const guvenliAd = String(ad || 'mevzuat').trim().replace(/\s+/g, '_').slice(0, 80);
+  const asciiTemiz = guvenliAd.split('').map((h) => TURKCE_ASCII[h] || h).join('').replace(/[^a-zA-Z0-9._-]/g, '');
+  return { ascii: `${asciiTemiz}.${uzanti}`, utf8: `${guvenliAd}.${uzanti}` };
+}
+function mevzuatContentDisposition(ad, uzanti) {
+  const { ascii, utf8 } = dosyaAdiUret(ad, uzanti);
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(utf8)}`;
+}
 
 function basarili(res, data, mesaj = null) {
   return res.json({ success: true, data, message: mesaj });
@@ -75,6 +87,30 @@ async function silHandler(req, res) {
   }
 }
 
+async function wordDisaAktarHandler(req, res) {
+  try {
+    const kayit = await service.getir(req.params.id);
+    const buffer = await mevzuatWordOlustur(kayit);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', mevzuatContentDisposition(kayit.ad, 'docx'));
+    res.send(buffer);
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function pdfDisaAktarHandler(req, res) {
+  try {
+    const kayit = await service.getir(req.params.id);
+    const buffer = await mevzuatPdfOlustur(kayit);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', mevzuatContentDisposition(kayit.ad, 'pdf'));
+    res.send(buffer);
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 async function pdfGetirHandler(req, res) {
   try {
     const kayit = await service.getir(req.params.id);
@@ -116,5 +152,6 @@ async function istatistikHandler(req, res) {
 
 module.exports = {
   listeHandler, getirHandler, mevzuatGovAramaHandler, ekleHandler, guncelleHandler, silHandler,
-  pdfGetirHandler, manuelYenileHandler, guncellemeyiOnaylaHandler, istatistikHandler,
+  pdfGetirHandler, wordDisaAktarHandler, pdfDisaAktarHandler,
+  manuelYenileHandler, guncellemeyiOnaylaHandler, istatistikHandler,
 };
