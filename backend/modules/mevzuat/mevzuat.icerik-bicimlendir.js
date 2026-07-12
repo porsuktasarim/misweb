@@ -26,6 +26,49 @@ const IZIN_VERILEN_ETIKETLER = ['b', 'i', 'strong', 'em', 'br', 'p', 'div', 'ul'
 const PARAGRAF_YERTUTUCU = '\u0000PARA\u0000';
 const ZAYIF_YERTUTUCU = '\u0000WEAK\u0000';
 
+// mevzuat.gov.tr kaynagi Turkce karakterleri SAYISAL (&#231;) veya
+// ADLANDIRILMIS (&ccedil;) HTML varliklariyla kodluyor olabilir. Bunlar
+// cozulmezse hem ekranda (tarayici otomatik cozer, sorun olmaz) HEM DE
+// disa aktarma (Word/PDF - KENDI ayristirmamizi kullaniyoruz, tarayici
+// YOK) sirasinda LITERAL "&#231;" gibi METIN olarak sizip KARAKTER
+// HATALARINA yol aciyordu. Bu yuzden EN BASTA, tum varliklar cozulur.
+const ADLANDIRILMIS_VARLIKLAR = {
+  amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+  ccedil: 'ç', Ccedil: 'Ç', gcirc: 'ğ', Gcirc: 'Ğ', uuml: 'ü', Uuml: 'Ü',
+  ouml: 'ö', Ouml: 'Ö', scedil: 'ş', Scedil: 'Ş', idot: 'ı', Idot: 'İ',
+  szlig: 'ß', eacute: 'é', egrave: 'è', acirc: 'â', icirc: 'î', ucirc: 'û',
+};
+
+/** TUM HTML varliklarini (sayisal + adlandirilmis) GERCEK karaktere cevirir - AMA
+ * &amp;/&lt;/&gt;/&quot; (YAPISAL, etiket ayrıştırmasını etkileyebilecek varlıklar)
+ * HARIC - onlar yapisalVarliklariCoz ile SONRA (tum etiket islemleri bittikten
+ * sonra) cozulur, aksi halde erken cozulen bir "&lt;" gercek "<" karakterine
+ * donusup etiket-ayirma regex'lerimizi YANILTABILIRDI. */
+function ozelKarakterOlmayanVarliklariCoz(metin) {
+  const YAPISAL_KODLAR = new Set([38, 60, 62, 34]); // & < > "
+  return metin
+    .replace(/&#x([0-9a-fA-F]+);/g, (t, hex) => {
+      const kod = parseInt(hex, 16);
+      return YAPISAL_KODLAR.has(kod) ? t : String.fromCodePoint(kod);
+    })
+    .replace(/&#(\d+);/g, (t, dec) => {
+      const kod = parseInt(dec, 10);
+      return YAPISAL_KODLAR.has(kod) ? t : String.fromCodePoint(kod);
+    })
+    .replace(/&(nbsp|ccedil|Ccedil|gcirc|Gcirc|uuml|Uuml|ouml|Ouml|scedil|Scedil|idot|Idot|szlig|eacute|egrave|acirc|icirc|ucirc);/g,
+      (t, ad) => (ad === 'nbsp' ? ' ' : ADLANDIRILMIS_VARLIKLAR[ad]));
+}
+
+/** YAPISAL varliklari (&amp; &lt; &gt; &quot; &apos;) cozer - SADECE tum etiket islemleri BITTIKTEN SONRA cagrilmali. */
+function yapisalVarliklariCoz(metin) {
+  return metin
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&'); // EN SON - digerleri yanlislikla ikinci kez cozulmesin
+}
+
 /** (6) Beyaz listede OLMAYAN her etiketi (bilinmeyen/ozel) KALDIRIR - ic metni KORUR. */
 function bilinmeyenEtiketleriTemizle(html) {
   return html.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, (tamEslesme, etiketAdi) => (
@@ -65,6 +108,11 @@ function htmlDuzenle(html) {
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
 
+  // ONEMLI: YAPISAL OLMAYAN varliklar (Turkce karakterler vb.) EN BASTA
+  // cozulur. YAPISAL olanlar (&amp; &lt; &gt; &quot;) ETIKET ISLEMLERI
+  // BITENE KADAR ERTELENIR (bkz. fonksiyon yorumu).
+  temiz = ozelKarakterOlmayanVarliklariCoz(temiz);
+
   temiz = bilinmeyenEtiketleriTemizle(temiz);
   temiz = bozukEtiketleriOnar(temiz);
 
@@ -92,6 +140,10 @@ function htmlDuzenle(html) {
   // --- 3) ARTIK yapisal anlami TASINMIS olan TUM orijinal p/div/br
   // etiketlerini SIL (kendi <p> sarmalayicilarimizi biz kuracagiz) ---
   temiz = temiz.replace(/<\/?(p|div|br)\b[^>]*\/?>/gi, '');
+
+  // --- 3b) Artik etiket-siniri regex'leri BITTIGI icin YAPISAL
+  // varliklari (&amp; &lt; &gt; &quot;) GUVENLE cozebiliriz ---
+  temiz = yapisalVarliklariCoz(temiz);
 
   // --- 4) (5) Alt-madde ("a) ... b) ...") isaretlerini AYRI SATIRA al -
   // kaynakta hic ayirici OLMASA BILE ---
@@ -202,4 +254,9 @@ function belgeYapisiniBicimlendir(temizHtml) {
   return sonuc.join('');
 }
 
-module.exports = { htmlDuzenle, belgeYapisiniBicimlendir };
+/** Erken + geç varlık çözmeyi TEK seferde uygular - etiket ayrıştırması BİTMİŞ, düz metin üzerinde kullanım için (dışa aktarma modülleri gibi). */
+function varliklariTamCoz(metin) {
+  return yapisalVarliklariCoz(ozelKarakterOlmayanVarliklariCoz(metin));
+}
+
+module.exports = { htmlDuzenle, belgeYapisiniBicimlendir, varliklariTamCoz };

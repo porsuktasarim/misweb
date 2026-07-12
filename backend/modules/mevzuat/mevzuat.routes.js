@@ -26,6 +26,7 @@ router.get('/:id', controller.getirHandler);
 router.put('/:id', controller.guncelleHandler);
 router.delete('/:id', controller.silHandler);
 router.get('/:id/pdf', controller.pdfGetirHandler);
+router.get('/:id/ek/:index', controller.ekGetirHandler);
 router.get('/:id/export/word', controller.wordDisaAktarHandler);
 router.get('/:id/export/pdf', controller.pdfDisaAktarHandler);
 router.post('/:id/yenile', controller.manuelYenileHandler);

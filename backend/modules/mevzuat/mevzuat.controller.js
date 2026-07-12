@@ -111,6 +111,19 @@ async function pdfDisaAktarHandler(req, res) {
   }
 }
 
+async function ekGetirHandler(req, res) {
+  try {
+    const kayit = await service.getir(req.params.id);
+    const ek = (kayit.ekler || [])[Number(req.params.index)];
+    if (!ek || !ek.dosyaYolu || !fs.existsSync(ek.dosyaYolu)) return basarisiz(res, 'Ek bulunamadı', 404);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(ek.ad || 'ek')}.pdf"`);
+    fs.createReadStream(ek.dosyaYolu).pipe(res);
+  } catch (err) {
+    return basarisiz(res, err.message, 404);
+  }
+}
+
 async function pdfGetirHandler(req, res) {
   try {
     const kayit = await service.getir(req.params.id);
@@ -152,6 +165,6 @@ async function istatistikHandler(req, res) {
 
 module.exports = {
   listeHandler, getirHandler, mevzuatGovAramaHandler, ekleHandler, guncelleHandler, silHandler,
-  pdfGetirHandler, wordDisaAktarHandler, pdfDisaAktarHandler,
+  pdfGetirHandler, ekGetirHandler, wordDisaAktarHandler, pdfDisaAktarHandler,
   manuelYenileHandler, guncellemeyiOnaylaHandler, istatistikHandler,
 };

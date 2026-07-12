@@ -49,6 +49,21 @@ const mevzuatSchema = new mongoose.Schema(
 
     icerikTipi: { type: String, enum: ['pdf', 'mevzuat_gov'], required: true },
 
+    // Ek belgeler (Ek-1, Ek-2 gibi tablo/form ekleri). NOT: mevzuat.gov.tr
+    // kaynagindan OTOMATIK tespit edilmiyor (API'nin bunlari nasil
+    // dondurdugu bilinmiyor, canli veriyle dogrulanmasi gerekiyor) -
+    // simdilik SADECE goruntuleme altyapisi hazir, elle eklenmeli.
+    ekler: {
+      type: [
+        {
+          ad: String,          // "Ek-1", "Ek-2 Sınıflandırma Tablosu" gibi
+          dosyaYolu: String,    // yerel PDF dosyasi (varsa)
+          url: String,          // dis baglanti (varsa)
+        },
+      ],
+      default: [],
+    },
+
     // 'mevzuat_gov' icin:
     mevzuatGovUrl: String,
     mevzuatGovId: String,  // bedesten API'nin dahili kimligi - SECILEN aday

@@ -26,6 +26,8 @@
     .son-surum-linki { display: block; font-size: 13px; padding: .3rem 0; color: inherit; text-decoration: none; border-bottom: 1px dashed #e2e8e4; }
     .son-surum-linki:last-child { border-bottom: none; }
     .son-surum-linki:hover { color: #0F6E56; }
+    .ek-linki { display: block; font-size: 13px; padding: .5rem .7rem; border-radius: 6px; background: rgba(15,110,86,.10); color: inherit; text-decoration: none; }
+    .ek-linki:hover { background: rgba(15,110,86,.18); }
   </style>
 </head>
 <body>
@@ -47,8 +49,16 @@
             <div class="d-flex gap-2">
               <a href="/mevzuat/" class="btn btn-sm btn-outline-secondary">Listeye Dön</a>
               <button id="btnYenile" class="btn btn-sm btn-outline-success d-none">Yenile</button>
+              <button class="btn btn-sm btn-outline-secondary" onclick="hamIcerigiGosterGizle()">Ham İçerik</button>
               <button class="btn btn-sm btn-outline-danger" onclick="silKayit()">Sil</button>
             </div>
+          </div>
+
+          <div id="hamIcerikAlani" class="d-none mb-3">
+            <div class="alert alert-secondary small mb-2">
+              Bu, sistemin sakladığı ham HTML'dir. Bir biçimlendirme sorunu bildirecekseniz bu metni kopyalayıp paylaşabilirsiniz.
+            </div>
+            <textarea class="form-control" style="font-family:monospace;font-size:12px;" rows="12" readonly id="hamIcerikMetni"></textarea>
           </div>
 
           <div id="guncellemeBanner" class="d-none guncelleme-banner">
@@ -102,6 +112,11 @@
                 <tr><th class="small text-muted fw-normal">Son Kontrol</th><td id="biSonKontrol" class="small"></td></tr>
               </tbody>
             </table>
+          </div>
+
+          <div class="yan-blok d-none" id="eklerBlogu">
+            <h3>Ekler</h3>
+            <div id="eklerListesi" class="d-flex flex-column gap-2"></div>
           </div>
 
           <div class="yan-blok" id="cikitBlogu">
@@ -246,6 +261,14 @@
       if (json.success) document.getElementById('guncellemeBanner').classList.add('d-none');
     };
 
+    window.hamIcerigiGosterGizle = () => {
+      const alan = document.getElementById('hamIcerikAlani');
+      alan.classList.toggle('d-none');
+      if (!alan.classList.contains('d-none')) {
+        document.getElementById('hamIcerikMetni').value = mevzuat.htmlIcerik || mevzuat.icerik || '(içerik yok)';
+      }
+    };
+
     window.silKayit = async () => {
       if (!confirm('Bu kaydı kalıcı olarak silmek istediğine emin misin?')) return;
       const res = await fetch(`${API}/${id}`, { method: 'DELETE' });
@@ -266,6 +289,16 @@
       btn.textContent = 'Yenile';
     });
 
+    function renderEkler() {
+      const ekler = mevzuat.ekler || [];
+      if (ekler.length === 0) return;
+      document.getElementById('eklerBlogu').classList.remove('d-none');
+      document.getElementById('eklerListesi').innerHTML = ekler.map((e, i) => {
+        const baglanti = e.url || (e.dosyaYolu ? `${API}/${id}/ek/${i}` : '#');
+        return `<a href="${baglanti}" target="_blank" class="ek-linki"><i class="bi bi-paperclip me-1"></i>${e.ad || `Ek-${i + 1}`}</a>`;
+      }).join('');
+    }
+
     async function yukle() {
       const res = await fetch(`${API}/${id}`);
       const json = await res.json();
@@ -285,6 +318,7 @@
       renderIcerik();
       renderBilgiler();
       renderSurumler();
+      renderEkler();
     }
     yukle();
   </script>

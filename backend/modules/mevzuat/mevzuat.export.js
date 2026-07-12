@@ -15,6 +15,7 @@ const {
   Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType,
 } = require('docx');
 const PDFDocument = require('pdfkit');
+const { varliklariTamCoz } = require('./mevzuat.icerik-bicimlendir');
 
 const FONT_NORMAL = path.join(__dirname, '../reporting/sablonlar/fontlar/DejaVuSerif.ttf');
 const FONT_KALIN = path.join(__dirname, '../reporting/sablonlar/fontlar/DejaVuSerif-Bold.ttf');
@@ -25,31 +26,47 @@ function calismaParcalariniCikar(parcaHtml) {
   const regex = /<b>(.*?)<\/b>|<i>(.*?)<\/i>|([^<]+)/gs;
   let m;
   while ((m = regex.exec(parcaHtml)) !== null) {
-    const decode = (s) => s.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-    if (m[1] !== undefined) runlar.push({ text: decode(m[1]), bold: true });
-    else if (m[2] !== undefined) runlar.push({ text: decode(m[2]), italic: true });
-    else if (m[3] !== undefined && m[3] !== '') runlar.push({ text: decode(m[3]) });
+    if (m[1] !== undefined) runlar.push({ text: varliklariTamCoz(m[1]), bold: true });
+    else if (m[2] !== undefined) runlar.push({ text: varliklariTamCoz(m[2]), italic: true });
+    else if (m[3] !== undefined && m[3] !== '') runlar.push({ text: varliklariTamCoz(m[3]) });
   }
   return runlar;
 }
 
 /**
- * belgeYapisiniBicimlendir CIKTISINI (bir dizi <p style="...">...</p>)
- * { stil, satirlar: [[{text,bold,italic}, ...], ...] } listesine cevirir
- * (her <p> icindeki <br/> ayri "satir" olur - Word/PDF'te ayri satir).
+ * belgeYapisiniBicimlendir CIKTISINI (bir dizi <p ...>...</p>) VEYA
+ * (herhangi bir nedenle <p> SARMALAYICISI OLMAYAN, sadece <br/>/<b>/<i>
+ * iceren) HAM icerigi { baslikMi, satirlar } listesine cevirir.
+ *
+ * ONEMLI: <p style="..."> TAM ESLESMESI beklemek KIRILGANDI - stil
+ * bicimi biraz farkli olsa (veya <p> hic OLMASA) TUM icerik "duz metin,
+ * hic bicim yok" haline dusuyordu (kullanicinin bildirdigi sorun). Bu
+ * yuzden ONCE <p ...> (herhangi bir oznitelik) dener, BULAMAZSA <br/><br/>
+ * ile bolerek AYNI yapiyi (en azindan kalin/italik + paragraf ayrimi
+ * KORUNARAK) üretir - SADECE ikisi de basarisiz olursa duz metne duser.
  */
 function htmlIParagraflaraAyir(html) {
-  const pRegex = /<p style="([^"]*)">([\s\S]*?)<\/p>/g;
+  if (!html) return [];
+
+  const pRegex = /<p([^>]*)>([\s\S]*?)<\/p>/gi;
   const paragraflar = [];
   let m;
   while ((m = pRegex.exec(html)) !== null) {
-    const stilMetni = m[1];
+    const stilMetni = m[1] || '';
     const icerik = m[2];
     const baslikMi = stilMetni.includes('font-size');
     const satirlar = icerik.split(/<br\s*\/?>/gi).map(calismaParcalariniCikar).filter((s) => s.length > 0);
-    paragraflar.push({ baslikMi, satirlar });
+    if (satirlar.length > 0) paragraflar.push({ baslikMi, satirlar });
   }
-  return paragraflar;
+  if (paragraflar.length > 0) return paragraflar;
+
+  // <p> etiketi hic bulunamadi - HAM icerigi <br/><br/> (paragraf) /
+  // <br/> (satir) sinirlarina gore boler, ILK PARCAYI baslik sayar.
+  const parcalar = html.split(/(?:<br\s*\/?>\s*){2,}/gi).filter((p) => p.trim() !== '');
+  return parcalar.map((parca, i) => ({
+    baslikMi: i === 0,
+    satirlar: parca.split(/<br\s*\/?>/gi).map(calismaParcalariniCikar).filter((s) => s.length > 0),
+  })).filter((p) => p.satirlar.length > 0);
 }
 
 async function mevzuatWordOlustur(mevzuat) {
