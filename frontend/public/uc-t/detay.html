@@ -8,12 +8,25 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
   <link href="/assets/css/layout.css?v=12" rel="stylesheet" />
   <style>
-    .evrak-satiri { display: flex; align-items: center; gap: .75rem; padding: .6rem .2rem; border-bottom: 1px solid #eef2ef; }
-    .evrak-satiri:last-child { border-bottom: none; }
-    .evrak-kodu { font-size: 11px; font-weight: 700; color: #0F6E56; background: rgba(15,110,86,.08); border-radius: 5px; padding: .1rem .45rem; white-space: nowrap; }
-    .evrak-tamamlandi .evrak-ad { text-decoration: line-through; color: #8a978f; }
-    .ek4ab-secili { border: 1px solid #0F6E56; background: rgba(15,110,86,.06); border-radius: 8px; padding: .75rem 1rem; }
-    .ek4ab-aday { border: 1px solid #e2e8e4; border-radius: 8px; padding: .6rem .8rem; margin-bottom: .4rem; display: flex; justify-content: space-between; align-items: center; }
+    /* ---- Sağ sütun: süreç ağacı ---- */
+    .ana-adim-blok { margin-bottom: 1rem; }
+    .ana-adim-baslik { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; color: #4a6358; text-transform: uppercase; letter-spacing: .02em; padding: .3rem .1rem; }
+    .ana-adim-ilerleme { font-size: 11px; font-weight: 500; color: #8a978f; }
+    .alt-adim-satiri { display: flex; align-items: center; gap: .6rem; padding: .55rem .6rem; border-radius: 8px; cursor: pointer; border: 1px solid transparent; }
+    .alt-adim-satiri:hover { background: #f8faf8; }
+    .alt-adim-satiri.secili { border-color: #0F6E56; background: rgba(15,110,86,.06); }
+    .alt-adim-durum { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #cdd9d2; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+    .alt-adim-durum.tamam { background: #0F6E56; border-color: #0F6E56; color: #fff; }
+    .alt-adim-metin { flex-grow: 1; font-size: 13px; line-height: 1.3; }
+    .alt-adim-ek-kodu { font-size: 10px; color: #8a978f; }
+    .alt-adim-cikti-rozeti { font-size: 10px; font-weight: 600; color: #0F6E56; background: rgba(15,110,86,.10); border-radius: 5px; padding: .1rem .4rem; white-space: nowrap; }
+
+    /* ---- Sol sütun: veri giriş paneli ---- */
+    .veri-paneli-bos { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 60vh; color: #8a978f; text-align: center; }
+    .veri-paneli-baslik { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #e2e8e4; }
+
+    .ek4ab-secili { border: 1px solid #0F6E56; background: rgba(15,110,86,.06); border-radius: 8px; padding: .65rem .85rem; font-size: 13px; }
+    .ek4ab-aday { border: 1px solid #e2e8e4; border-radius: 8px; padding: .5rem .7rem; margin-bottom: .35rem; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
   </style>
 </head>
 <body>
@@ -24,12 +37,14 @@
     <nav class="mis-anamenu" id="mis-anamenu"></nav>
 
     <div class="mis-icerik">
+
+      <!-- SOL: veri giriş paneli -->
       <div class="mis-icerik-birincil">
         <div class="mis-panel">
-          <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
             <div>
               <h2 class="mb-0" id="bBaslik">Yükleniyor...</h2>
-              <div class="small text-muted">Tespit ve Tahdit Evrak Kontrol Listesi</div>
+              <div class="small text-muted">3T Süreci</div>
             </div>
             <div class="d-flex gap-2">
               <a href="/uc-t/" class="btn btn-sm btn-outline-secondary">Listeye Dön</a>
@@ -37,21 +52,26 @@
             </div>
           </div>
 
-          <div id="evrakListesi"></div>
+          <div id="veriPaneli">
+            <div class="veri-paneli-bos">
+              <i class="bi bi-arrow-right-circle" style="font-size:2rem;"></i>
+              <p class="mt-2 mb-0">Sağdaki süreçten bir adım seç.</p>
+            </div>
+          </div>
         </div>
       </div>
 
+      <!-- SAĞ: süreç ağacı -->
       <div class="mis-icerik-ikincil">
         <div class="mis-panel">
           <h2>Ek-4ab Kaynağı</h2>
-          <p class="text-muted small">
-            Tahsis aşamasında ihtiyaç duyulacak aile/çiftçi ailesi,
-            geçim kaynağı ve hayvan varlığı (BBHB) bilgileri, bu köy
-            için hazırlanmış bir Ek-4ab kaydından alınacak.
-          </p>
-          <div id="ek4abAlani"></div>
+          <div id="ek4abAlani" class="mb-3"></div>
+
+          <h2>Süreç</h2>
+          <div id="surecAgaci"></div>
         </div>
       </div>
+
     </div>
 
     <footer class="mis-footer" id="mis-footer"></footer>
@@ -66,32 +86,112 @@
     const API = '/api/uc-t';
     const id = new URLSearchParams(location.search).get('id');
     let kayit = null;
+    let seciliAna = null;
+    let seciliAlt = null;
 
     function tarihFormatla(iso) {
       if (!iso) return '-';
       return new Date(iso).toLocaleDateString('tr-TR');
     }
-
-    function renderEvraklar() {
-      const alan = document.getElementById('evrakListesi');
-      alan.innerHTML = kayit.tespitTahditEvraklari.map((e, i) => `
-        <div class="evrak-satiri ${e.tamamlandiMi ? 'evrak-tamamlandi' : ''}">
-          <input type="checkbox" class="form-check-input flex-shrink-0" ${e.tamamlandiMi ? 'checked' : ''} onchange="evrakDegistir(${i}, this.checked)" />
-          <span class="evrak-kodu flex-shrink-0">${e.ekKodu}</span>
-          <span class="evrak-ad flex-grow-1">${e.ad}</span>
-          ${e.tamamlandiMi ? `<span class="text-muted small flex-shrink-0">${tarihFormatla(e.tamamlanmaTarihi)}</span>` : ''}
-        </div>`).join('');
+    function guvenliMetin(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    window.evrakDegistir = async (index, tamamlandiMi) => {
-      const res = await fetch(`${API}/${id}/evrak`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ evrakIndex: index, tamamlandiMi }),
-      });
-      const json = await res.json();
-      if (json.success) { kayit = json.data; renderEvraklar(); }
+    // ================= SAĞ: SÜREÇ AĞACI =================
+    function renderSurec() {
+      const alan = document.getElementById('surecAgaci');
+      alan.innerHTML = kayit.surec.map((ana, ai) => {
+        const tamam = ana.altAdimlar.filter((a) => a.tamamlandiMi).length;
+        return `
+          <div class="ana-adim-blok">
+            <div class="ana-adim-baslik">
+              <span>${guvenliMetin(ana.ad)}</span>
+              <span class="ana-adim-ilerleme">${tamam}/${ana.altAdimlar.length}</span>
+            </div>
+            ${ana.altAdimlar.map((alt, alti) => `
+              <div class="alt-adim-satiri ${seciliAna === ai && seciliAlt === alti ? 'secili' : ''}" onclick="adimSec(${ai}, ${alti})">
+                <div class="alt-adim-durum ${alt.tamamlandiMi ? 'tamam' : ''}">${alt.tamamlandiMi ? '<i class="bi bi-check"></i>' : ''}</div>
+                <div class="alt-adim-metin">
+                  ${guvenliMetin(alt.ad)}
+                  <div class="alt-adim-ek-kodu">${guvenliMetin(alt.ekKodu || '')}</div>
+                </div>
+                ${alt.tamamlandiMi && alt.ciktiVarMi ? `<span class="alt-adim-cikti-rozeti">${guvenliMetin(alt.ekKodu)}</span>` : ''}
+              </div>
+            `).join('')}
+          </div>`;
+      }).join('');
+    }
+
+    // ================= SOL: VERİ GİRİŞ PANELİ =================
+    window.adimSec = (anaAdimIndex, altAdimIndex) => {
+      seciliAna = anaAdimIndex;
+      seciliAlt = altAdimIndex;
+      renderSurec();
+      renderVeriPaneli();
     };
 
+    function renderVeriPaneli() {
+      const panel = document.getElementById('veriPaneli');
+      if (seciliAna === null) {
+        panel.innerHTML = `<div class="veri-paneli-bos"><i class="bi bi-arrow-right-circle" style="font-size:2rem;"></i><p class="mt-2 mb-0">Sağdaki süreçten bir adım seç.</p></div>`;
+        return;
+      }
+      const ana = kayit.surec[seciliAna];
+      const alt = ana.altAdimlar[seciliAlt];
+
+      panel.innerHTML = `
+        <div class="veri-paneli-baslik">
+          <div>
+            <div class="small text-muted">${guvenliMetin(ana.ad)}</div>
+            <h4 class="mb-0">${guvenliMetin(alt.ad)}</h4>
+            ${alt.ekKodu ? `<span class="badge bg-secondary mt-1">${guvenliMetin(alt.ekKodu)}</span>` : ''}
+          </div>
+          <span class="badge ${alt.tamamlandiMi ? 'bg-success' : 'bg-warning text-dark'}">${alt.tamamlandiMi ? 'Tamamlandı' : 'Bekliyor'}</span>
+        </div>
+
+        <p class="text-muted small">
+          Bu adım için veri girişi ekranı ileride buraya eklenecek.
+          Şimdilik adımı manuel olarak tamamlandı işaretleyip not
+          ekleyebilirsin - istediğin zaman güncelleyebilirsin.
+        </p>
+
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" id="tamamlandiSwitch" ${alt.tamamlandiMi ? 'checked' : ''} style="width:2.5em;height:1.3em;">
+          <label class="form-check-label" for="tamamlandiSwitch">Bu adım tamamlandı</label>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Not (opsiyonel)</label>
+          <textarea class="form-control" id="adimNotu" rows="3">${guvenliMetin(alt.not || '')}</textarea>
+        </div>
+
+        ${alt.tamamlandiMi ? `<div class="small text-muted mb-3"><i class="bi bi-clock-history me-1"></i>Tamamlanma tarihi: ${tarihFormatla(alt.tamamlanmaTarihi)}</div>` : ''}
+
+        <button class="btn btn-primary btn-sm" onclick="adimKaydet()">Kaydet</button>
+        <div id="adimKaydetSonuc" class="mt-2"></div>
+      `;
+    }
+
+    window.adimKaydet = async () => {
+      const tamamlandiMi = document.getElementById('tamamlandiSwitch').checked;
+      const not = document.getElementById('adimNotu').value;
+      const sonucAlan = document.getElementById('adimKaydetSonuc');
+      sonucAlan.innerHTML = '<span class="text-muted small">Kaydediliyor...</span>';
+
+      const res = await fetch(`${API}/${id}/adim`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, tamamlandiMi, not }),
+      });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json.message}</span>`; return; }
+
+      kayit = json.data;
+      renderSurec();
+      renderVeriPaneli();
+      sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
+    };
+
+    // ================= EK-4AB KAYNAĞI =================
     async function renderEk4ab() {
       const alan = document.getElementById('ek4abAlani');
 
@@ -99,52 +199,42 @@
         const e = kayit.ek4abKaydiId;
         alan.innerHTML = `
           <div class="ek4ab-secili mb-2">
-            <div class="small text-muted">Seçili kaynak</div>
-            <strong>${e.il} / ${e.ilce} / ${e.koyMahalle}</strong>
-            <div class="small text-muted mt-1">${e.uretimYili ? e.uretimYili + ' üretim yılı · ' : ''}Toplam BBHB: ${(e.genelToplamBBHB || 0).toFixed(2)}</div>
-            <a href="/ek4ab/detay.html?id=${e._id}" class="small" target="_blank">Ek-4ab kaydını görüntüle →</a>
+            <strong>${guvenliMetin(e.uretimYili || '-')} üretim yılı</strong>
+            <div class="text-muted">Toplam BBHB: ${(e.genelToplamBBHB || 0).toFixed(2)}</div>
+            <a href="/ek4ab/detay.html?id=${e._id}" class="small" target="_blank">Görüntüle →</a>
           </div>
-          <button class="btn btn-sm btn-outline-secondary" onclick="ek4abSecimiKaldir()">Değiştir / Kaldır</button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="ek4abSecimiKaldir()">Değiştir</button>
         `;
         return;
       }
 
-      alan.innerHTML = '<div class="text-muted small">Uygun Ek-4ab kayıtları aranıyor...</div>';
+      alan.innerHTML = '<div class="text-muted small">Aranıyor...</div>';
       const res = await fetch(`${API}/ek4ab-adaylari?il=${encodeURIComponent(kayit.il)}&ilce=${encodeURIComponent(kayit.ilce)}&koyMahalle=${encodeURIComponent(kayit.koyMahalle)}`);
       const json = await res.json();
       if (!json.success || json.data.length === 0) {
-        alan.innerHTML = `
-          <div class="text-muted small mb-2">Bu köy için hazır Ek-4ab kaydı bulunamadı.</div>
-          <a href="/ek4ab/" class="btn btn-sm btn-outline-primary" target="_blank">Ek-4ab modülüne git</a>
-        `;
+        alan.innerHTML = `<div class="text-muted small mb-2">Hazır Ek-4ab kaydı yok.</div><a href="/ek4ab/" class="btn btn-sm btn-outline-primary" target="_blank">Ek-4ab'ye git</a>`;
         return;
       }
       alan.innerHTML = json.data.map((e) => `
         <div class="ek4ab-aday">
-          <div class="small">
-            <strong>${e.uretimYili || '-'} üretim yılı</strong>
-            <div class="text-muted">Toplam BBHB: ${(e.genelToplamBBHB || 0).toFixed(2)} · ${tarihFormatla(e.createdAt)}</div>
-          </div>
-          <button class="btn btn-sm btn-primary flex-shrink-0" onclick="ek4abSec('${e._id}')">Bunu Seç</button>
+          <div><strong>${e.uretimYili || '-'}</strong><div class="text-muted">BBHB: ${(e.genelToplamBBHB || 0).toFixed(2)}</div></div>
+          <button class="btn btn-sm btn-primary" onclick="ek4abSec('${e._id}')">Seç</button>
         </div>`).join('');
     }
 
     window.ek4abSec = async (ek4abKaydiId) => {
       const res = await fetch(`${API}/${id}/ek4ab-sec`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ek4abKaydiId }),
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ek4abKaydiId }),
       });
       const json = await res.json();
-      if (json.success) { await yukle(); }
+      if (json.success) await yukle();
     };
-
     window.ek4abSecimiKaldir = async () => {
       const res = await fetch(`${API}/${id}/ek4ab-sec`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ek4abKaydiId: null }),
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ek4abKaydiId: null }),
       });
       const json = await res.json();
-      if (json.success) { await yukle(); }
+      if (json.success) await yukle();
     };
 
     window.silKayit = async () => {
@@ -162,7 +252,8 @@
       kayit = json.data;
       document.getElementById('bBaslik').textContent = `${kayit.il} / ${kayit.ilce} / ${kayit.koyMahalle}`;
       document.title = `${kayit.koyMahalle} - 3T - MİS`;
-      renderEvraklar();
+      renderSurec();
+      renderVeriPaneli();
       await renderEk4ab();
     }
     yukle();

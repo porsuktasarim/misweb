@@ -96,15 +96,16 @@
       if (json.data.length === 0) { alan.innerHTML = '<div class="text-muted small">Henüz kayıt yok.</div>'; return; }
 
       alan.innerHTML = json.data.map((k) => {
-        const toplam = k.tespitTahditEvraklari.length;
-        const tamam = k.tespitTahditEvraklari.filter((e) => e.tamamlandiMi).length;
-        const yuzde = Math.round((tamam / toplam) * 100);
+        const tumAltAdimlar = k.surec.flatMap((a) => a.altAdimlar);
+        const toplam = tumAltAdimlar.length;
+        const tamam = tumAltAdimlar.filter((e) => e.tamamlandiMi).length;
+        const yuzde = toplam ? Math.round((tamam / toplam) * 100) : 0;
         return `
           <a href="/uc-t/detay.html?id=${k._id}" class="mis-3t-karti text-decoration-none text-body">
             <div>
               <strong>${k.il} / ${k.ilce} / ${k.koyMahalle}</strong>
               <div class="small text-muted mt-1">
-                Tespit/Tahdit: ${tamam}/${toplam} evrak
+                Tespit/Tahdit: ${tamam}/${toplam} adım
                 ${k.ek4abKaydiId ? ' · <i class="bi bi-check-circle text-success"></i> Ek-4ab bağlı' : ' · <span class="text-warning">Ek-4ab seçilmedi</span>'}
               </div>
             </div>

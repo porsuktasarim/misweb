@@ -27,16 +27,21 @@ async function sil(id) {
   return kayit;
 }
 
-/** Tek bir tespit/tahdit evrakının tamamlandı durumunu günceller (indeks ile). */
-async function evrakDurumunuGuncelle(id, evrakIndex, { tamamlandiMi, not }) {
+/** Bir alt adımın (ana adım + alt adım indeksiyle) durumunu günceller. */
+async function adimGuncelle(id, anaAdimIndex, altAdimIndex, { tamamlandiMi, not }) {
   const kayit = await UcT.findById(id);
   if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
-  const evrak = kayit.tespitTahditEvraklari[evrakIndex];
-  if (!evrak) throw new Error('Evrak bulunamadı.');
 
-  evrak.tamamlandiMi = !!tamamlandiMi;
-  evrak.tamamlanmaTarihi = tamamlandiMi ? new Date() : undefined;
-  if (not !== undefined) evrak.not = not;
+  const anaAdim = kayit.surec[anaAdimIndex];
+  if (!anaAdim) throw new Error('Ana adım bulunamadı.');
+  const altAdim = anaAdim.altAdimlar[altAdimIndex];
+  if (!altAdim) throw new Error('Alt adım bulunamadı.');
+
+  if (tamamlandiMi !== undefined) {
+    altAdim.tamamlandiMi = !!tamamlandiMi;
+    altAdim.tamamlanmaTarihi = tamamlandiMi ? new Date() : undefined;
+  }
+  if (not !== undefined) altAdim.not = not;
 
   await kayit.save();
   return kayit;
@@ -64,4 +69,4 @@ async function koyIcinEk4abAdaylari(il, ilce, koyMahalle) {
   return Ek4abSonuc.find({ il, ilce, koyMahalle }).select('il ilce koyMahalle uretimYili genelToplamBBHB createdAt').sort({ createdAt: -1 });
 }
 
-module.exports = { listele, getir, olustur, sil, evrakDurumunuGuncelle, ek4abSec, koyIcinEk4abAdaylari };
+module.exports = { listele, getir, olustur, sil, adimGuncelle, ek4abSec, koyIcinEk4abAdaylari };

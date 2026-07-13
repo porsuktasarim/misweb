@@ -44,10 +44,10 @@ async function silHandler(req, res) {
   }
 }
 
-async function evrakGuncelleHandler(req, res) {
+async function adimGuncelleHandler(req, res) {
   try {
-    const { evrakIndex, tamamlandiMi, not } = req.body;
-    return basarili(res, await service.evrakDurumunuGuncelle(req.params.id, evrakIndex, { tamamlandiMi, not }));
+    const { anaAdimIndex, altAdimIndex, tamamlandiMi, not } = req.body;
+    return basarili(res, await service.adimGuncelle(req.params.id, anaAdimIndex, altAdimIndex, { tamamlandiMi, not }));
   } catch (err) {
     return basarisiz(res, err.message);
   }
@@ -72,5 +72,5 @@ async function ek4abAdaylariHandler(req, res) {
 
 module.exports = {
   listeHandler, getirHandler, olusturHandler, silHandler,
-  evrakGuncelleHandler, ek4abSecHandler, ek4abAdaylariHandler,
+  adimGuncelleHandler, ek4abSecHandler, ek4abAdaylariHandler,
 };
