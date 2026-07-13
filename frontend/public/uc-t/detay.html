@@ -148,25 +148,32 @@
           </div>
           <span class="badge ${alt.tamamlandiMi ? 'bg-success' : 'bg-warning text-dark'}">${alt.tamamlandiMi ? 'Tamamlandı' : 'Bekliyor'}</span>
         </div>
+        <div id="veriPaneliGovde"></div>
+      `;
 
+      if (alt.tip === 'ek4a') return renderEk4aPaneli(alt);
+      if (alt.tip === 'ek4b') return renderEk4bPaneli(alt);
+      if (alt.tip === 'birlestir') return renderBirlestirPaneli();
+      return renderManuelPaneli(alt);
+    }
+
+    // ---- MANUEL (varsayılan) panel ----
+    function renderManuelPaneli(alt) {
+      document.getElementById('veriPaneliGovde').innerHTML = `
         <p class="text-muted small">
           Bu adım için veri girişi ekranı ileride buraya eklenecek.
           Şimdilik adımı manuel olarak tamamlandı işaretleyip not
           ekleyebilirsin - istediğin zaman güncelleyebilirsin.
         </p>
-
         <div class="form-check form-switch mb-3">
           <input class="form-check-input" type="checkbox" id="tamamlandiSwitch" ${alt.tamamlandiMi ? 'checked' : ''} style="width:2.5em;height:1.3em;">
           <label class="form-check-label" for="tamamlandiSwitch">Bu adım tamamlandı</label>
         </div>
-
         <div class="mb-3">
           <label class="form-label small fw-semibold">Not (opsiyonel)</label>
           <textarea class="form-control" id="adimNotu" rows="3">${guvenliMetin(alt.not || '')}</textarea>
         </div>
-
         ${alt.tamamlandiMi ? `<div class="small text-muted mb-3"><i class="bi bi-clock-history me-1"></i>Tamamlanma tarihi: ${tarihFormatla(alt.tamamlanmaTarihi)}</div>` : ''}
-
         <button class="btn btn-primary btn-sm" onclick="adimKaydet()">Kaydet</button>
         <div id="adimKaydetSonuc" class="mt-2"></div>
       `;
@@ -189,6 +196,172 @@
       renderSurec();
       renderVeriPaneli();
       sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
+    };
+
+    // ---- EK-4/A panel: BBHB + ÇKS seç, birleştir ----
+    async function renderEk4aPaneli(alt) {
+      const govde = document.getElementById('veriPaneliGovde');
+      govde.innerHTML = `
+        <p class="text-muted small">Bu köy için BBHB (hayvan varlığı) ve ÇKS (ekiliş/geçim kaynağı) kayıtlarını seç - birleştirilip çiftçi bazlı liste üretilecek.</p>
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">BBHB Kaydı *</label>
+            <select id="ek4aBbhbSelect" class="form-select form-select-sm"><option value="">Yükleniyor...</option></select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">ÇKS Kaydı (opsiyonel)</label>
+            <select id="ek4aCksSelect" class="form-select form-select-sm"><option value="">Yükleniyor...</option></select>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="ek4aVeriCekVeKaydet()">Veri Çek ve Kaydet</button>
+        <div id="ek4aSonuc" class="mt-2"></div>
+        <div id="ek4aOnizleme" class="mt-3"></div>
+      `;
+
+      const [bbhbJson, cksJson] = await Promise.all([
+        fetch(`${API}/bbhb-adaylari?il=${encodeURIComponent(kayit.il)}&ilce=${encodeURIComponent(kayit.ilce)}&koyMahalle=${encodeURIComponent(kayit.koyMahalle)}`).then((r) => r.json()),
+        fetch(`${API}/cks-adaylari?il=${encodeURIComponent(kayit.il)}&ilce=${encodeURIComponent(kayit.ilce)}&koyMahalle=${encodeURIComponent(kayit.koyMahalle)}`).then((r) => r.json()),
+      ]);
+
+      const bbhbSelect = document.getElementById('ek4aBbhbSelect');
+      bbhbSelect.innerHTML = (bbhbJson.success && bbhbJson.data.length)
+        ? bbhbJson.data.map((b) => `<option value="${b._id}" ${alt.kaynakBbhbSonucId === b._id ? 'selected' : ''}>${tarihFormatla(b.hesaplamaTarihi)} · Toplam BBHB: ${b.bolumToplamBBHB.toFixed(2)} · ${b.isletmeciSayisi} işletmeci</option>`).join('')
+        : '<option value="">Kayıt bulunamadı</option>';
+
+      const cksSelect = document.getElementById('ek4aCksSelect');
+      cksSelect.innerHTML = '<option value="">— Seçilmedi —</option>' + ((cksJson.success && cksJson.data.length)
+        ? cksJson.data.map((c) => `<option value="${c._id}" ${alt.kaynakCksSonucId === c._id ? 'selected' : ''}>${c.uretimYili || '-'} üretim yılı · ${c.ciftciler.length} çiftçi</option>`).join('')
+        : '');
+
+      if (alt.veri) renderEk4aOnizleme(alt.veri);
+    }
+
+    function renderEk4aOnizleme(veri) {
+      document.getElementById('ek4aOnizleme').innerHTML = `
+        <div class="small text-muted mb-1">${veri.ciftciler.length} çiftçi · ${veri.eslesmeyenSayisi} ÇKS eşleşmesi yok · Toplam BBHB: ${veri.bolumToplamBBHB.toFixed(2)}</div>
+        <table class="table table-sm">
+          <thead><tr><th>İşletmeci</th><th>Hayvan (BBHB)</th><th>Yem Bitkisi</th><th>Sebze</th><th>Hububat</th></tr></thead>
+          <tbody>${veri.ciftciler.map((c) => `<tr><td>${guvenliMetin(c.isletmeciAdi)}</td><td>${c.toplamHayvanVarligi}</td><td>${c.yemBitkisi ?? '-'}</td><td>${c.sebzeBag ?? '-'}</td><td>${c.hububat ?? '-'}</td></tr>`).join('')}</tbody>
+        </table>
+      `;
+    }
+
+    window.ek4aVeriCekVeKaydet = async () => {
+      const bbhbSonucId = document.getElementById('ek4aBbhbSelect').value;
+      const cksSonucId = document.getElementById('ek4aCksSelect').value;
+      const sonucAlan = document.getElementById('ek4aSonuc');
+      if (!bbhbSonucId) { sonucAlan.innerHTML = '<span class="text-danger small">BBHB kaydı seçilmelidir.</span>'; return; }
+      sonucAlan.innerHTML = '<span class="text-muted small">Hesaplanıyor...</span>';
+
+      const res = await fetch(`${API}/${id}/ek4a-veri-cek`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, bbhbSonucId, cksSonucId: cksSonucId || null }),
+      });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json.message}</span>`; return; }
+
+      kayit = json.data;
+      renderSurec();
+      sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
+      renderEk4aOnizleme(kayit.surec[seciliAna].altAdimlar[seciliAlt].veri);
+    };
+
+    // ---- EK-4/B panel: BBHB seç, kategori toplamlarını üret ----
+    async function renderEk4bPaneli(alt) {
+      const govde = document.getElementById('veriPaneliGovde');
+      govde.innerHTML = `
+        <p class="text-muted small">Bu köy için BBHB kaydını seç - köy düzeyinde Kültür/Kültür Melezi/Yerli × İnek/Dana-Düve ve Küçükbaş toplamları üretilecek.</p>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">BBHB Kaydı *</label>
+          <select id="ek4bBbhbSelect" class="form-select form-select-sm"><option value="">Yükleniyor...</option></select>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="ek4bVeriCekVeKaydet()">Veri Çek ve Kaydet</button>
+        <div id="ek4bSonuc" class="mt-2"></div>
+        <div id="ek4bOnizleme" class="mt-3"></div>
+      `;
+
+      const bbhbJson = await fetch(`${API}/bbhb-adaylari?il=${encodeURIComponent(kayit.il)}&ilce=${encodeURIComponent(kayit.ilce)}&koyMahalle=${encodeURIComponent(kayit.koyMahalle)}`).then((r) => r.json());
+      const bbhbSelect = document.getElementById('ek4bBbhbSelect');
+      bbhbSelect.innerHTML = (bbhbJson.success && bbhbJson.data.length)
+        ? bbhbJson.data.map((b) => `<option value="${b._id}" ${alt.kaynakBbhbSonucId === b._id ? 'selected' : ''}>${tarihFormatla(b.hesaplamaTarihi)} · Toplam BBHB: ${b.bolumToplamBBHB.toFixed(2)}</option>`).join('')
+        : '<option value="">Kayıt bulunamadı</option>';
+
+      if (alt.veri) renderEk4bOnizleme(alt.veri);
+    }
+
+    function renderEk4bOnizleme(veri) {
+      const t = veri.kategoriToplamlari;
+      document.getElementById('ek4bOnizleme').innerHTML = `
+        <table class="table table-sm">
+          <thead><tr><th></th><th>İnek</th><th>Dana-Düve</th></tr></thead>
+          <tbody>
+            <tr><th>Kültür</th><td>${t.kulturIrki.inek}</td><td>${t.kulturIrki.duveDana}</td></tr>
+            <tr><th>Kültür Melezi</th><td>${t.kulturMelezi.inek}</td><td>${t.kulturMelezi.duveDana}</td></tr>
+            <tr><th>Yerli</th><td>${t.yerliIrk.inek}</td><td>${t.yerliIrk.duveDana}</td></tr>
+          </tbody>
+        </table>
+        <table class="table table-sm">
+          <thead><tr><th>Küçükbaş</th><th>Koyun</th><th>Keçi</th></tr></thead>
+          <tbody><tr><td></td><td>${t.kucukbas.koyun}</td><td>${t.kucukbas.kec}</td></tr></tbody>
+        </table>
+        <div class="small text-muted">Toplam BBHB: ${veri.bbhbToplam.toFixed(2)}</div>
+      `;
+    }
+
+    window.ek4bVeriCekVeKaydet = async () => {
+      const bbhbSonucId = document.getElementById('ek4bBbhbSelect').value;
+      const sonucAlan = document.getElementById('ek4bSonuc');
+      if (!bbhbSonucId) { sonucAlan.innerHTML = '<span class="text-danger small">BBHB kaydı seçilmelidir.</span>'; return; }
+      sonucAlan.innerHTML = '<span class="text-muted small">Hesaplanıyor...</span>';
+
+      const res = await fetch(`${API}/${id}/ek4b-veri-cek`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, bbhbSonucId }),
+      });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json.message}</span>`; return; }
+
+      kayit = json.data;
+      renderSurec();
+      sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
+      renderEk4bOnizleme(kayit.surec[seciliAna].altAdimlar[seciliAlt].veri);
+    };
+
+    // ---- BİRLEŞTİRME panel: 4a+4b özet, devam et ----
+    function renderBirlestirPaneli() {
+      const altAdimlar = kayit.surec[seciliAna].altAdimlar;
+      const ek4a = altAdimlar.find((a) => a.tip === 'ek4a');
+      const ek4b = altAdimlar.find((a) => a.tip === 'ek4b');
+      const govde = document.getElementById('veriPaneliGovde');
+
+      const ek4aHazir = ek4a && ek4a.tamamlandiMi;
+      const ek4bHazir = ek4b && ek4b.tamamlandiMi;
+
+      govde.innerHTML = `
+        <p class="text-muted small">Ek-4/a ve Ek-4/b'nin ikisi de tamamlandığında bu adım onaylanıp bir sonraki adıma (Kroki ve Harita) geçilebilir.</p>
+        <div class="d-flex gap-2 mb-3">
+          <span class="badge ${ek4aHazir ? 'bg-success' : 'bg-secondary'}">${ek4aHazir ? '✓' : '…'} Ek-4/a</span>
+          <span class="badge ${ek4bHazir ? 'bg-success' : 'bg-secondary'}">${ek4bHazir ? '✓' : '…'} Ek-4/b</span>
+        </div>
+        ${(ek4aHazir && ek4bHazir) ? `
+          <button class="btn btn-primary btn-sm" onclick="birlestirVeDevamEt()">Birleştir ve Devam Et</button>
+        ` : `<div class="alert alert-warning small py-2">Önce Ek-4/a ve Ek-4/b tamamlanmalı.</div>`}
+        <div id="birlestirSonuc" class="mt-2"></div>
+      `;
+    }
+
+    window.birlestirVeDevamEt = async () => {
+      const sonucAlan = document.getElementById('birlestirSonuc');
+      sonucAlan.innerHTML = '<span class="text-muted small">İşleniyor...</span>';
+      const res = await fetch(`${API}/${id}/birlestir`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt }),
+      });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json.message}</span>`; return; }
+      kayit = json.data;
+      renderSurec();
+      sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Devam edilebilir.</span>';
     };
 
     // ================= EK-4AB KAYNAĞI =================

@@ -70,7 +70,53 @@ async function ek4abAdaylariHandler(req, res) {
   }
 }
 
+async function bbhbAdaylariHandler(req, res) {
+  try {
+    const { il, ilce, koyMahalle } = req.query;
+    return basarili(res, await service.koyIcinBbhbAdaylari(il, ilce, koyMahalle));
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function cksAdaylariHandler(req, res) {
+  try {
+    const { il, ilce, koyMahalle } = req.query;
+    return basarili(res, await service.koyIcinCksAdaylari(il, ilce, koyMahalle));
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function ek4aVeriCekHandler(req, res) {
+  try {
+    const { anaAdimIndex, altAdimIndex, bbhbSonucId, cksSonucId } = req.body;
+    return basarili(res, await service.ek4aVeriCek(req.params.id, anaAdimIndex, altAdimIndex, { bbhbSonucId, cksSonucId }), 'Ek-4/a verisi çekildi');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function ek4bVeriCekHandler(req, res) {
+  try {
+    const { anaAdimIndex, altAdimIndex, bbhbSonucId } = req.body;
+    return basarili(res, await service.ek4bVeriCek(req.params.id, anaAdimIndex, altAdimIndex, { bbhbSonucId }), 'Ek-4/b verisi çekildi');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function birlestirVeDevamEtHandler(req, res) {
+  try {
+    const { anaAdimIndex, altAdimIndex } = req.body;
+    return basarili(res, await service.birlestirVeDevamEt(req.params.id, anaAdimIndex, altAdimIndex), 'Birleştirildi, devam edilebilir');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 module.exports = {
   listeHandler, getirHandler, olusturHandler, silHandler,
   adimGuncelleHandler, ek4abSecHandler, ek4abAdaylariHandler,
+  bbhbAdaylariHandler, cksAdaylariHandler, ek4aVeriCekHandler, ek4bVeriCekHandler, birlestirVeDevamEtHandler,
 };

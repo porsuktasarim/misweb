@@ -32,9 +32,25 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   Kaynağı Bildirim Cetveli" üretimi (anahtar-kelime tabanlı otomatik
   ürün sınıflandırma: Yem Bitkisi/Sebze-Meyve/Hububat-Yağlı Tohumlar)
 - **Ek-4ab** — BBHB (Ek-4/b) ve ÇKS (Ek-4/a) verilerini isim eşleştirmeyle
-  TEK tabloda birleştiren araç (ileride Tahsis modülüne evrilecek).
-  36 sütunlu, 3 katmanlı başlıklı resmi form + Teknik Ekip imza bloğu
-  (kurum önceliğine göre otomatik sıralama, 4'erli gruplama kuralları)
+  TEK tabloda birleştiren BAĞIMSIZ araç. 36 sütunlu, 3 katmanlı
+  başlıklı resmi form + Teknik Ekip imza bloğu (kurum önceliğine göre
+  otomatik sıralama, 4'erli gruplama kuralları). 3T modülü bu
+  modülden REFERANS ALIR ama Ek-4ab kendi başına da kullanılabilir
+  durumda kalır (değiştirilmedi).
+- **3T (Tespit-Tahdit-Tahsis)** — 4342 sayılı Kanun Uygulama
+  Talimatı'nın A/B/C bölümlerine birebir karşılık gelen bir SÜREÇ
+  AĞACI (ana adım → alt adım). Her 3T kaydı bir köy/mahalleye
+  bağlıdır. Sağ sütunda süreç durumu (14 alt adım: Ek-1..Ek-6),
+  sol sütunda seçili adımın veri girişi. Ek-4/a (Çiftçi Aile ve
+  Geçim Kaynağı) ve Ek-4/b (Hayvan Varlığı Cetveli) BBHB+ÇKS
+  kayıtlarından SEÇİLEREK otomatik hesaplanır (Ek-4/a için Ek-4ab'nin
+  `birlestir()` çekirdeği yeniden kullanılır; Ek-4/b için BBHB'nin
+  detaylı kategori kırılımları köy düzeyinde toplanır) - ikisi ayrı
+  ayrı tamamlanabilir, ardından "4/a ve 4/b Birleştirme Onayı" adımı
+  ile devam edilir. Diğer adımlar (Ek-2, Ek-3, Ek-4/c-h, Ek-5, Ek-6)
+  ŞİMDİLİK manuel tamamlandı işaretlemesi + not alanı ile takip
+  edilir (gerçek veri formları kademeli olarak eklenecek). Tahsis
+  (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
 - **Personel Yönetimi** (Ayarlar içinde) — Teknik Ekip Üyeleri: yıl/ilçe
   bazlı akordiyon, kurum seçimine göre otomatik imza metni üretimi
   (Muhtarlık/Mahalli Bilirkişi/Belediye vb.), toplu üye yükleme
@@ -92,3 +108,8 @@ pdf-parse, diff (jsdiff, CDN), Docker/Coolify.
 - Ek-4ab raporu şu an sadece Excel formatında (Word/PDF henüz yok).
 - Personel Yönetimi'nde Kullanıcılar ve İl Mera Komisyonu Üyeleri
   bölümleri henüz yapılmadı (placeholder).
+- 3T modülünde Tahsis (Ek-7, 7/a-f, Ek-8, Ek-9, Ek-10) henüz yok -
+  sadece Tespit/Tahdit (A/B/C bölümleri) var. B bölümünde Ek-4/a ve
+  Ek-4/b BBHB+ÇKS'den otomatik hesaplanıyor, geri kalan adımlar
+  (Ek-2, Ek-3, Ek-4/c-h, Ek-5, Ek-6) şimdilik sadece manuel
+  tamamlandı/not takibi - gerçek belge/veri formları henüz yok.

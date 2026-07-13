@@ -34,8 +34,9 @@ const VARSAYILAN_SUREC = [
     ad: 'B. Tespit ve Tahdit Çalışmaları',
     altAdimlar: [
       { ad: 'Tespit Tutanağı', ekKodu: 'Ek-4', ciktiVarMi: true },
-      { ad: 'Çiftçi Aile ve Geçim Kaynağı Bildirim Cetveli', ekKodu: 'Ek-4/a', ciktiVarMi: true },
-      { ad: 'Hayvan Varlığı Cetveli', ekKodu: 'Ek-4/b', ciktiVarMi: true },
+      { ad: 'Çiftçi Aile ve Geçim Kaynağı Bildirim Cetveli', ekKodu: 'Ek-4/a', ciktiVarMi: true, tip: 'ek4a' },
+      { ad: 'Hayvan Varlığı Cetveli', ekKodu: 'Ek-4/b', ciktiVarMi: true, tip: 'ek4b' },
+      { ad: '4/a ve 4/b Birleştirme Onayı', ekKodu: null, ciktiVarMi: false, tip: 'birlestir' },
       { ad: 'Kroki ve 1/5000\'lik Harita', ekKodu: 'Ek-4/c', ciktiVarMi: true },
       { ad: 'Mera/Yaylak/Kışlak/Otlak/Çayır Tutanağı', ekKodu: 'Ek-4/d', ciktiVarMi: true },
       { ad: 'İhtiyaç Tespit Raporu', ekKodu: 'Ek-4/e', ciktiVarMi: true },
@@ -60,6 +61,16 @@ const altAdimSchema = new mongoose.Schema(
     tamamlandiMi: { type: Boolean, default: false },
     tamamlanmaTarihi: Date,
     not: String,
+
+    // 'manuel' (varsayilan, sadece isaretleme) | 'ek4a' | 'ek4b' | 'birlestir'
+    // - frontend HANGI veri giris panelini gosterecegini buna gore secer.
+    tip: { type: String, default: 'manuel' },
+
+    // Ek-4/a, Ek-4/b gibi BBHB/ÇKS'den veri CEKEN adimlar icin: hangi
+    // kaynak kayitlardan uretildigi + SONUCUN KENDISI (snapshot).
+    kaynakBbhbSonucId: { type: mongoose.Schema.Types.ObjectId, ref: 'BbhbSonuc' },
+    kaynakCksSonucId: { type: mongoose.Schema.Types.ObjectId, ref: 'CksSonuc' },
+    veri: mongoose.Schema.Types.Mixed,
   },
   { _id: false }
 );
