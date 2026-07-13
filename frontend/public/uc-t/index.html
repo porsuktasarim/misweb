@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>3T (Tespit-Tahdit-Tahsis) - Mera İzleme Sistemi</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <link href="/assets/css/layout.css?v=12" rel="stylesheet" />
+  <style>
+    .mis-3t-karti { border: 1px solid #e2e8e4; border-radius: 10px; padding: .9rem 1rem; margin-bottom: .6rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .mis-3t-karti:hover { border-color: #0F6E56; }
+    .ilerleme-cubuk { height: 6px; border-radius: 3px; background: #e2e8e4; overflow: hidden; width: 140px; }
+    .ilerleme-dolu { height: 100%; background: #0F6E56; }
+  </style>
+</head>
+<body>
+
+  <div class="mis-kabuk" id="mis-kabuk">
+    <div class="mis-marka" id="mis-marka"></div>
+    <div class="mis-ustcubuk" id="mis-ustcubuk"></div>
+    <nav class="mis-anamenu" id="mis-anamenu"></nav>
+
+    <div class="mis-icerik">
+      <div class="mis-icerik-birincil">
+        <div class="mis-panel">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="mb-0">3T Kayıtları</h2>
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#yeniModal">+ Yeni 3T Kaydı</button>
+          </div>
+          <div id="listeAlani"><div class="text-muted small">Yükleniyor...</div></div>
+        </div>
+      </div>
+
+      <div class="mis-icerik-ikincil">
+        <div class="mis-panel">
+          <h2>Hakkında</h2>
+          <p class="text-muted small mb-0">
+            4342 sayılı Mera Kanunu kapsamında <strong>Tespit → Tahdit → Tahsis</strong>
+            sürecini takip eder. Şu an bu sayfada Tespit ve Tahdit
+            aşamasındaki evrakların tamamlanma durumu işaretlenebilir ve
+            bu köy için hazırlanmış bir Ek-4ab (BBHB+ÇKS birleşik) kaydı
+            temel olarak seçilebilir. Tahsis (Ek-7 ve sonrası) bir
+            sonraki adımda eklenecek.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <footer class="mis-footer" id="mis-footer"></footer>
+  </div>
+
+  <!-- YENİ KAYIT MODAL -->
+  <div class="modal fade" id="yeniModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Yeni 3T Kaydı</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <p class="small text-muted">Bu kaydın hangi köy/mahalle için açıldığını seç.</p>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">İl</label>
+          <select id="yeniIl" class="form-select"></select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">İlçe</label>
+          <select id="yeniIlce" class="form-select"></select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Köy/Mahalle</label>
+          <select id="yeniMahalle" class="form-select"></select>
+        </div>
+        <div id="yeniSonuc" class="mt-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">İptal</button>
+        <button class="btn btn-sm btn-primary" id="yeniKaydetBtn">Oluştur</button>
+      </div>
+    </div></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js"></script>
+  <script src="/assets/js/mis-menu.js?v=16"></script>
+  <script src="/assets/js/shell.js?v=12"></script>
+  <script src="/assets/js/mis-yer-secici.js?v=13"></script>
+  <script>
+    misKabuguBaslat('uc-t', '3T (Tespit-Tahdit-Tahsis)');
+
+    async function apiGet(url) { const r = await fetch(url); return r.json(); }
+
+    async function listeyiYukle() {
+      const alan = document.getElementById('listeAlani');
+      alan.innerHTML = '<div class="text-muted small">Yükleniyor...</div>';
+      const json = await apiGet('/api/uc-t');
+      if (!json.success) { alan.innerHTML = `<div class="alert alert-danger">${json.message}</div>`; return; }
+      if (json.data.length === 0) { alan.innerHTML = '<div class="text-muted small">Henüz kayıt yok.</div>'; return; }
+
+      alan.innerHTML = json.data.map((k) => {
+        const toplam = k.tespitTahditEvraklari.length;
+        const tamam = k.tespitTahditEvraklari.filter((e) => e.tamamlandiMi).length;
+        const yuzde = Math.round((tamam / toplam) * 100);
+        return `
+          <a href="/uc-t/detay.html?id=${k._id}" class="mis-3t-karti text-decoration-none text-body">
+            <div>
+              <strong>${k.il} / ${k.ilce} / ${k.koyMahalle}</strong>
+              <div class="small text-muted mt-1">
+                Tespit/Tahdit: ${tamam}/${toplam} evrak
+                ${k.ek4abKaydiId ? ' · <i class="bi bi-check-circle text-success"></i> Ek-4ab bağlı' : ' · <span class="text-warning">Ek-4ab seçilmedi</span>'}
+              </div>
+            </div>
+            <div class="ilerleme-cubuk flex-shrink-0"><div class="ilerleme-dolu" style="width:${yuzde}%;"></div></div>
+          </a>`;
+      }).join('');
+    }
+    listeyiYukle();
+
+    // ---- Yeni kayıt ----
+    misYerSeciciKur({
+      ilSelectId: 'yeniIl', ilceSelectId: 'yeniIlce', mahalleSelectId: 'yeniMahalle',
+      onDegisti: (secim) => { window._3tSecim = secim; },
+    });
+
+    document.getElementById('yeniKaydetBtn').addEventListener('click', async () => {
+      const sonucAlan = document.getElementById('yeniSonuc');
+      const secim = window._3tSecim || {};
+      if (!secim.il || !secim.ilce || !secim.mahalle) {
+        sonucAlan.innerHTML = '<div class="text-danger small">İl, ilçe ve köy/mahalle seçilmelidir.</div>';
+        return;
+      }
+      sonucAlan.innerHTML = '<div class="text-muted small">Oluşturuluyor...</div>';
+      const res = await fetch('/api/uc-t', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ il: secim.il, ilce: secim.ilce, koyMahalle: secim.mahalle }),
+      });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<div class="text-danger small">${json.message}</div>`; return; }
+      window.location.href = `/uc-t/detay.html?id=${json.data._id}`;
+    });
+  </script>
+</body>
+</html>

@@ -18,6 +18,7 @@ const ek4abRoutes = require('./backend/modules/ek4ab/ek4ab.routes');
 const teknikEkipRoutes = require('./backend/modules/personel/teknikEkip.routes');
 const mevzuatRoutes = require('./backend/modules/mevzuat/mevzuat.routes');
 const mevzuatService = require('./backend/modules/mevzuat/mevzuat.service');
+const ucTRoutes = require('./backend/modules/uc-t/uc-t.routes');
 const cron = require('node-cron');
 
 const app = express();
@@ -34,6 +35,7 @@ app.use('/api/cks', cksRoutes);
 app.use('/api/ek4ab', ek4abRoutes);
 app.use('/api/teknik-ekip', teknikEkipRoutes);
 app.use('/api/mevzuat', mevzuatRoutes);
+app.use('/api/uc-t', ucTRoutes);
 
 const PORT = process.env.PORT || 4342;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/mis';

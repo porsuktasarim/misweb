@@ -36,6 +36,12 @@ const MIS_MENU = [
         ikonSvg: '<path d="M8 3v4M16 3v4M4 11h16M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>',
       },
       {
+        anahtar: 'uc-t',
+        ad: '3T (Tespit-Tahdit-Tahsis)',
+        href: '/uc-t/',
+        ikonSvg: '<path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+      },
+      {
         anahtar: 'mevzuat',
         ad: 'Mevzuat',
         href: '/mevzuat/',
