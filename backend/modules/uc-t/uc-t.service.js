@@ -6,7 +6,7 @@ const UcT = require('./uc-t.model');
 const Ek4abSonuc = require('../ek4ab/ek4ab.model');
 const BbhbSonuc = require('../bbhb/bbhb.model');
 const CksSonuc = require('../cks/cks.model');
-const { birlestir } = require('../ek4ab/ek4ab.core');
+const ek4abService = require('../ek4ab/ek4ab.service');
 
 async function listele() {
   return UcT.find({ aktif: true }).sort({ createdAt: -1 });
@@ -50,7 +50,7 @@ async function adimGuncelle(id, anaAdimIndex, altAdimIndex, { tamamlandiMi, not 
   return kayit;
 }
 
-/** Bu 3T kaydına TEMEL alınacak Ek-4ab kaydını SEÇER (bağımsız Ek-4ab modülünden referans). */
+/** Bu 3T kaydına TEMEL alınacak Ek-4ab kaydını SEÇER (elle - Birleştirme adımı OTOMATİK de yapabilir). */
 async function ek4abSec(id, ek4abKaydiId) {
   const kayit = await UcT.findById(id);
   if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
@@ -60,74 +60,87 @@ async function ek4abSec(id, ek4abKaydiId) {
     if (!ek4ab) throw new Error('Seçilen Ek-4ab kaydı bulunamadı.');
     kayit.ek4abKaydiId = ek4abKaydiId;
   } else {
-    kayit.ek4abKaydiId = undefined; // secimi kaldir
+    kayit.ek4abKaydiId = undefined;
   }
 
   await kayit.save();
   return kayit;
 }
 
-/** Ayni koy/mahalle icin mevcut Ek-4ab kayitlarini (secim listesi icin) getirir. */
 async function koyIcinEk4abAdaylari(il, ilce, koyMahalle) {
   return Ek4abSonuc.find({ il, ilce, koyMahalle }).select('il ilce koyMahalle uretimYili genelToplamBBHB createdAt').sort({ createdAt: -1 });
 }
 
-/** Ayni koy/mahalleyi iceren bir BOLUME sahip BBHB kayitlarini (secim icin) getirir. */
+/**
+ * ONEMLI: Mongo'da TAM ESLESME (il/ilce/mahalle) aramak, farkli
+ * kaynaklardan (manuel giris, Turkvet import, Yerlesim secici)
+ * gelen kucuk buyuk harf/bosluk farklarinda SESSIZCE hicbir sonuc
+ * DONDURMUYORDU (kullanicinin karsilastigi "kayit bulunamadi"
+ * sorunu). Bu yuzden - tipki Yerlesim aramasinda oldugu gibi -
+ * TUM kayitlar cekilip Turkce-duyarli, kirpilmis/kucuk harfe
+ * cevrilmis JS karsilastirmasi yapiliyor.
+ */
+function esitMi(a, b) {
+  return (a || '').trim().toLocaleLowerCase('tr-TR') === (b || '').trim().toLocaleLowerCase('tr-TR');
+}
+
+/** BBHB sonuclari icinde, bu koye ait BOLUMUN INDEKSINI de dondurerek eslesenleri bulur. */
+async function bbhbAdaylariBul(il, ilce, koyMahalle) {
+  const tumKayitlar = await BbhbSonuc.find().select('kaynakTipi hesaplamaTarihi bolumler createdAt').sort({ createdAt: -1 });
+  const sonuc = [];
+  for (const k of tumKayitlar) {
+    const bolumIndex = k.bolumler.findIndex((b) => esitMi(b.il, il) && esitMi(b.ilce, ilce) && esitMi(b.mahalle, koyMahalle));
+    if (bolumIndex === -1) continue;
+    const bolum = k.bolumler[bolumIndex];
+    sonuc.push({
+      _id: k._id, bolumIndex, kaynakTipi: k.kaynakTipi, hesaplamaTarihi: k.hesaplamaTarihi, createdAt: k.createdAt,
+      bolumToplamBBHB: bolum.bolumToplamBBHB, isletmeciSayisi: bolum.isletmeciSonuclari.length,
+    });
+  }
+  return sonuc;
+}
+
 async function koyIcinBbhbAdaylari(il, ilce, koyMahalle) {
-  const kayitlar = await BbhbSonuc.find({ 'bolumler.il': il, 'bolumler.ilce': ilce, 'bolumler.mahalle': koyMahalle })
-    .select('kaynakTipi hesaplamaTarihi bolumler createdAt')
-    .sort({ createdAt: -1 });
-  return kayitlar.map((k) => {
-    const bolum = k.bolumler.find((b) => b.il === il && b.ilce === ilce && b.mahalle === koyMahalle);
-    return {
-      _id: k._id,
-      kaynakTipi: k.kaynakTipi,
-      hesaplamaTarihi: k.hesaplamaTarihi,
-      createdAt: k.createdAt,
-      bolumToplamBBHB: bolum ? bolum.bolumToplamBBHB : 0,
-      isletmeciSayisi: bolum ? bolum.isletmeciSonuclari.length : 0,
-    };
-  });
+  return bbhbAdaylariBul(il, ilce, koyMahalle);
 }
 
-/** Ayni koy/mahalle icin mevcut ÇKS kayitlarini (secim icin) getirir. */
+/** ÇKS sonuclari icinde bu koye ait olanlari (Turkce-duyarli JS karsilastirmasiyla) bulur. */
 async function koyIcinCksAdaylari(il, ilce, koyMahalle) {
-  return CksSonuc.find({ il, ilce, koyMahalle }).select('uretimYili createdAt ciftciler').sort({ createdAt: -1 });
-}
-
-function bbhbBolumBul(bbhbSonuc, il, ilce, koyMahalle) {
-  const bolum = bbhbSonuc.bolumler.find((b) => b.il === il && b.ilce === ilce && b.mahalle === koyMahalle);
-  if (!bolum) throw new Error('Seçilen BBHB kaydında bu köy/mahalleye ait bölüm bulunamadı.');
-  return bolum;
+  const tumKayitlar = await CksSonuc.find().select('il ilce koyMahalle uretimYili createdAt ciftciler').sort({ createdAt: -1 });
+  return tumKayitlar.filter((k) => esitMi(k.il, il) && esitMi(k.ilce, ilce) && esitMi(k.koyMahalle, koyMahalle));
 }
 
 /**
- * EK-4/A: Cıftçi Aile ve Geçim Kaynağı Bildirim Cetveli - BBHB
- * (hayvan varlığı) + ÇKS (ekiliş/geçim kaynağı) BİRLEŞTİRİLEREK
- * üretilir. AYNI mantık Ek-4ab modülünde de kullanılıyor
- * (ek4ab.core.js birlestir()) - TEK KAYNAKTAN, tekrar yazılmadı.
+ * EK-4/A: SADECE ÇKS'den ceker (aile/ciftci ailesi + ekilis/gecim
+ * kaynagi). "ÇKS'ye kayıtlı kimse bulunmamaktadır" isaretlenirse
+ * (atlandi=true) hicbir kayit gerekmeden adim TAMAMLANDI sayilir.
  */
-async function ek4aVeriCek(id, anaAdimIndex, altAdimIndex, { bbhbSonucId, cksSonucId }) {
+async function ek4aVeriCek(id, anaAdimIndex, altAdimIndex, { cksSonucId, atlandi }) {
   const kayit = await UcT.findById(id);
   if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
-  if (!bbhbSonucId) throw new Error('BBHB kaydı seçilmelidir.');
-
-  const bbhbSonuc = await BbhbSonuc.findById(bbhbSonucId);
-  if (!bbhbSonuc) throw new Error('Seçilen BBHB kaydı bulunamadı.');
-  const bolum = bbhbBolumBul(bbhbSonuc, kayit.il, kayit.ilce, kayit.koyMahalle);
-
-  let cksSonuc = null;
-  if (cksSonucId) {
-    cksSonuc = await CksSonuc.findById(cksSonucId);
-    if (!cksSonuc) throw new Error('Seçilen ÇKS kaydı bulunamadı.');
-  }
-
-  const { birlesikListe, eslesmeyenSayisi } = birlestir(bolum, cksSonuc);
 
   const altAdim = kayit.surec[anaAdimIndex].altAdimlar[altAdimIndex];
-  altAdim.kaynakBbhbSonucId = bbhbSonucId;
-  altAdim.kaynakCksSonucId = cksSonucId || undefined;
-  altAdim.veri = { ciftciler: birlesikListe, eslesmeyenSayisi, bolumToplamBBHB: bolum.bolumToplamBBHB };
+
+  if (atlandi) {
+    altAdim.kaynakCksSonucId = undefined;
+    altAdim.veri = { atlandiMi: true, ciftciler: [] };
+    altAdim.tamamlandiMi = true;
+    altAdim.tamamlanmaTarihi = new Date();
+    await kayit.save();
+    return kayit;
+  }
+
+  if (!cksSonucId) throw new Error('ÇKS kaydı seçilmeli veya "ÇKS\'ye kayıtlı kimse bulunmamaktadır" işaretlenmelidir.');
+  const cksSonuc = await CksSonuc.findById(cksSonucId);
+  if (!cksSonuc) throw new Error('Seçilen ÇKS kaydı bulunamadı.');
+
+  altAdim.kaynakCksSonucId = cksSonucId;
+  altAdim.veri = {
+    atlandiMi: false,
+    ciftciler: cksSonuc.ciftciler.map((c) => ({
+      isletmeciAdi: c.isletmeciAdi, yemBitkisi: c.yemBitkisi, sebzeBag: c.sebzeMeyve, hububat: c.hububatYagli, tarim: c.tarim,
+    })),
+  };
   altAdim.tamamlandiMi = true;
   altAdim.tamamlanmaTarihi = new Date();
 
@@ -137,13 +150,7 @@ async function ek4aVeriCek(id, anaAdimIndex, altAdimIndex, { bbhbSonucId, cksSon
 
 const EK4B_KATEGORI_ETIKETLERI = { inek: 'İnek', duveDana: 'Dana-Düve', koyun: 'Koyun', kec: 'Keçi' };
 
-/**
- * EK-4/B: Hayvan Varlığı Cetveli - KÖY DÜZEYİNDE (işletmeci bazlı
- * değil) Kültür / Kültür Melezi / Yerli Irk × İnek / Dana-Düve VE
- * Küçükbaş × Koyun / Keçi kırılımında TOPLAM adet. Kaynak: SEÇİLEN
- * BBHB kaydının bu köye ait bölümündeki TÜM işletmecilerin detaylı
- * kategori kırılımlarının TOPLAMI.
- */
+/** EK-4/B: SADECE BBHB'den ceker - koy duzeyinde kategori toplamlari. */
 async function ek4bVeriCek(id, anaAdimIndex, altAdimIndex, { bbhbSonucId }) {
   const kayit = await UcT.findById(id);
   if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
@@ -151,16 +158,14 @@ async function ek4bVeriCek(id, anaAdimIndex, altAdimIndex, { bbhbSonucId }) {
 
   const bbhbSonuc = await BbhbSonuc.findById(bbhbSonucId);
   if (!bbhbSonuc) throw new Error('Seçilen BBHB kaydı bulunamadı.');
-  const bolum = bbhbBolumBul(bbhbSonuc, kayit.il, kayit.ilce, kayit.koyMahalle);
+  const bolumIndex = bbhbSonuc.bolumler.findIndex((b) => esitMi(b.il, kayit.il) && esitMi(b.ilce, kayit.ilce) && esitMi(b.mahalle, kayit.koyMahalle));
+  if (bolumIndex === -1) throw new Error('Seçilen BBHB kaydında bu köy/mahalleye ait bölüm bulunamadı.');
+  const bolum = bbhbSonuc.bolumler[bolumIndex];
 
-  // grup -> { inek, duveDana } / kucukbas -> { koyun, kec } TOPLAMLARI
   const toplamlar = {
-    kulturIrki: { inek: 0, duveDana: 0 },
-    kulturMelezi: { inek: 0, duveDana: 0 },
-    yerliIrk: { inek: 0, duveDana: 0 },
-    kucukbas: { koyun: 0, kec: 0 },
+    kulturIrki: { inek: 0, duveDana: 0 }, kulturMelezi: { inek: 0, duveDana: 0 },
+    yerliIrk: { inek: 0, duveDana: 0 }, kucukbas: { koyun: 0, kec: 0 },
   };
-
   for (const isletmeci of bolum.isletmeciSonuclari) {
     for (const d of isletmeci.detaylar) {
       if (['kulturIrki', 'kulturMelezi', 'yerliIrk'].includes(d.grup)) {
@@ -175,7 +180,7 @@ async function ek4bVeriCek(id, anaAdimIndex, altAdimIndex, { bbhbSonucId }) {
 
   const altAdim = kayit.surec[anaAdimIndex].altAdimlar[altAdimIndex];
   altAdim.kaynakBbhbSonucId = bbhbSonucId;
-  altAdim.veri = { kategoriToplamlari: toplamlar, etiketler: EK4B_KATEGORI_ETIKETLERI, bbhbToplam: bolum.bolumToplamBBHB };
+  altAdim.veri = { bbhbBolumIndex: bolumIndex, kategoriToplamlari: toplamlar, etiketler: EK4B_KATEGORI_ETIKETLERI, bbhbToplam: bolum.bolumToplamBBHB };
   altAdim.tamamlandiMi = true;
   altAdim.tamamlanmaTarihi = new Date();
 
@@ -184,9 +189,10 @@ async function ek4bVeriCek(id, anaAdimIndex, altAdimIndex, { bbhbSonucId }) {
 }
 
 /**
- * BİRLEŞTİRME ONAYI: Ek-4/a ve Ek-4/b'nin İKİSİ DE tamamlanmış
- * olmalıdır. Bu adım YENİ veri ÜRETMEZ, sadece "her ikisi de hazır,
- * devam edilebilir" onayını verir.
+ * BİRLEŞTİRME: Ek-4/b'de secilen BBHB + Ek-4/a'da secilen ÇKS (varsa)
+ * ile, MEVCUT Ek-4ab modulunun AYNI mantigini (onizlemeOlustur ->
+ * sonucuKaydet) kullanarak GERCEK bir Ek-4ab (Birlesik Cetvel) kaydi
+ * URETIR ve bu 3T kaydina OTOMATIK olarak baglar.
  */
 async function birlestirVeDevamEt(id, anaAdimIndex, altAdimIndex) {
   const kayit = await UcT.findById(id);
@@ -197,9 +203,25 @@ async function birlestirVeDevamEt(id, anaAdimIndex, altAdimIndex) {
   const ek4b = altAdimlar.find((a) => a.tip === 'ek4b');
   if (!ek4a || !ek4a.tamamlandiMi) throw new Error('Önce Ek-4/a tamamlanmalıdır.');
   if (!ek4b || !ek4b.tamamlandiMi) throw new Error('Önce Ek-4/b tamamlanmalıdır.');
+  if (!ek4b.kaynakBbhbSonucId) throw new Error('Ek-4/b\'de kullanılan BBHB kaydı bulunamadı.');
+
+  const onizleme = await ek4abService.onizlemeOlustur({
+    bbhbSonucId: ek4b.kaynakBbhbSonucId,
+    bbhbBolumIndex: ek4b.veri.bbhbBolumIndex,
+    cksSonucId: ek4a.veri.atlandiMi ? null : ek4a.kaynakCksSonucId,
+  });
+
+  const yeniEk4ab = await ek4abService.sonucuKaydet(onizleme);
+
+  kayit.ek4abKaydiId = yeniEk4ab._id;
 
   const altAdim = altAdimlar[altAdimIndex];
-  altAdim.veri = { ek4aOzet: { ciftciSayisi: ek4a.veri.ciftciler.length }, ek4bOzet: { bbhbToplam: ek4b.veri.bbhbToplam } };
+  altAdim.veri = {
+    ek4abKaydiId: yeniEk4ab._id,
+    ciftciSayisi: onizleme.ciftciler.length,
+    eslesmeyenSayisi: onizleme.eslesmeyenSayisi,
+    genelToplamBBHB: onizleme.genelToplamBBHB,
+  };
   altAdim.tamamlandiMi = true;
   altAdim.tamamlanmaTarihi = new Date();
 

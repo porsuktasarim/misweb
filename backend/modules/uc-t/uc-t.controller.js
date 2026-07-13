@@ -90,8 +90,8 @@ async function cksAdaylariHandler(req, res) {
 
 async function ek4aVeriCekHandler(req, res) {
   try {
-    const { anaAdimIndex, altAdimIndex, bbhbSonucId, cksSonucId } = req.body;
-    return basarili(res, await service.ek4aVeriCek(req.params.id, anaAdimIndex, altAdimIndex, { bbhbSonucId, cksSonucId }), 'Ek-4/a verisi çekildi');
+    const { anaAdimIndex, altAdimIndex, cksSonucId, atlandi } = req.body;
+    return basarili(res, await service.ek4aVeriCek(req.params.id, anaAdimIndex, altAdimIndex, { cksSonucId, atlandi }), 'Ek-4/a verisi çekildi');
   } catch (err) {
     return basarisiz(res, err.message);
   }
