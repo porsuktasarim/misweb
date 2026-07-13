@@ -245,7 +245,7 @@
             <thead><tr><th>Tarih</th><th>Yer</th><th>Kişi Sayısı</th><th>Bağlantılar</th><th></th></tr></thead>
             <tbody>
               ${json.data.map((k) => `
-                <tr data-id="${k._id}">
+                <tr data-id="${k._id}" id="ek4ab-satir-${k._id}">
                   <td class="small">${tarihFormatla(k.createdAt)}</td>
                   <td class="small">${[k.il, k.ilce, k.koyMahalle].join('/')}</td>
                   <td class="small">${k.ciftciler.length}</td>
@@ -258,6 +258,18 @@
             </tbody>
           </table>
         </div>`;
+
+      // URL'de ?id= varsa (orn. 3T modulunden "Goruntule" ile gelindiyse)
+      // o satiri vurgulayip gorunur alana kaydir.
+      const vurgulanacakId = new URLSearchParams(location.search).get('id');
+      if (vurgulanacakId) {
+        const satir = document.getElementById(`ek4ab-satir-${vurgulanacakId}`);
+        if (satir) {
+          satir.style.transition = 'background-color .3s';
+          satir.style.backgroundColor = '#fff3cd';
+          satir.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
 
       alan.querySelectorAll('.mis-ek4ab-sil-btn').forEach((btn) => {
         btn.addEventListener('click', async () => {

@@ -358,7 +358,7 @@
         document.getElementById('birlestirSonuc').innerHTML = `
           <div class="alert alert-success small py-2 mt-2">
             <i class="bi bi-check-circle me-1"></i>Ek-4ab kaydı oluşturuldu (${bulunanAdim.veri.ciftciSayisi} çiftçi, toplam BBHB: ${bulunanAdim.veri.genelToplamBBHB.toFixed(2)}).
-            <a href="/ek4ab/detay.html?id=${bulunanAdim.veri.ek4abKaydiId}" target="_blank">Görüntüle →</a>
+            <a href="/ek4ab/?id=${bulunanAdim.veri.ek4abKaydiId}" target="_blank">Görüntüle →</a>
           </div>`;
       }
     }
@@ -388,7 +388,7 @@
           <div class="ek4ab-secili mb-2">
             <strong>${guvenliMetin(e.uretimYili || '-')} üretim yılı</strong>
             <div class="text-muted">Toplam BBHB: ${(e.genelToplamBBHB || 0).toFixed(2)}</div>
-            <a href="/ek4ab/detay.html?id=${e._id}" class="small" target="_blank">Görüntüle →</a>
+            <a href="/ek4ab/?id=${e._id}" class="small" target="_blank">Görüntüle →</a>
           </div>
           <button class="btn btn-sm btn-outline-secondary" onclick="ek4abSecimiKaldir()">Değiştir</button>
         `;
