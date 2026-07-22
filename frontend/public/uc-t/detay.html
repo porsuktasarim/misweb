@@ -432,6 +432,25 @@
       else alert(json.message);
     };
 
+        /** Surecte İLK TAMAMLANMAMIŞ alt adımı bulup otomatik secer - "son kaldigi yerden devam" */
+    function sonKalinanAdimiSecVeAc() {
+      for (let ai = 0; ai < kayit.surec.length; ai++) {
+        const altAdimlar = kayit.surec[ai].altAdimlar;
+        for (let alti = 0; alti < altAdimlar.length; alti++) {
+          if (!altAdimlar[alti].tamamlandiMi) {
+            seciliAna = ai; seciliAlt = alti;
+            return;
+          }
+        }
+      }
+      // Hepsi tamamlanmis - son adimi goster (tamamlanmis haliyle)
+      const sonAna = kayit.surec.length - 1;
+      if (sonAna >= 0) {
+        seciliAna = sonAna;
+        seciliAlt = kayit.surec[sonAna].altAdimlar.length - 1;
+      }
+    }
+
     async function yukle() {
       const res = await fetch(`${API}/${id}`);
       const json = await res.json();
@@ -439,6 +458,7 @@
       kayit = json.data;
       document.getElementById('bBaslik').textContent = `${kayit.il} / ${kayit.ilce} / ${kayit.koyMahalle}`;
       document.title = `${kayit.koyMahalle} - 3T - MİS`;
+      if (seciliAna === null) sonKalinanAdimiSecVeAc(); // SADECE ilk yuklemede - kullanicinin sonraki tiklamalarini EZME
       renderSurec();
       renderVeriPaneli();
       await renderEk4ab();

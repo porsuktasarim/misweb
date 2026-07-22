@@ -3,6 +3,7 @@
  */
 
 const UcT = require('./uc-t.model');
+const { TESPIT_TAHDIT_ANA_ADIMLAR, TAHSIS_ANA_ADIMLAR, anaAdimlariKopyala } = require('./uc-t.model');
 const Ek4abSonuc = require('../ek4ab/ek4ab.model');
 const BbhbSonuc = require('../bbhb/bbhb.model');
 const CksSonuc = require('../cks/cks.model');
@@ -18,9 +19,16 @@ async function getir(id) {
   return kayit;
 }
 
-async function olustur({ il, ilce, koyMahalle }) {
+async function olustur({ il, ilce, koyMahalle, tespitTahditVar = true, tahsisVar = true }) {
   if (!il || !ilce || !koyMahalle) throw new Error('İl, ilçe ve köy/mahalle zorunludur.');
-  return UcT.create({ il, ilce, koyMahalle });
+  if (!tespitTahditVar && !tahsisVar) throw new Error('En az bir aşama (Tespit/Tahdit veya Tahsis) seçilmelidir.');
+
+  const surec = [
+    ...(tespitTahditVar ? anaAdimlariKopyala(TESPIT_TAHDIT_ANA_ADIMLAR) : []),
+    ...(tahsisVar ? anaAdimlariKopyala(TAHSIS_ANA_ADIMLAR) : []),
+  ];
+
+  return UcT.create({ il, ilce, koyMahalle, tespitTahditVar, tahsisVar, surec });
 }
 
 async function sil(id) {
