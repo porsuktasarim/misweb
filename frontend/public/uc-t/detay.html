@@ -97,6 +97,22 @@
       return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
+    /** Yuklu bir PDF'i INDIRMEDEN, ACILIR-KAPANIR (collapse) sekilde sayfa icinde gosterir. */
+    function pdfGomuluGoruntuleyiciHtml(alt, pdfUrl) {
+      if (!alt || !alt.pdfDosyaYolu) return '';
+      const benzersizId = 'pdf-' + Math.random().toString(36).slice(2);
+      return `
+        <div class="mt-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#${benzersizId}">
+            <i class="bi bi-file-earmark-pdf text-danger me-1"></i>${guvenliMetin(alt.pdfOrijinalAd || 'Yüklenen belge')} - göster/gizle
+          </button>
+          <a href="${pdfUrl}" target="_blank" class="btn btn-sm btn-link">Yeni sekmede aç</a>
+          <div class="collapse mt-2" id="${benzersizId}">
+            <iframe src="${pdfUrl}" style="width:100%; height:70vh; border:1px solid #e2e8e4; border-radius:8px;"></iframe>
+          </div>
+        </div>`;
+    }
+
     // ================= SAĞ: SÜREÇ AĞACI =================
     function renderSurec() {
       const alan = document.getElementById('surecAgaci');
@@ -160,13 +176,21 @@
 
     // ---- ADIM 1: İL MERA KOMİSYONU KARARI paneli ----
     let _karar1SeciliKomisyon = null;
-    let _karar1Secimler = {}; // { kurumAdi: 'asil'|'yedek' }
+    let _karar1KurumListesi = null;
+    let _karar1Secimler = {}; // { kurumKod: 'asil'|'yedek' }
+    const K1_DIGER_KURUM_KODLARI = ['teknikPersonel', 'dsi', 'ogm', 'defterdarlik', 'milliEmlak', 'kadastro', 'ziraatOdasi', 'jandarma', 'polis'];
 
     async function renderKarar1Paneli(alt) {
       const govde = document.getElementById('veriPaneliGovde');
       const oncekiVeri = alt.veri || {};
+      const b = oncekiVeri.baskanlik || {};
       _karar1Secimler = {};
-      (oncekiVeri.katilimcilar || []).forEach((k) => { _karar1Secimler[k.kurumAdi] = k.temsilciTipi; });
+      (oncekiVeri.katilimcilar || []).forEach((k) => { _karar1Secimler[k.kurumKod] = k.temsilciTipi; });
+
+      if (!_karar1KurumListesi) {
+        const kj = await fetch('/api/il-mera-komisyonu/kurum-listesi').then((r) => r.json());
+        _karar1KurumListesi = kj.success ? kj.data : [];
+      }
 
       govde.innerHTML = `
         <div class="row g-2 mb-2">
@@ -180,37 +204,50 @@
           </div>
         </div>
 
-        <div class="mb-2">
+        <div class="mb-3">
           <label class="form-label small fw-semibold">İl Mera Komisyonu *</label>
           <select id="k1KomisyonSelect" class="form-select form-select-sm"><option value="">Yükleniyor...</option></select>
           <div class="form-text small">Listede yoksa Ayarlar → Personel Yönetimi → İl Mera Komisyonu Üyeleri'nden ekle.</div>
         </div>
 
-        <div class="mb-2">
-          <label class="form-label small fw-semibold d-block">Güvenlik Kurumu</label>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="k1Guvenlik" id="k1GPolis" value="polis" ${oncekiVeri.guvenlikSecimi === 'polis' ? 'checked' : ''}>
-            <label class="form-check-label small" for="k1GPolis">Polis</label>
+        <div class="mb-3 p-2 border rounded">
+          <label class="form-label small fw-semibold d-block">Başkanlık</label>
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="k1ValiIzinli" ${b.valiIzinli ? 'checked' : ''}>
+            <label class="form-check-label small" for="k1ValiIzinli">Vali izinli</label>
           </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="k1Guvenlik" id="k1GJandarma" value="jandarma" ${oncekiVeri.guvenlikSecimi === 'jandarma' ? 'checked' : ''}>
-            <label class="form-check-label small" for="k1GJandarma">Jandarma</label>
+          <div id="k1VYSorusu" class="ms-3" style="display:none;">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" id="k1VYIzinli" ${b.valiYardimcisiIzinli ? 'checked' : ''}>
+              <label class="form-check-label small" for="k1VYIzinli">Vali Yardımcısı izinli</label>
+            </div>
+            <div id="k1IlMudurSorusu" class="ms-3" style="display:none;">
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="k1IlMudurIzinli" ${b.ilMuduruIzinli ? 'checked' : ''}>
+                <label class="form-check-label small" for="k1IlMudurIzinli">İl Müdürü izinli</label>
+              </div>
+            </div>
           </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="k1Guvenlik" id="k1GIkisi" value="ikisi" ${oncekiVeri.guvenlikSecimi === 'ikisi' ? 'checked' : ''}>
-            <label class="form-check-label small" for="k1GIkisi">İkisi de</label>
-          </div>
+          <div id="k1BaskanSonucAlani" class="mt-2"></div>
         </div>
 
         <div id="k1KatilimcilarAlani" class="mb-3"></div>
 
+        <div class="mb-3 p-2 border rounded">
+          <label class="form-label small fw-semibold d-block">Muhtar (${guvenliMetin(kayit.koyMahalle)} Köyü/Mahallesi)</label>
+          <div class="row g-2">
+            <div class="col-6"><input type="text" class="form-control form-control-sm" id="k1MuhtarAd" placeholder="Ad Soyad" value="${guvenliMetin(oncekiVeri.muhtar?.adSoyad || '')}"></div>
+            <div class="col-6"><input type="text" class="form-control form-control-sm" id="k1MuhtarYedekAd" placeholder="Yedek (varsa)" value="${guvenliMetin(oncekiVeri.muhtar?.yedekAdSoyad || '')}"></div>
+          </div>
+        </div>
+
         <div class="mb-3">
           <label class="form-label small fw-semibold">Karar Belgesi (PDF)</label>
           <input type="file" class="form-control form-control-sm" id="k1PdfInput" accept="application/pdf">
-          ${alt.pdfDosyaYolu ? `<div class="form-text small"><i class="bi bi-file-earmark-pdf text-danger me-1"></i><a href="${API}/${id}/adim-pdf/${seciliAna}/${seciliAlt}" target="_blank">Mevcut belgeyi görüntüle</a> (yeni dosya seçersen değişir)</div>` : ''}
         </div>
+        ${pdfGomuluGoruntuleyiciHtml(alt, `${API}/${id}/adim-pdf/${seciliAna}/${seciliAlt}`)}
 
-        <button class="btn btn-primary btn-sm" onclick="karar1Kaydet()">Kaydet</button>
+        <button class="btn btn-primary btn-sm mt-2" onclick="karar1Kaydet()">Kaydet</button>
         <button class="btn btn-link btn-sm text-muted" onclick="karar1IslemsizTamamla()">Formu doldurmadan tamamlandı işaretle</button>
         <div id="k1Sonuc" class="mt-2"></div>
       `;
@@ -218,60 +255,99 @@
       const komisyonJson = await fetch(`${API}/komisyon-adaylari?il=${encodeURIComponent(kayit.il)}`).then((r) => r.json());
       const select = document.getElementById('k1KomisyonSelect');
       if (komisyonJson.success && komisyonJson.data.length) {
-        select.innerHTML = komisyonJson.data.map((k) => `<option value="${k._id}" ${oncekiVeri.komisyonId === k._id ? 'selected' : ''}>${k.yil} - ${k.il} (${k.uyeler.length} kurum)</option>`).join('');
+        select.innerHTML = '<option value="">— Seç —</option>' + komisyonJson.data.map((k) => `<option value="${k._id}" ${oncekiVeri.komisyonId === k._id ? 'selected' : ''}>${k.yil} - ${k.il}</option>`).join('');
       } else {
         select.innerHTML = '<option value="">Bu il için kayıtlı komisyon yok</option>';
       }
       select.addEventListener('change', karar1KomisyonSecildi);
-      document.querySelectorAll('input[name="k1Guvenlik"]').forEach((r) => r.addEventListener('change', karar1KatilimcilariGuncelle));
+      document.getElementById('k1ValiIzinli').addEventListener('change', karar1BaskanlikGuncelle);
+      document.getElementById('k1VYIzinli').addEventListener('change', karar1BaskanlikGuncelle);
+      document.getElementById('k1IlMudurIzinli').addEventListener('change', karar1BaskanlikGuncelle);
 
       if (select.value) await karar1KomisyonSecildi();
+      karar1BaskanlikSorularinaGoster(b);
+      karar1BaskanlikGuncelle(b);
+    }
+
+    function karar1BaskanlikSorularinaGoster(b) {
+      document.getElementById('k1VYSorusu').style.display = document.getElementById('k1ValiIzinli').checked ? 'block' : 'none';
+      document.getElementById('k1IlMudurSorusu').style.display = (document.getElementById('k1ValiIzinli').checked && document.getElementById('k1VYIzinli').checked) ? 'block' : 'none';
     }
 
     async function karar1KomisyonSecildi() {
       const komisyonId = document.getElementById('k1KomisyonSelect').value;
-      if (!komisyonId) { _karar1SeciliKomisyon = null; document.getElementById('k1KatilimcilarAlani').innerHTML = ''; return; }
+      if (!komisyonId) { _karar1SeciliKomisyon = null; document.getElementById('k1KatilimcilarAlani').innerHTML = ''; karar1BaskanlikGuncelle(); return; }
       const json = await fetch(`/api/il-mera-komisyonu/${komisyonId}`).then((r) => r.json());
       if (!json.success) return;
       _karar1SeciliKomisyon = json.data;
       karar1KatilimcilariGuncelle();
+      karar1BaskanlikGuncelle();
+    }
+
+    /** Baskanligin KIM oldugunu ('vali'|'valiYardimcisi'|'ilMudur') dondurur. */
+    function karar1BaskanTipi() {
+      const valiIzinli = document.getElementById('k1ValiIzinli').checked;
+      if (!valiIzinli) return 'vali';
+      const vyIzinli = document.getElementById('k1VYIzinli').checked;
+      if (!vyIzinli) return 'valiYardimcisi';
+      const ilMudurEl = document.getElementById('k1IlMudurIzinli');
+      if (ilMudurEl && !ilMudurEl.checked) return 'ilMudur';
+      return null; // ucu de izinli
+    }
+
+    function karar1BaskanlikGuncelle() {
+      karar1BaskanlikSorularinaGoster();
+      const sonucAlan = document.getElementById('k1BaskanSonucAlani');
+      const tip = karar1BaskanTipi();
+
+      if (tip === 'vali') {
+        sonucAlan.innerHTML = `<label class="form-label small mb-1">Vali Adı Soyadı</label><input type="text" class="form-control form-control-sm" id="k1BaskanAdSoyad" placeholder="Vali adı soyadı">`;
+        karar1KatilimcilariGuncelle();
+        return;
+      }
+      if (tip === 'valiYardimcisi') {
+        const vy = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'valiYardimcisi') : null;
+        sonucAlan.innerHTML = `
+          <div class="small"><strong>${guvenliMetin(vy?.asilAdSoyad || '(komisyon kaydında Vali Yardımcısı bilgisi yok)')}</strong> - Vali Yardımcısı</div>
+          <div class="form-check mt-1"><input type="checkbox" class="form-check-input" id="k1BaskanVekil"><label class="form-check-label small" for="k1BaskanVekil">Vekaleten (V.)</label></div>`;
+        karar1KatilimcilariGuncelle();
+        return;
+      }
+      if (tip === 'ilMudur') {
+        const im = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'ilMudur') : null;
+        sonucAlan.innerHTML = `
+          <div class="small"><strong>${guvenliMetin(im?.asilAdSoyad || '(komisyon kaydında İl Müdürü bilgisi yok)')}</strong> - İl Tarım ve Orman Müdürü</div>
+          <div class="form-check mt-1"><input type="checkbox" class="form-check-input" id="k1BaskanVekil"><label class="form-check-label small" for="k1BaskanVekil">Vekaleten (V.)</label></div>`;
+        karar1KatilimcilariGuncelle();
+        return;
+      }
+      sonucAlan.innerHTML = '<div class="alert alert-warning small py-2 mb-0">Vali, Vali Yardımcısı ve İl Müdürü\'nün hepsi izinli görünüyor - lütfen durumu kontrol edin.</div>';
     }
 
     function karar1KatilimcilariGuncelle() {
       const alan = document.getElementById('k1KatilimcilarAlani');
-      if (!_karar1SeciliKomisyon) { alan.innerHTML = ''; return; }
-      const guvenlikSecimi = (document.querySelector('input[name="k1Guvenlik"]:checked') || {}).value;
+      if (!_karar1SeciliKomisyon) { alan.innerHTML = '<div class="text-muted small">Katılımcılar için önce komisyon seç.</div>'; return; }
 
-      const gosterilecekUyeler = _karar1SeciliKomisyon.uyeler.filter((u) => {
-        if (!u.guvenlikTipi) return true; // guvenlik disi kurumlar HER ZAMAN gosterilir
-        if (!guvenlikSecimi) return false; // guvenlik secimi yapilmadan guvenlik kurumlari gizli
-        if (guvenlikSecimi === 'ikisi') return true;
-        return u.guvenlikTipi === guvenlikSecimi;
-      });
-
-      if (gosterilecekUyeler.length === 0) {
-        alan.innerHTML = '<div class="text-muted small">Bu komisyonda henüz kurum/üye eklenmemiş.</div>';
-        return;
-      }
+      const baskanTip = karar1BaskanTipi();
+      // Il Muduru BASKAN DEGILSE, normal katilimci listesinde de gorunsun.
+      const gosterilecekKodlar = baskanTip === 'ilMudur' ? K1_DIGER_KURUM_KODLARI : ['ilMudur', ...K1_DIGER_KURUM_KODLARI];
 
       alan.innerHTML = `
-        <label class="form-label small fw-semibold d-block">Katılımcılar (kurum başına asıl veya yedek seç)</label>
-        <table class="table table-sm">
-          <thead><tr><th>Kurum</th><th>Asıl</th><th>Yedek</th></tr></thead>
+        <label class="form-label small fw-semibold d-block">Katılımcılar</label>
+        <table class="table table-sm align-middle">
+          <thead><tr><th></th><th>Kurum</th><th>Asıl</th><th>Yedek</th></tr></thead>
           <tbody>
-            ${gosterilecekUyeler.map((u) => {
-              const secilen = _karar1Secimler[u.kurumAdi] || 'asil';
+            ${gosterilecekKodlar.map((kod) => {
+              const tanim = _karar1KurumListesi.find((k) => k.kod === kod) || { ad: kod, yedekVar: true };
+              const uye = _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === kod) || {};
+              const dahil = _karar1Secimler[kod] !== undefined;
+              const secilenTip = _karar1Secimler[kod] || 'asil';
               return `
                 <tr>
-                  <td class="small">${guvenliMetin(u.kurumAdi)}</td>
-                  <td>
-                    <label class="small"><input type="radio" name="k1_${guvenliMetin(u.kurumAdi)}" value="asil" ${secilen === 'asil' ? 'checked' : ''} onchange="_karar1Secimler['${u.kurumAdi.replace(/'/g, "\\'")}']='asil'">
-                    ${guvenliMetin(u.asilAdSoyad || '-')}${u.asilUnvan ? ' (' + guvenliMetin(u.asilUnvan) + ')' : ''}</label>
-                  </td>
-                  <td>
-                    <label class="small"><input type="radio" name="k1_${guvenliMetin(u.kurumAdi)}" value="yedek" ${secilen === 'yedek' ? 'checked' : ''} onchange="_karar1Secimler['${u.kurumAdi.replace(/'/g, "\\'")}']='yedek'">
-                    ${guvenliMetin(u.yedekAdSoyad || '-')}${u.yedekUnvan ? ' (' + guvenliMetin(u.yedekUnvan) + ')' : ''}</label>
-                  </td>
+                  <td><input type="checkbox" class="form-check-input k1-dahil-check" data-kod="${kod}" ${dahil ? 'checked' : ''} onchange="karar1DahilDegisti('${kod}', this.checked)"></td>
+                  <td class="small">${guvenliMetin(tanim.ad)}</td>
+                  <td><label class="small"><input type="radio" name="k1tip_${kod}" value="asil" ${secilenTip === 'asil' ? 'checked' : ''} onchange="_karar1Secimler['${kod}']='asil'"> ${guvenliMetin(uye.asilAdSoyad || '-')}</label></td>
+                  <td>${tanim.yedekVar === false ? '<span class="text-muted small">Yedeği yok</span>' : `<label class="small"><input type="radio" name="k1tip_${kod}" value="yedek" ${secilenTip === 'yedek' ? 'checked' : ''} onchange="_karar1Secimler['${kod}']='yedek'"> ${guvenliMetin(uye.yedekAdSoyad || '-')}</label>`}</td>
                 </tr>`;
             }).join('')}
           </tbody>
@@ -279,23 +355,60 @@
       `;
     }
 
+    window.karar1DahilDegisti = (kod, dahilMi) => {
+      if (dahilMi) { if (!_karar1Secimler[kod]) _karar1Secimler[kod] = 'asil'; }
+      else { delete _karar1Secimler[kod]; }
+    };
+
     function karar1KatilimciListesiniTopla() {
-      if (!_karar1SeciliKomisyon) return [];
-      const guvenlikSecimi = (document.querySelector('input[name="k1Guvenlik"]:checked') || {}).value;
-      const gosterilecekUyeler = _karar1SeciliKomisyon.uyeler.filter((u) => {
-        if (!u.guvenlikTipi) return true;
-        if (!guvenlikSecimi) return false;
-        if (guvenlikSecimi === 'ikisi') return true;
-        return u.guvenlikTipi === guvenlikSecimi;
-      });
-      return gosterilecekUyeler.map((u) => {
-        const tip = _karar1Secimler[u.kurumAdi] || 'asil';
-        return {
-          kurumAdi: u.kurumAdi, temsilciTipi: tip,
-          adSoyad: tip === 'asil' ? u.asilAdSoyad : u.yedekAdSoyad,
-          unvan: tip === 'asil' ? u.asilUnvan : u.yedekUnvan,
-        };
-      });
+      const sonuc = [];
+      if (_karar1SeciliKomisyon) {
+        document.querySelectorAll('.k1-dahil-check:checked').forEach((chk) => {
+          const kod = chk.dataset.kod;
+          const uye = _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === kod) || {};
+          const tip = _karar1Secimler[kod] || 'asil';
+          const tanim = _karar1KurumListesi.find((k) => k.kod === kod) || { ad: kod };
+          sonuc.push({
+            kurumKod: kod, kurumAdi: tanim.ad, temsilciTipi: tip,
+            adSoyad: tip === 'asil' ? uye.asilAdSoyad : uye.yedekAdSoyad,
+            unvan: tip === 'asil' ? uye.asilUnvan : uye.yedekUnvan,
+          });
+        });
+      }
+      const muhtarAd = (document.getElementById('k1MuhtarAd')?.value || '').trim();
+      if (muhtarAd) {
+        sonuc.push({
+          kurumKod: 'muhtar', kurumAdi: 'Muhtar', temsilciTipi: 'asil',
+          adSoyad: muhtarAd, unvan: `${kayit.koyMahalle} Muhtarı`,
+          yedekAdSoyad: (document.getElementById('k1MuhtarYedekAd')?.value || '').trim() || undefined,
+        });
+      }
+      return sonuc;
+    }
+
+    function karar1BaskanlikBilgisiniTopla() {
+      const tip = karar1BaskanTipi();
+      const b = {
+        valiIzinli: document.getElementById('k1ValiIzinli').checked,
+        valiYardimcisiIzinli: document.getElementById('k1VYIzinli').checked,
+        ilMuduruIzinli: document.getElementById('k1IlMudurIzinli')?.checked || false,
+        tip,
+      };
+      if (tip === 'vali') {
+        b.adSoyad = (document.getElementById('k1BaskanAdSoyad')?.value || '').trim();
+        b.unvan = 'Vali';
+      } else if (tip === 'valiYardimcisi') {
+        const vy = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'valiYardimcisi') : null;
+        b.adSoyad = vy?.asilAdSoyad || '';
+        b.unvan = 'Vali Yardımcısı';
+        b.vekilMi = document.getElementById('k1BaskanVekil')?.checked || false;
+      } else if (tip === 'ilMudur') {
+        const im = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'ilMudur') : null;
+        b.adSoyad = im?.asilAdSoyad || '';
+        b.unvan = 'İl Tarım ve Orman Müdürü';
+        b.vekilMi = document.getElementById('k1BaskanVekil')?.checked || false;
+      }
+      return b;
     }
 
     window.karar1Kaydet = async () => {
@@ -303,7 +416,6 @@
       const kararTarihi = document.getElementById('k1Tarih').value;
       const kararSayisi = document.getElementById('k1Sayi').value.trim();
       const komisyonId = document.getElementById('k1KomisyonSelect').value;
-      const guvenlikSecimi = (document.querySelector('input[name="k1Guvenlik"]:checked') || {}).value || '';
       const pdfDosya = document.getElementById('k1PdfInput').files[0];
 
       if (!kararTarihi || !kararSayisi) { sonucAlan.innerHTML = '<span class="text-danger small">Karar tarihi ve sayısı zorunludur.</span>'; return; }
@@ -315,7 +427,7 @@
       formData.append('kararTarihi', kararTarihi);
       formData.append('kararSayisi', kararSayisi);
       formData.append('komisyonId', komisyonId);
-      formData.append('guvenlikSecimi', guvenlikSecimi);
+      formData.append('baskanlik', JSON.stringify(karar1BaskanlikBilgisiniTopla()));
       formData.append('katilimcilar', JSON.stringify(karar1KatilimciListesiniTopla()));
       if (pdfDosya) formData.append('pdf', pdfDosya);
 
@@ -326,6 +438,7 @@
 
       kayit = json.data;
       renderSurec();
+      renderVeriPaneli();
       sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
     };
 

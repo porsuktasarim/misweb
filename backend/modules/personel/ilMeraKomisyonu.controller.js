@@ -11,6 +11,10 @@ function basarisiz(res, mesaj, kod = 400) {
   return res.status(kod).json({ success: false, data: null, message: mesaj });
 }
 
+function kurumListesiHandler(req, res) {
+  return basarili(res, service.kurumListesi());
+}
+
 async function listeHandler(req, res) {
   try {
     return basarili(res, await service.hepsiniListele());
@@ -60,4 +64,4 @@ async function silHandler(req, res) {
   }
 }
 
-module.exports = { listeHandler, ilIcinListeHandler, getirHandler, olusturHandler, uyeleriGuncelleHandler, silHandler };
+module.exports = { listeHandler, ilIcinListeHandler, getirHandler, olusturHandler, uyeleriGuncelleHandler, silHandler, kurumListesiHandler };

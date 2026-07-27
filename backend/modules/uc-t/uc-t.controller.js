@@ -126,11 +126,12 @@ async function komisyonAdaylariHandler(req, res) {
 
 async function karar1KaydetHandler(req, res) {
   try {
-    const { anaAdimIndex, altAdimIndex, kararTarihi, kararSayisi, komisyonId, guvenlikSecimi } = req.body;
+    const { anaAdimIndex, altAdimIndex, kararTarihi, kararSayisi, komisyonId } = req.body;
     const katilimcilar = req.body.katilimcilar ? JSON.parse(req.body.katilimcilar) : [];
+    const baskanlik = req.body.baskanlik ? JSON.parse(req.body.baskanlik) : null;
     return basarili(
       res,
-      await service.karar1Kaydet(req.params.id, anaAdimIndex, altAdimIndex, { kararTarihi, kararSayisi, komisyonId, guvenlikSecimi, katilimcilar }, req.file),
+      await service.karar1Kaydet(req.params.id, anaAdimIndex, altAdimIndex, { kararTarihi, kararSayisi, komisyonId, baskanlik, katilimcilar }, req.file),
       'Karar kaydedildi'
     );
   } catch (err) {

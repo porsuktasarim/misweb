@@ -7,6 +7,7 @@ const controller = require('./ilMeraKomisyonu.controller');
 
 const router = express.Router();
 
+router.get('/kurum-listesi', controller.kurumListesiHandler);
 router.get('/il-listesi', controller.ilIcinListeHandler);
 router.get('/', controller.listeHandler);
 router.post('/', controller.olusturHandler);

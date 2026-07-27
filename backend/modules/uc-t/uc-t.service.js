@@ -24,7 +24,7 @@ async function listele() {
  * bu FILTRELEME FRONTEND'DE yapilip HAZIR katilimci listesi
  * gonderilir (backend sadece SNAPSHOT'i saklar, tekrar sorgu atmaz).
  */
-async function karar1Kaydet(id, anaAdimIndex, altAdimIndex, { kararTarihi, kararSayisi, komisyonId, guvenlikSecimi, katilimcilar }, dosya) {
+async function karar1Kaydet(id, anaAdimIndex, altAdimIndex, { kararTarihi, kararSayisi, komisyonId, baskanlik, katilimcilar }, dosya) {
   const kayit = await UcT.findById(id);
   if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
   if (!kararTarihi || !kararSayisi) throw new Error('Karar tarihi ve sayısı zorunludur.');
@@ -41,7 +41,7 @@ async function karar1Kaydet(id, anaAdimIndex, altAdimIndex, { kararTarihi, karar
 
   altAdim.veri = {
     kararTarihi, kararSayisi, komisyonId,
-    guvenlikSecimi: guvenlikSecimi || null,
+    baskanlik: baskanlik || null, // { tip: 'vali'|'valiYardimcisi'|'ilMudur', adSoyad, unvan, vekilMi }
     katilimcilar: katilimcilar || [],
   };
   altAdim.tamamlandiMi = true;

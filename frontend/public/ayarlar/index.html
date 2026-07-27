@@ -988,68 +988,73 @@
       });
     }
 
-    function imkUyeSatiriHtml(uye, idx) {
+    let _imkKurumListesi = null;
+    async function imkKurumListesiniYukle() {
+      if (_imkKurumListesi) return _imkKurumListesi;
+      const json = await apiGet('/api/il-mera-komisyonu/kurum-listesi');
+      _imkKurumListesi = json.success ? json.data : [];
+      return _imkKurumListesi;
+    }
+
+    function imkUyeSatiriHtml(kurumTanimi, uye) {
+      const otomatikUnvanlar = { valiYardimcisi: 'Vali Yardımcısı', ilMudur: 'İl Tarım ve Orman Müdürü' };
+      const asilUnvanHtml = kurumTanimi.otomatikUnvan
+        ? `<input type="text" class="form-control form-control-sm imk-asil-unvan" value="${otomatikUnvanlar[kurumTanimi.kod]}" readonly>`
+        : `<input type="text" class="form-control form-control-sm imk-asil-unvan" value="${(uye.asilUnvan || '').replace(/"/g, '&quot;')}" placeholder="Unvan">`;
+
+      if (kurumTanimi.koyeOzgu) {
+        return `
+          <tr data-kurum-kod="${kurumTanimi.kod}">
+            <td>${kurumTanimi.ad}</td>
+            <td colspan="4" class="text-muted small">Köye özgü - her 3T kararında ayrıca girilir, burada sabit kayıt tutulmaz.</td>
+          </tr>`;
+      }
+
       return `
-        <tr data-idx="${idx}">
-          <td><input type="text" class="form-control form-control-sm imk-kurum-adi" value="${(uye.kurumAdi || '').replace(/"/g, '&quot;')}" placeholder="Kurum adı"></td>
-          <td>
-            <select class="form-select form-select-sm imk-guvenlik-tipi">
-              <option value="" ${!uye.guvenlikTipi ? 'selected' : ''}>—</option>
-              <option value="polis" ${uye.guvenlikTipi === 'polis' ? 'selected' : ''}>Polis</option>
-              <option value="jandarma" ${uye.guvenlikTipi === 'jandarma' ? 'selected' : ''}>Jandarma</option>
-            </select>
-          </td>
+        <tr data-kurum-kod="${kurumTanimi.kod}">
+          <td>${kurumTanimi.ad}${kurumTanimi.guvenlikTipi ? ` <span class="badge bg-secondary">${kurumTanimi.guvenlikTipi}</span>` : ''}</td>
           <td><input type="text" class="form-control form-control-sm imk-asil-ad" value="${(uye.asilAdSoyad || '').replace(/"/g, '&quot;')}" placeholder="Ad Soyad"></td>
-          <td><input type="text" class="form-control form-control-sm imk-asil-unvan" value="${(uye.asilUnvan || '').replace(/"/g, '&quot;')}" placeholder="Unvan"></td>
-          <td><input type="text" class="form-control form-control-sm imk-yedek-ad" value="${(uye.yedekAdSoyad || '').replace(/"/g, '&quot;')}" placeholder="Ad Soyad"></td>
-          <td><input type="text" class="form-control form-control-sm imk-yedek-unvan" value="${(uye.yedekUnvan || '').replace(/"/g, '&quot;')}" placeholder="Unvan"></td>
-          <td><button type="button" class="btn btn-sm btn-outline-danger imk-satir-sil-btn">×</button></td>
+          <td>${asilUnvanHtml}</td>
+          ${kurumTanimi.yedekVar ? `
+            <td><input type="text" class="form-control form-control-sm imk-yedek-ad" value="${(uye.yedekAdSoyad || '').replace(/"/g, '&quot;')}" placeholder="Ad Soyad"></td>
+            <td><input type="text" class="form-control form-control-sm imk-yedek-unvan" value="${(uye.yedekUnvan || '').replace(/"/g, '&quot;')}" placeholder="Unvan"></td>
+          ` : `<td colspan="2" class="text-muted small">Yedeği yok</td>`}
         </tr>`;
     }
 
-    function imkUyeFormunuKur(komisyon) {
+    async function imkUyeFormunuKur(komisyon) {
+      const kurumListesi = await imkKurumListesiniYukle();
       const govde = document.getElementById(`imk-govde-${komisyon._id}`);
       govde.innerHTML = `
+        <p class="text-muted small">Kurumlar imza sırasına göre sabittir. Vali Yardımcısı ve İl Müdürü'nün unvanı otomatik gelir ve yedeği yoktur (bu ikisi ile Vali arasındaki başkanlık vekalet sırası her 3T kararında ayrıca sorulur).</p>
         <div class="table-responsive">
           <table class="table table-sm align-middle">
             <thead>
-              <tr>
-                <th>Kurum</th><th>Güvenlik Tipi</th>
-                <th>Asıl Ad Soyad</th><th>Asıl Unvan</th>
-                <th>Yedek Ad Soyad</th><th>Yedek Unvan</th><th></th>
-              </tr>
+              <tr><th>Kurum</th><th>Asıl Ad Soyad</th><th>Asıl Unvan</th><th>Yedek Ad Soyad</th><th>Yedek Unvan</th></tr>
             </thead>
             <tbody id="imk-tablo-${komisyon._id}">
-              ${komisyon.uyeler.map((u, i) => imkUyeSatiriHtml(u, i)).join('')}
+              ${kurumListesi.map((kt) => imkUyeSatiriHtml(kt, komisyon.uyeler.find((u) => u.kurumKod === kt.kod) || {})).join('')}
             </tbody>
           </table>
         </div>
-        <button type="button" class="btn btn-sm btn-outline-secondary imk-satir-ekle-btn">+ Kurum Ekle</button>
         <button type="button" class="btn btn-sm btn-primary imk-kaydet-btn">Kaydet</button>
         <span class="imk-sonuc small ms-2"></span>
       `;
 
       const tablo = document.getElementById(`imk-tablo-${komisyon._id}`);
 
-      govde.querySelector('.imk-satir-ekle-btn').addEventListener('click', () => {
-        tablo.insertAdjacentHTML('beforeend', imkUyeSatiriHtml({}, tablo.children.length));
-        tablo.lastElementChild.querySelector('.imk-satir-sil-btn').addEventListener('click', (e) => e.target.closest('tr').remove());
-      });
-
-      tablo.querySelectorAll('.imk-satir-sil-btn').forEach((btn) => {
-        btn.addEventListener('click', (e) => e.target.closest('tr').remove());
-      });
-
       govde.querySelector('.imk-kaydet-btn').addEventListener('click', async () => {
         const sonucAlan = govde.querySelector('.imk-sonuc');
-        const uyeler = Array.from(tablo.querySelectorAll('tr')).map((tr) => ({
-          kurumAdi: tr.querySelector('.imk-kurum-adi').value.trim(),
-          guvenlikTipi: tr.querySelector('.imk-guvenlik-tipi').value || null,
-          asilAdSoyad: tr.querySelector('.imk-asil-ad').value.trim(),
-          asilUnvan: tr.querySelector('.imk-asil-unvan').value.trim(),
-          yedekAdSoyad: tr.querySelector('.imk-yedek-ad').value.trim(),
-          yedekUnvan: tr.querySelector('.imk-yedek-unvan').value.trim(),
-        })).filter((u) => u.kurumAdi);
+        const uyeler = kurumListesi.filter((kt) => !kt.koyeOzgu).map((kt) => {
+          const tr = tablo.querySelector(`tr[data-kurum-kod="${kt.kod}"]`);
+          return {
+            kurumKod: kt.kod,
+            asilAdSoyad: tr.querySelector('.imk-asil-ad').value.trim(),
+            asilUnvan: tr.querySelector('.imk-asil-unvan').value.trim(),
+            yedekAdSoyad: kt.yedekVar ? tr.querySelector('.imk-yedek-ad').value.trim() : '',
+            yedekUnvan: kt.yedekVar ? tr.querySelector('.imk-yedek-unvan').value.trim() : '',
+          };
+        }).filter((u) => u.asilAdSoyad);
 
         sonucAlan.textContent = 'Kaydediliyor...';
         const res = await fetch(`/api/il-mera-komisyonu/${komisyon._id}/uyeler`, {

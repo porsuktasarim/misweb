@@ -1,28 +1,51 @@
 /**
  * ilMeraKomisyonu.model.js
  *
- * Yil + il bazinda İl Mera Komisyonu uye listesi. Teknik Ekip'ten
- * farkli olarak: (1) ILCE degil IL bazinda, (2) her kurumun bir ASIL
- * bir de YEDEK temsilcisi var (ikisi de kaydedilir - HANGISININ
- * belirli bir kararda imzaladigi, o kararin kendisinde - 3T modulunun
- * "İl Mera Komisyonu Kararı" adiminda - SECILIR, burada degil).
+ * Yil + il bazinda İl Mera Komisyonu uye listesi. Kurumlar ARTIK
+ * SERBEST METIN DEGIL - kullanicinin belirttigi SABIT, imza sirasina
+ * gore siralanmis kurum listesinden secilir.
  *
- * Guvenlik kurumlari (Emniyet/Jandarma) icin `guvenlikTipi` etiketi
- * tutulur - 3T'deki "Polis mi, Jandarma mi, ikisi mi imzalayacak"
- * secimi bu etikete gore ilgili uye satir(lar)ini filtreler.
+ * Vali Yardimcisi ve İl Muduru: unvan OTOMATIK/SABIT (degistirilmez),
+ * YEDEGI YOK (bunlar bir "baskanlik vekalet zinciri"nin parcasidir -
+ * Vali izinliyse Vali Yardimcisi, o da izinliyse İl Muduru baskanlik
+ * eder; bu ZINCIR her KARARDA - 3T Adim 1'de - ayrica sorulur, burada
+ * SADECE Vali Yardimcisi ve İl Muduru'nun SABIT bilgileri tutulur).
+ *
+ * Muhtar: sabit kayitta YER ALMAZ - her karar HANGI koy/mahalle
+ * icinse O muhtar oldugu icin, muhtar bilgisi HER 3T KARARINDA ayrica
+ * girilir (bkz. uc-t modulu, Adim 1).
+ *
+ * Diger TUM kurumlarin (Teknik Personel, DSİ, OGM, Defterdarlık,
+ * Milli Emlak, Kadastro, Ziraat Odasi, Jandarma, Polis) hem ASIL hem
+ * YEDEK temsilcisi var.
  */
 
 const mongoose = require('mongoose');
 
+/** İMZA SIRASINA GORE sabit kurum listesi. */
+const KOMISYON_KURUMLARI = [
+  { kod: 'valiYardimcisi', ad: 'Vali Yardımcısı', otomatikUnvan: true, yedekVar: false, koyeOzgu: false },
+  { kod: 'ilMudur', ad: 'İl Tarım ve Orman Müdürü', otomatikUnvan: true, yedekVar: false, koyeOzgu: false },
+  { kod: 'teknikPersonel', ad: 'Teknik Personel', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
+  { kod: 'dsi', ad: 'DSİ', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
+  { kod: 'ogm', ad: 'OGM', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
+  { kod: 'muhtar', ad: 'Muhtar', otomatikUnvan: false, yedekVar: true, koyeOzgu: true },
+  { kod: 'defterdarlik', ad: 'Defterdarlık', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
+  { kod: 'milliEmlak', ad: 'Milli Emlak', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
+  { kod: 'kadastro', ad: 'Kadastro', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
+  { kod: 'ziraatOdasi', ad: 'Ziraat Odası', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
+  { kod: 'jandarma', ad: 'Jandarma', otomatikUnvan: false, yedekVar: true, koyeOzgu: false, guvenlikTipi: 'jandarma' },
+  { kod: 'polis', ad: 'Polis', otomatikUnvan: false, yedekVar: true, koyeOzgu: false, guvenlikTipi: 'polis' },
+];
+
+const KURUM_KODLARI = KOMISYON_KURUMLARI.map((k) => k.kod);
+
 const uyeSchema = new mongoose.Schema(
   {
-    kurumAdi: { type: String, required: true },
-    // SADECE guvenlik kurumlari icin doldurulur - digerlerinde null/bos.
-    guvenlikTipi: { type: String, enum: ['polis', 'jandarma', null], default: null },
-
+    kurumKod: { type: String, required: true, enum: KURUM_KODLARI },
     asilAdSoyad: String,
-    asilUnvan: String,
-    yedekAdSoyad: String,
+    asilUnvan: String,   // valiYardimcisi/ilMudur icin SABIT (frontend kilitler), digerlerinde serbest
+    yedekAdSoyad: String, // valiYardimcisi/ilMudur/muhtar icin kullanilmaz
     yedekUnvan: String,
   },
   { _id: false }
@@ -40,3 +63,4 @@ const ilMeraKomisyonuSchema = new mongoose.Schema(
 ilMeraKomisyonuSchema.index({ yil: 1, il: 1 }, { unique: true });
 
 module.exports = mongoose.model('IlMeraKomisyonu', ilMeraKomisyonuSchema);
+module.exports.KOMISYON_KURUMLARI = KOMISYON_KURUMLARI;

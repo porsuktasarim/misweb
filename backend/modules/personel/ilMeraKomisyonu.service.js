@@ -3,6 +3,11 @@
  */
 
 const IlMeraKomisyonu = require('./ilMeraKomisyonu.model');
+const { KOMISYON_KURUMLARI } = require('./ilMeraKomisyonu.model');
+
+function kurumListesi() {
+  return KOMISYON_KURUMLARI;
+}
 
 /** Tum yillari gruplu dondurur (Teknik Ekip'teki ayni desen) */
 async function hepsiniListele() {
@@ -55,5 +60,5 @@ async function komisyonSil(id) {
 
 module.exports = {
   hepsiniListele, komisyonGetir, ilVeYilaGoreBul, ilIcinKomisyonlar,
-  komisyonOlustur, uyeleriGuncelle, komisyonSil,
+  komisyonOlustur, uyeleriGuncelle, komisyonSil, kurumListesi,
 };

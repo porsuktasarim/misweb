@@ -51,19 +51,32 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   ŞİMDİLİK manuel tamamlandı işaretlemesi + not alanı ile takip
   edilir (gerçek veri formları kademeli olarak eklenecek). ADIM 1
   (İl Mera Komisyonu Kararı) artık GERÇEK FORM: karar tarihi/sayısı,
-  İl Mera Komisyonu Üyeleri'nden komisyon seçimi (kurum başına
-  asıl/yedek temsilci seçimi), Polis/Jandarma/İkisi de güvenlik
-  kurumu seçimi, PDF karar belgesi yükleme. Diğer adımlar henüz
+  İl Mera Komisyonu seçimi, BAŞKANLIK VEKALET ZİNCİRİ (Vali izinli mi
+  → değilse Vali başkanlık eder; izinliyse Vali Yardımcısı izinli mi
+  → değilse o başkanlık eder (vekaleten işaretlenebilir); o da
+  izinliyse İl Müdürü başkanlık eder - üçü de izinliyse uyarı verilir
+  ve elle çözülür), sabit kurum listesinden (Teknik Personel, DSİ,
+  OGM, Defterdarlık, Milli Emlak, Kadastro, Ziraat Odası, Jandarma,
+  Polis) katılımcı seçimi (asıl/yedek), köye özgü Muhtar bilgisi (her
+  kararda ayrı girilir), PDF karar belgesi yükleme + İNDİRMEDEN
+  açılır-kapanır (collapse+iframe) görüntüleme. NOT: Vali/Vali
+  Yardımcısı/İl Müdürü arasındaki başkanlık-vekalet mantığı en iyi
+  yorumla kuruldu, canlıda doğrulanması önerilir. Diğer adımlar henüz
   manuel işaretleme. Tahsis (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
 - **Personel Yönetimi** (Ayarlar içinde) — Teknik Ekip Üyeleri: yıl/ilçe
   bazlı akordiyon, kurum seçimine göre otomatik imza metni üretimi
   (Muhtarlık/Mahalli Bilirkişi/Belediye vb.), toplu üye yükleme
   (xlsx/xls/csv/json). İl Mera Komisyonu Üyeleri: yıl/il bazlı
-  akordiyon, kurum başına asıl+yedek temsilci, güvenlik kurumları
-  (Polis/Jandarma) için ayrı etiket (3T Adım 1'in filtrelemesi için).
-  Kullanıcılar bölümü hâlâ iskelet halinde (henüz doldurulmadı) -
-  3T'de planlanan "adımı işlemsiz tamamlama izni" bu bölüme bağlı
-  olacak.
+  akordiyon, SABİT kurum listesi (imza sırasına göre: Vali Yardımcısı,
+  İl Müdürü, Teknik Personel, DSİ, OGM, Muhtar, Defterdarlık, Milli
+  Emlak, Kadastro, Ziraat Odası, Jandarma, Polis). Vali Yardımcısı ve
+  İl Müdürü'nün unvanı otomatik/sabit ve yedeği yok (3T'deki başkanlık
+  vekalet zincirinin parçası); Muhtar köye özgü olduğu için burada
+  sabit kayıt tutulmaz (her 3T kararında ayrı girilir); diğer 9
+  kurumun asıl+yedek temsilcisi var, güvenlik kurumları (Jandarma/
+  Polis) ayrı etiketli. Kullanıcılar bölümü hâlâ iskelet halinde
+  (henüz doldurulmadı) - 3T'de planlanan "adımı işlemsiz tamamlama
+  izni" bu bölüme bağlı olacak.
 - **Mevzuat** — Anayasadan yönetmeliğe, mahkeme kararına kadar hukuki
   kaynak arşivi. mevzuat.gov.tr URL'si yapıştırılınca içerik otomatik
   çekilir (bedesten.adalet.gov.tr API'si; HTML veya PDF formatını
