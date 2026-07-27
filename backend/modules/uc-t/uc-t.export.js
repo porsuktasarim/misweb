@@ -28,8 +28,21 @@ async function duyuruTutanagiVerileriniOlustur(kayit, veri) {
   const yil = komisyon ? komisyon.yil : '20..';
   const tarihGosterim = veri.baslangicTarihi ? new Date(veri.baslangicTarihi).toLocaleDateString('tr-TR') : `…/…/${yil}`;
   const kurumListesi = [...(veri.gonderimKurumlari || []), ...(veri.digerKurumlar ? [veri.digerKurumlar] : [])].join(', ') || '……………………………';
-  const vy = komisyon ? komisyon.uyeler.find((u) => u.kurumKod === 'valiYardimcisi') : null;
-  const imzaAdSoyad = vy?.asilAdSoyad || '……………………………';
+
+  // Imza icin Adim 1'de (varsa) belirlenmis GERCEK baskanlik bilgisini
+  // kullan (Vali Yardimcisi/Il Muduru/Teknik Personel) - yoksa
+  // komisyon kaydindaki Vali Yardimcisi'na geri don.
+  const karar1Adim = kayit.surec.flatMap((a) => a.altAdimlar).find((a) => a.tip === 'ilMeraKomisyonuKarari');
+  const b = karar1Adim?.veri?.baskanlik;
+  let imzaAdSoyad = '……………………………';
+  let imzaUnvan = 'Vali Yardımcısı';
+  if (b && b.adSoyad) {
+    imzaAdSoyad = b.adSoyad;
+    imzaUnvan = b.unvan;
+  } else if (komisyon) {
+    const vy = komisyon.uyeler.find((u) => u.kurumKod === 'valiYardimcisi');
+    if (vy?.asilAdSoyad) imzaAdSoyad = vy.asilAdSoyad;
+  }
 
   const govdeMetni = `4342 Sayılı Mera Kanunu'na göre ${kayit.il} İli ${kayit.ilce} İlçesi ${kayit.koyMahalle} Köyü/Mahallesi sınırları içerisinde bulunan mera / yaylak / kışlak / otlak / çayırların tespit ve tahdit çalışmalarına ${tarihGosterim} tarihinde başlanacağını belirten duyuru, 4342 Sayılı Mera Kanunu'nun 7 nci maddesi gereği …/…/${yil} ile …/…/${yil} tarihleri arasında ilan edilmek ve ${kurumListesi}'na asılmak üzere ${kayit.il} İli Mera Komisyonundan teslim alınıp, belirtilen tarihler arasında usulüne uygun şekilde ilan yapıldığını gösterir işbu tutanak tarafımızdan düzenlenerek imza altına alınmıştır.`;
 
@@ -37,7 +50,7 @@ async function duyuruTutanagiVerileriniOlustur(kayit, veri) {
     baslik: 'DUYURU TUTANAĞI (Ek-2)',
     govdeMetni,
     tarihSatiri: `…../…../${yil}`,
-    imzaAdSoyad, imzaUnvan: 'Vali Yardımcısı', imzaAltYazi: 'İl Mera Komisyonu Başkanı',
+    imzaAdSoyad, imzaUnvan, imzaAltYazi: 'İl Mera Komisyonu Başkanı',
   };
 }
 

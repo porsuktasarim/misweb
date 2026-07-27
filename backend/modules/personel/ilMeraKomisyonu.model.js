@@ -22,21 +22,29 @@
 
 const mongoose = require('mongoose');
 
-/** İMZA SIRASINA GORE sabit kurum listesi. */
+/**
+ * 4342 Sayılı Mera Kanunu'nun 3'üncü maddesine gore: Komisyona normalde
+ * Vali Yardımcısı BAŞKANLIK eder; O YOKSA İl Müdürü, O DA YOKSA Teknik
+ * Personel (ziraat mühendisi) başkanlık eder - Vali'nin KENDİSİ bu
+ * BAŞKANLIK ZİNCİRİNİN parçası DEĞİLDİR; Vali sadece komisyonu ONAYLAR
+ * (valilik onayı) ve İSTERSE (ZORUNLU OLMAKSIZIN) katılımcı/imzacı
+ * olabilir - bu yuzden 'baskanlikZinciri' ISARETLENMEMIS (Vali icin).
+ */
 const KOMISYON_KURUMLARI = [
   { kod: 'vali', ad: 'Vali', otomatikUnvan: true, yedekVar: false, koyeOzgu: false },
-  { kod: 'valiYardimcisi', ad: 'Vali Yardımcısı', otomatikUnvan: true, yedekVar: false, koyeOzgu: false },
-  { kod: 'ilMudur', ad: 'İl Tarım ve Orman Müdürü', otomatikUnvan: true, yedekVar: false, koyeOzgu: false },
-  { kod: 'teknikPersonel', ad: 'Teknik Personel', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
-  { kod: 'dsi', ad: 'DSİ', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
-  { kod: 'ogm', ad: 'OGM', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
-  { kod: 'muhtar', ad: 'Muhtar', otomatikUnvan: false, yedekVar: true, koyeOzgu: true },
+  { kod: 'valiYardimcisi', ad: 'Vali Yardımcısı', otomatikUnvan: true, yedekVar: false, koyeOzgu: false, baskanlikZinciri: 1 },
+  { kod: 'ilMudur', ad: 'İl Müdürü', otomatikUnvan: true, yedekVar: false, koyeOzgu: false, baskanlikZinciri: 2 },
+  { kod: 'teknikPersonel', ad: 'Teknik Personel', otomatikUnvan: false, yedekVar: true, koyeOzgu: false, baskanlikZinciri: 3 },
+  { kod: 'dsi', ad: 'Devlet Su İşleri Bölge Müdürlüğü', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
+  { kod: 'ogm', ad: 'Orman Bölge Müdürlüğü', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
+  { kod: 'muhtar', ad: 'Muhtarlık', otomatikUnvan: false, yedekVar: true, koyeOzgu: true },
   { kod: 'defterdarlik', ad: 'Defterdarlık', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
-  { kod: 'milliEmlak', ad: 'Milli Emlak', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
-  { kod: 'kadastro', ad: 'Kadastro', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
-  { kod: 'ziraatOdasi', ad: 'Ziraat Odası', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
-  { kod: 'jandarma', ad: 'Jandarma', otomatikUnvan: false, yedekVar: true, koyeOzgu: false, guvenlikTipi: 'jandarma' },
-  { kod: 'polis', ad: 'Polis', otomatikUnvan: false, yedekVar: true, koyeOzgu: false, guvenlikTipi: 'polis' },
+  { kod: 'milliEmlakMudurlugu', ad: 'Milli Emlak Müdürlüğü', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
+  { kod: 'milliEmlakDairesi', ad: 'Milli Emlak Dairesi Başkanlığı', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
+  { kod: 'kadastro', ad: 'İl Kadastro Müdürlüğü', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
+  { kod: 'ziraatOdasi', ad: 'Ziraat Odası Başkanlığı', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },
+  { kod: 'jandarma', ad: 'İl Jandarma Komutanlığı', otomatikUnvan: false, yedekVar: true, koyeOzgu: false, guvenlikTipi: 'jandarma' },
+  { kod: 'polis', ad: 'İl Emniyet Müdürlüğü', otomatikUnvan: false, yedekVar: true, koyeOzgu: false, guvenlikTipi: 'polis' },
 ];
 
 const KURUM_KODLARI = KOMISYON_KURUMLARI.map((k) => k.kod);

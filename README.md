@@ -50,41 +50,59 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   ile devam edilir. Diğer adımlar (Ek-4/c-h, Ek-5, Ek-6) ŞİMDİLİK
   manuel tamamlandı işaretlemesi + not alanı ile takip edilir. ADIM 1
   (İl Mera Komisyonu Kararı): karar tarihi/sayısı, komisyon seçimi,
-  BAŞKANLIK VEKALET ZİNCİRİ (Vali → Vali Yardımcısı → İl Müdürü,
-  izin durumuna göre; artık Vali de komisyon kaydında sabit satır),
-  sabit kurum listesinden katılımcı seçimi, köye özgü Muhtar bilgisi
-  (varsa o yılın Teknik Ekip listesinden OTOMATİK doldurulur,
-  düzenlenebilir), PDF karar belgesi yükleme + indirmeden açılır-
-  kapanır görüntüleme. ADIM 2 (Duyuru/Ek-1) ve ADIM 3 (Duyuru
+  BAŞKANLIK ZİNCİRİ 4342 sayılı Kanun m.3'e göre KESİNLEŞTİRİLDİ:
+  normalde Vali Yardımcısı başkanlık eder; o yoksa İl Müdürü, o da
+  yoksa Teknik Personel (ziraat mühendisi) başkanlık eder - Vali'nin
+  KENDİSİ bu zincirin parçası DEĞİLDİR, sadece komisyonu onaylar
+  (valilik onayı) ve İSTERSE (zorunlu olmaksızın) katılımcı/imzacı
+  olabilir. Komisyon üyeleri artık kanunun 11 kişilik listesine
+  birebir uygun: Vali (opsiyonel), Vali Yardımcısı, İl Müdürü, Teknik
+  Personel, DSİ Bölge Müdürlüğü, Orman Bölge Müdürlüğü, Muhtarlık,
+  Defterdarlık, Milli Emlak Müdürlüğü, Milli Emlak Dairesi Başkanlığı
+  (büyükşehir/normal il ayrımı için İKİSİ AYRI kurum), İl Kadastro
+  Müdürlüğü, Ziraat Odası Başkanlığı, İl Jandarma Komutanlığı, İl
+  Emniyet Müdürlüğü. Başkan olmayan İl Müdürü/Teknik Personel normal
+  katılımcı listesinde görünür (çift sayılmaz - test edildi). Köye
+  özgü Muhtar bilgisi (varsa o yılın Teknik Ekip listesinden OTOMATİK
+  doldurulur, düzenlenebilir), PDF karar belgesi yükleme + indirmeden
+  açılır-kapanır görüntüleme. ADIM 2 (Duyuru/Ek-1) ve ADIM 3 (Duyuru
   Tutanağı/Ek-2): il/ilçe/köy otomatik, tarih girişi, Duyuru
   Tutanağı'nda ayrıca gönderim kurumları işaretlemeli listesi (Köy/
   Mahalle Muhtarlığı, Belediye Başkanlığı, Orman Bölge Müdürlüğü, DSİ,
   Büyükşehir Belediyesi, Komşu İlçe Belediyeleri, Komşu Mahalle
   Muhtarlıkları, Milli Emlak Dairesi Başkanlığı/Müdürlüğü + serbest
-  "diğer kurumlar"), imza bloğu (Adım 1'de seçilen komisyondan Vali
-  Yardımcısı adı+unvanı, altında "İl Mera Komisyonu Başkanı", sayfa
-  3 sütuna bölünmüş gibi düşünülüp sağ sütunda ortalı - hem ekranda
-  hem Word/PDF çıktısında). Her iki adımda da girilen bilgilerle
-  OTOMATİK ÜRETİLEN, panoya kopyalanabilen resmi metin var. Sağ
-  sütundaki ayrı "Ek-4ab Kaynağı" bloğu kaldırıldı (Birleştirme adımı
-  zaten otomatik bağlıyor). NOT: Başkanlık-vekalet mantığı ve Duyuru
-  Tutanağı'nın tam resmi formatı en iyi yorumla kuruldu, canlıda
-  doğrulanması önerilir. Tahsis (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
+  "diğer kurumlar"), imza bloğu artık Adım 1'de GERÇEKTEN belirlenen
+  başkanın (Vali Yardımcısı/İl Müdürü/Teknik Personel, hangisiyse)
+  adı+unvanını kullanır (sabit "Vali Yardımcısı" varsayımı değil),
+  altında "İl Mera Komisyonu Başkanı", sayfa 3 sütuna bölünmüş gibi
+  düşünülüp sağ sütunda ortalı - hem ekranda hem Word/PDF çıktısında.
+  Her iki adımda da girilen bilgilerle OTOMATİK ÜRETİLEN, panoya
+  kopyalanabilen resmi metin var. Sağ sütundaki ayrı "Ek-4ab Kaynağı"
+  bloğu kaldırıldı (Birleştirme adımı zaten otomatik bağlıyor). NOT:
+  Duyuru Tutanağı'nın tam resmi formatı en iyi yorumla kuruldu,
+  canlıda doğrulanması önerilir. Tahsis (Ek-7 ve sonrası) HENÜZ
+  EKLENMEDİ.
 - **Personel Yönetimi** (Ayarlar içinde) — Teknik Ekip Üyeleri: yıl/ilçe
   bazlı akordiyon, kurum seçimine göre otomatik imza metni üretimi
   (Muhtarlık/Mahalli Bilirkişi/Belediye vb.), toplu üye yükleme
   (xlsx/xls/csv/json); 3T'nin Muhtar otomatik doldurma özelliği bu
   modülün "muhtarlik" kurumlu üyelerini kullanır. İl Mera Komisyonu
-  Üyeleri: yıl/il bazlı akordiyon, SABİT kurum listesi (imza sırasına
-  göre: Vali, Vali Yardımcısı, İl Müdürü, Teknik Personel, DSİ, OGM,
-  Muhtar, Defterdarlık, Milli Emlak, Kadastro, Ziraat Odası, Jandarma,
-  Polis). Vali/Vali Yardımcısı/İl Müdürü'nün unvanı otomatik/sabit ve
-  yedeği yok (3T'deki başkanlık vekalet zincirinin parçası); Muhtar
-  köye özgü olduğu için burada sabit kayıt tutulmaz; diğer 9 kurumun
-  asıl+yedek temsilcisi var, güvenlik kurumları (Jandarma/Polis) ayrı
-  etiketli. Kullanıcılar bölümü hâlâ iskelet halinde (henüz
-  doldurulmadı) - 3T'de planlanan "adımı işlemsiz tamamlama izni" bu
-  bölüme bağlı olacak.
+  Üyeleri: yıl/il bazlı akordiyon, 4342 sayılı Kanun m.3'ün 11 kişilik
+  komisyon tanımına birebir uygun SABİT kurum listesi (imza sırasına
+  göre: Vali (opsiyonel), Vali Yardımcısı, İl Müdürü, Teknik Personel,
+  DSİ Bölge Müdürlüğü, Orman Bölge Müdürlüğü, Muhtarlık, Defterdarlık,
+  Milli Emlak Müdürlüğü, Milli Emlak Dairesi Başkanlığı (iki ayrı
+  kurum - il tipine göre biri kullanılır), İl Kadastro Müdürlüğü,
+  Ziraat Odası Başkanlığı, İl Jandarma Komutanlığı, İl Emniyet
+  Müdürlüğü). Vali/Vali Yardımcısı/İl Müdürü'nün unvanı otomatik/sabit
+  ve yedeği yok; Vali KANUNEN başkanlık zincirinin parçası DEĞİLDİR
+  (sadece opsiyonel katılımcı/onaylayıcı - m.3), başkanlık sırası Vali
+  Yardımcısı → İl Müdürü → Teknik Personel'dir (3T'de bu sıra
+  uygulanır). Muhtar köye özgü olduğu için burada sabit kayıt
+  tutulmaz; diğer kurumların asıl+yedek temsilcisi var, güvenlik
+  kurumları (Jandarma/Polis) ayrı etiketli. Kullanıcılar bölümü hâlâ
+  iskelet halinde (henüz doldurulmadı) - 3T'de planlanan "adımı
+  işlemsiz tamamlama izni" bu bölüme bağlı olacak.
 - **Mevzuat** — Anayasadan yönetmeliğe, mahkeme kararına kadar hukuki
   kaynak arşivi. mevzuat.gov.tr URL'si yapıştırılınca içerik otomatik
   çekilir (bedesten.adalet.gov.tr API'si; HTML veya PDF formatını

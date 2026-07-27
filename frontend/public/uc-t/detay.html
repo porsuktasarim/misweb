@@ -194,7 +194,7 @@
     let _karar1SeciliKomisyon = null;
     let _karar1KurumListesi = null;
     let _karar1Secimler = {}; // { kurumKod: 'asil'|'yedek' }
-    const K1_DIGER_KURUM_KODLARI = ['teknikPersonel', 'dsi', 'ogm', 'defterdarlik', 'milliEmlak', 'kadastro', 'ziraatOdasi', 'jandarma', 'polis'];
+    const K1_DIGER_KURUM_KODLARI = ['vali', 'dsi', 'ogm', 'defterdarlik', 'milliEmlakMudurlugu', 'milliEmlakDairesi', 'kadastro', 'ziraatOdasi', 'jandarma', 'polis'];
 
     async function renderKarar1Paneli(alt) {
       const govde = document.getElementById('veriPaneliGovde');
@@ -228,20 +228,15 @@
 
         <div class="mb-3 p-2 border rounded">
           <label class="form-label small fw-semibold d-block">Başkanlık</label>
+          <p class="text-muted small mb-2">4342 Sayılı Kanun m.3 gereği: normalde Vali Yardımcısı başkanlık eder; o yoksa İl Müdürü, o da yoksa Teknik Personel (ziraat mühendisi) başkanlık eder.</p>
           <div class="form-check">
-            <input type="checkbox" class="form-check-input" id="k1ValiIzinli" ${b.valiIzinli ? 'checked' : ''}>
-            <label class="form-check-label small" for="k1ValiIzinli">Vali izinli</label>
+            <input type="checkbox" class="form-check-input" id="k1VYYok" ${b.valiYardimcisiYok ? 'checked' : ''}>
+            <label class="form-check-label small" for="k1VYYok">Vali Yardımcısı yok/katılmıyor</label>
           </div>
-          <div id="k1VYSorusu" class="ms-3" style="display:none;">
+          <div id="k1IlMudurSorusu" class="ms-3" style="display:none;">
             <div class="form-check">
-              <input type="checkbox" class="form-check-input" id="k1VYIzinli" ${b.valiYardimcisiIzinli ? 'checked' : ''}>
-              <label class="form-check-label small" for="k1VYIzinli">Vali Yardımcısı izinli</label>
-            </div>
-            <div id="k1IlMudurSorusu" class="ms-3" style="display:none;">
-              <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="k1IlMudurIzinli" ${b.ilMuduruIzinli ? 'checked' : ''}>
-                <label class="form-check-label small" for="k1IlMudurIzinli">İl Müdürü izinli</label>
-              </div>
+              <input type="checkbox" class="form-check-input" id="k1IlMudurYok" ${b.ilMuduruYok ? 'checked' : ''}>
+              <label class="form-check-label small" for="k1IlMudurYok">İl Müdürü de yok/katılmıyor</label>
             </div>
           </div>
           <div id="k1BaskanSonucAlani" class="mt-2"></div>
@@ -276,18 +271,16 @@
         select.innerHTML = '<option value="">Bu il için kayıtlı komisyon yok</option>';
       }
       select.addEventListener('change', karar1KomisyonSecildi);
-      document.getElementById('k1ValiIzinli').addEventListener('change', karar1BaskanlikGuncelle);
-      document.getElementById('k1VYIzinli').addEventListener('change', karar1BaskanlikGuncelle);
-      document.getElementById('k1IlMudurIzinli').addEventListener('change', karar1BaskanlikGuncelle);
+      document.getElementById('k1VYYok').addEventListener('change', karar1BaskanlikGuncelle);
+      document.getElementById('k1IlMudurYok').addEventListener('change', karar1BaskanlikGuncelle);
 
       if (select.value) await karar1KomisyonSecildi();
-      karar1BaskanlikSorularinaGoster(b);
-      karar1BaskanlikGuncelle(b);
+      karar1BaskanlikSorularinaGoster();
+      karar1BaskanlikGuncelle();
     }
 
-    function karar1BaskanlikSorularinaGoster(b) {
-      document.getElementById('k1VYSorusu').style.display = document.getElementById('k1ValiIzinli').checked ? 'block' : 'none';
-      document.getElementById('k1IlMudurSorusu').style.display = (document.getElementById('k1ValiIzinli').checked && document.getElementById('k1VYIzinli').checked) ? 'block' : 'none';
+    function karar1BaskanlikSorularinaGoster() {
+      document.getElementById('k1IlMudurSorusu').style.display = document.getElementById('k1VYYok').checked ? 'block' : 'none';
     }
 
     async function karar1KomisyonSecildi() {
@@ -309,15 +302,19 @@
       }
     }
 
-    /** Baskanligin KIM oldugunu ('vali'|'valiYardimcisi'|'ilMudur') dondurur. */
+    /**
+     * Baskanligin KIM oldugunu dondurur - 4342 sayili Kanun m.3 geregi
+     * Vali'nin KENDISI bu zincirin PARCASI DEGILDIR (sadece opsiyonel
+     * katilimci): normalde Vali Yardimcisi, o yoksa Il Muduru, o da
+     * yoksa Teknik Personel (ziraat muhendisi) - ZORUNLU son halka,
+     * ayrica soru sorulmaz.
+     */
     function karar1BaskanTipi() {
-      const valiIzinli = document.getElementById('k1ValiIzinli').checked;
-      if (!valiIzinli) return 'vali';
-      const vyIzinli = document.getElementById('k1VYIzinli').checked;
-      if (!vyIzinli) return 'valiYardimcisi';
-      const ilMudurEl = document.getElementById('k1IlMudurIzinli');
-      if (ilMudurEl && !ilMudurEl.checked) return 'ilMudur';
-      return null; // ucu de izinli
+      const vyYok = document.getElementById('k1VYYok').checked;
+      if (!vyYok) return 'valiYardimcisi';
+      const ilMudurYok = document.getElementById('k1IlMudurYok')?.checked;
+      if (!ilMudurYok) return 'ilMudur';
+      return 'teknikPersonel';
     }
 
     function karar1BaskanlikGuncelle() {
@@ -325,29 +322,22 @@
       const sonucAlan = document.getElementById('k1BaskanSonucAlani');
       const tip = karar1BaskanTipi();
 
-      if (tip === 'vali') {
-        const vali = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'vali') : null;
-        sonucAlan.innerHTML = `<div class="small"><strong>${guvenliMetin(vali?.asilAdSoyad || '(komisyon kaydında Vali bilgisi yok)')}</strong> - Vali</div>`;
-        karar1KatilimcilariGuncelle();
-        return;
-      }
       if (tip === 'valiYardimcisi') {
         const vy = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'valiYardimcisi') : null;
-        sonucAlan.innerHTML = `
-          <div class="small"><strong>${guvenliMetin(vy?.asilAdSoyad || '(komisyon kaydında Vali Yardımcısı bilgisi yok)')}</strong> - Vali Yardımcısı</div>
-          <div class="form-check mt-1"><input type="checkbox" class="form-check-input" id="k1BaskanVekil"><label class="form-check-label small" for="k1BaskanVekil">Vekaleten (V.)</label></div>`;
+        sonucAlan.innerHTML = `<div class="small"><strong>${guvenliMetin(vy?.asilAdSoyad || '(komisyon kaydında Vali Yardımcısı bilgisi yok)')}</strong> - Vali Yardımcısı</div>`;
         karar1KatilimcilariGuncelle();
         return;
       }
       if (tip === 'ilMudur') {
         const im = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'ilMudur') : null;
-        sonucAlan.innerHTML = `
-          <div class="small"><strong>${guvenliMetin(im?.asilAdSoyad || '(komisyon kaydında İl Müdürü bilgisi yok)')}</strong> - İl Tarım ve Orman Müdürü</div>
-          <div class="form-check mt-1"><input type="checkbox" class="form-check-input" id="k1BaskanVekil"><label class="form-check-label small" for="k1BaskanVekil">Vekaleten (V.)</label></div>`;
+        sonucAlan.innerHTML = `<div class="small"><strong>${guvenliMetin(im?.asilAdSoyad || '(komisyon kaydında İl Müdürü bilgisi yok)')}</strong> - İl Müdürü</div>`;
         karar1KatilimcilariGuncelle();
         return;
       }
-      sonucAlan.innerHTML = '<div class="alert alert-warning small py-2 mb-0">Vali, Vali Yardımcısı ve İl Müdürü\'nün hepsi izinli görünüyor - lütfen durumu kontrol edin.</div>';
+      // tip === 'teknikPersonel' (zincirin zorunlu son halkasi)
+      const tp = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'teknikPersonel') : null;
+      sonucAlan.innerHTML = `<div class="small"><strong>${guvenliMetin(tp?.asilAdSoyad || '(komisyon kaydında Teknik Personel bilgisi yok)')}</strong> - Teknik Personel</div>`;
+      karar1KatilimcilariGuncelle();
     }
 
     function karar1KatilimcilariGuncelle() {
@@ -355,8 +345,12 @@
       if (!_karar1SeciliKomisyon) { alan.innerHTML = '<div class="text-muted small">Katılımcılar için önce komisyon seç.</div>'; return; }
 
       const baskanTip = karar1BaskanTipi();
-      // Il Muduru BASKAN DEGILSE, normal katilimci listesinde de gorunsun.
-      const gosterilecekKodlar = baskanTip === 'ilMudur' ? K1_DIGER_KURUM_KODLARI : ['ilMudur', ...K1_DIGER_KURUM_KODLARI];
+      // Il Muduru ve Teknik Personel, BASKAN OLMADIKLARI durumda normal katilimci listesinde gorunur.
+      const gosterilecekKodlar = [
+        ...(baskanTip !== 'ilMudur' ? ['ilMudur'] : []),
+        ...(baskanTip !== 'teknikPersonel' ? ['teknikPersonel'] : []),
+        ...K1_DIGER_KURUM_KODLARI,
+      ];
 
       alan.innerHTML = `
         <label class="form-label small fw-semibold d-block">Katılımcılar</label>
@@ -415,25 +409,22 @@
     function karar1BaskanlikBilgisiniTopla() {
       const tip = karar1BaskanTipi();
       const b = {
-        valiIzinli: document.getElementById('k1ValiIzinli').checked,
-        valiYardimcisiIzinli: document.getElementById('k1VYIzinli').checked,
-        ilMuduruIzinli: document.getElementById('k1IlMudurIzinli')?.checked || false,
+        valiYardimcisiYok: document.getElementById('k1VYYok').checked,
+        ilMuduruYok: document.getElementById('k1IlMudurYok')?.checked || false,
         tip,
       };
-      if (tip === 'vali') {
-        const vali = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'vali') : null;
-        b.adSoyad = vali?.asilAdSoyad || '';
-        b.unvan = 'Vali';
-      } else if (tip === 'valiYardimcisi') {
+      if (tip === 'valiYardimcisi') {
         const vy = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'valiYardimcisi') : null;
         b.adSoyad = vy?.asilAdSoyad || '';
         b.unvan = 'Vali Yardımcısı';
-        b.vekilMi = document.getElementById('k1BaskanVekil')?.checked || false;
       } else if (tip === 'ilMudur') {
         const im = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'ilMudur') : null;
         b.adSoyad = im?.asilAdSoyad || '';
-        b.unvan = 'İl Tarım ve Orman Müdürü';
-        b.vekilMi = document.getElementById('k1BaskanVekil')?.checked || false;
+        b.unvan = 'İl Müdürü';
+      } else {
+        const tp = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'teknikPersonel') : null;
+        b.adSoyad = tp?.asilAdSoyad || '';
+        b.unvan = 'Teknik Personel';
       }
       return b;
     }
@@ -617,14 +608,27 @@
       const digerKurumlar = document.getElementById('dtDigerKurumlar').value.trim();
       const kurumListesi = [...secilenKurumlar, ...(digerKurumlar ? [digerKurumlar] : [])].join(', ') || '……………………………';
 
-      const vy = komisyon ? komisyon.uyeler.find((u) => u.kurumKod === 'valiYardimcisi') : null;
-      const imzaAdSoyad = vy?.asilAdSoyad || '……………………………';
+      // Imza icin Adim 1'de (varsa) belirlenmis GERCEK baskanlik
+      // bilgisini kullan (Vali Yardimcisi/Il Muduru/Teknik Personel -
+      // 4342 sayili Kanun m.3 geregi hangisi baskan ise) - yoksa
+      // komisyon kaydindaki Vali Yardimcisi'na geri don (varsayilan).
+      const karar1Adim = kayit.surec.flatMap((a) => a.altAdimlar).find((a) => a.tip === 'ilMeraKomisyonuKarari');
+      const b = karar1Adim?.veri?.baskanlik;
+      let imzaAdSoyad = '……………………………';
+      let imzaUnvan = 'Vali Yardımcısı';
+      if (b && b.adSoyad) {
+        imzaAdSoyad = b.adSoyad;
+        imzaUnvan = b.unvan;
+      } else if (komisyon) {
+        const vy = komisyon.uyeler.find((u) => u.kurumKod === 'valiYardimcisi');
+        if (vy?.asilAdSoyad) imzaAdSoyad = vy.asilAdSoyad;
+      }
 
       const govdeMetni = `4342 Sayılı Mera Kanunu'na göre ${kayit.il} İli ${kayit.ilce} İlçesi ${kayit.koyMahalle} Köyü/Mahallesi sınırları içerisinde bulunan mera / yaylak / kışlak / otlak / çayırların tespit ve tahdit çalışmalarına ${tarihGosterim} tarihinde başlanacağını belirten duyuru, 4342 Sayılı Mera Kanunu'nun 7 nci maddesi gereği …/…/${yil} ile …/…/${yil} tarihleri arasında ilan edilmek ve ${kurumListesi}'na asılmak üzere ${kayit.il} İli Mera Komisyonundan teslim alınıp, belirtilen tarihler arasında usulüne uygun şekilde ilan yapıldığını gösterir işbu tutanak tarafımızdan düzenlenerek imza altına alınmıştır.`;
 
       return {
         govdeMetni, tarihSatiri: `…../…../${yil}`,
-        imzaAdSoyad, imzaUnvan: 'Vali Yardımcısı', imzaAltYazi: 'İl Mera Komisyonu Başkanı',
+        imzaAdSoyad, imzaUnvan, imzaAltYazi: 'İl Mera Komisyonu Başkanı',
       };
     }
 
