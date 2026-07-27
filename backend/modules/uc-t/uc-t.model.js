@@ -19,6 +19,7 @@ const TESPIT_TAHDIT_ANA_ADIMLAR = [
   {
     ad: '0. Süreç Başlangıcı',
     altAdimlar: [
+      { ad: 'Komisyon ve Teknik Ekip Seçimi', ekKodu: null, ciktiVarMi: false, tip: 'komisyonTeknikEkipSecimi' },
       { ad: 'İl Mera Komisyonu Kararı (Tespit ve Tahdit çalışmalarına başlanmasına ilişkin)', ekKodu: null, ciktiVarMi: true, tip: 'ilMeraKomisyonuKarari' },
     ],
   },

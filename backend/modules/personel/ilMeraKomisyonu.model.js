@@ -64,6 +64,11 @@ const ilMeraKomisyonuSchema = new mongoose.Schema(
   {
     yil: { type: Number, required: true },
     il: { type: String, required: true },
+    // Bu ILE gore SADECE BIRI gecerli olur (buyuksehirlerde Dairesi
+    // Baskanligi, digerlerinde Mudurluk) - "milliEmlakMudurlugu" VEYA
+    // "milliEmlakDairesi" kurum kodlarindan HANGISININ AKTIF/GECERLI
+    // oldugunu belirler, digeri uyeler listesinde SAKLANMAZ/GOSTERILMEZ.
+    milliEmlakTuru: { type: String, enum: ['mudurluk', 'dairesiBaskanligi'], default: 'mudurluk' },
     uyeler: { type: [uyeSchema], default: [] },
   },
   { timestamps: true }

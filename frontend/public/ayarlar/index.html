@@ -1025,15 +1025,33 @@
     async function imkUyeFormunuKur(komisyon) {
       const kurumListesi = await imkKurumListesiniYukle();
       const govde = document.getElementById(`imk-govde-${komisyon._id}`);
+      const milliEmlakTuru = komisyon.milliEmlakTuru || 'mudurluk';
+      // Milli Emlak Muduruluk / Dairesi Baskanligi'ndan SADECE BIRI
+      // gecerlidir (buyuksehir/normal il ayrimi) - digeri LISTEDE HIC
+      // GORUNMEZ.
+      const gosterilecekKurumlar = kurumListesi.filter((kt) => {
+        if (kt.kod === 'milliEmlakMudurlugu') return milliEmlakTuru === 'mudurluk';
+        if (kt.kod === 'milliEmlakDairesi') return milliEmlakTuru === 'dairesiBaskanligi';
+        return true;
+      });
+
       govde.innerHTML = `
-        <p class="text-muted small">Kurumlar imza sırasına göre sabittir. Vali Yardımcısı ve İl Müdürü'nün unvanı otomatik gelir ve yedeği yoktur (bu ikisi ile Vali arasındaki başkanlık vekalet sırası her 3T kararında ayrıca sorulur).</p>
+        <p class="text-muted small">Kurumlar imza sırasına göre sabittir. Vali Yardımcısı ve İl Müdürü'nün unvanı otomatik gelir ve yedeği yoktur. Vali, 4342 sayılı Kanun m.3 gereği başkanlık zincirinin parçası DEĞİLDİR - sadece opsiyonel katılımcıdır.</p>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Milli Emlak Türü</label>
+          <select id="imk-milliemlak-turu-${komisyon._id}" class="form-select form-select-sm" style="max-width:280px;">
+            <option value="mudurluk" ${milliEmlakTuru === 'mudurluk' ? 'selected' : ''}>Milli Emlak Müdürlüğü</option>
+            <option value="dairesiBaskanligi" ${milliEmlakTuru === 'dairesiBaskanligi' ? 'selected' : ''}>Milli Emlak Dairesi Başkanlığı</option>
+          </select>
+          <div class="form-text small">Büyükşehirlerde genelde Dairesi Başkanlığı, diğer illerde Müdürlük bulunur - hangisi bu ilde geçerliyse onu seç.</div>
+        </div>
         <div class="table-responsive">
           <table class="table table-sm align-middle">
             <thead>
               <tr><th>Kurum</th><th>Asıl Ad Soyad</th><th>Asıl Unvan</th><th>Yedek Ad Soyad</th><th>Yedek Unvan</th></tr>
             </thead>
             <tbody id="imk-tablo-${komisyon._id}">
-              ${kurumListesi.map((kt) => imkUyeSatiriHtml(kt, komisyon.uyeler.find((u) => u.kurumKod === kt.kod) || {})).join('')}
+              ${gosterilecekKurumlar.map((kt) => imkUyeSatiriHtml(kt, komisyon.uyeler.find((u) => u.kurumKod === kt.kod) || {})).join('')}
             </tbody>
           </table>
         </div>
@@ -1043,9 +1061,12 @@
 
       const tablo = document.getElementById(`imk-tablo-${komisyon._id}`);
 
+      document.getElementById(`imk-milliemlak-turu-${komisyon._id}`).addEventListener('change', () => imkUyeFormunuKur({ ...komisyon, milliEmlakTuru: document.getElementById(`imk-milliemlak-turu-${komisyon._id}`).value }));
+
       govde.querySelector('.imk-kaydet-btn').addEventListener('click', async () => {
         const sonucAlan = govde.querySelector('.imk-sonuc');
-        const uyeler = kurumListesi.filter((kt) => !kt.koyeOzgu).map((kt) => {
+        const secilenMilliEmlakTuru = document.getElementById(`imk-milliemlak-turu-${komisyon._id}`).value;
+        const uyeler = gosterilecekKurumlar.filter((kt) => !kt.koyeOzgu).map((kt) => {
           const tr = tablo.querySelector(`tr[data-kurum-kod="${kt.kod}"]`);
           return {
             kurumKod: kt.kod,
@@ -1058,7 +1079,7 @@
 
         sonucAlan.textContent = 'Kaydediliyor...';
         const res = await fetch(`/api/il-mera-komisyonu/${komisyon._id}/uyeler`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uyeler }),
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uyeler, milliEmlakTuru: secilenMilliEmlakTuru }),
         });
         const json2 = await res.json();
         sonucAlan.innerHTML = json2.success ? '<span class="text-success">Kaydedildi.</span>' : `<span class="text-danger">${json2.message}</span>`;

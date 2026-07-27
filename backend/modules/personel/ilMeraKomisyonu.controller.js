@@ -49,7 +49,7 @@ async function olusturHandler(req, res) {
 
 async function uyeleriGuncelleHandler(req, res) {
   try {
-    return basarili(res, await service.uyeleriGuncelle(req.params.id, req.body.uyeler), 'Üyeler güncellendi');
+    return basarili(res, await service.uyeleriGuncelle(req.params.id, req.body.uyeler, req.body.milliEmlakTuru), 'Üyeler güncellendi');
   } catch (err) {
     return basarisiz(res, err.message);
   }

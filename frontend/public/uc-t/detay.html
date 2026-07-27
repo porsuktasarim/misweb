@@ -181,6 +181,7 @@
         <div id="veriPaneliGovde"></div>
       `;
 
+      if (alt.tip === 'komisyonTeknikEkipSecimi') return renderKomisyonTeknikEkipPaneli(alt);
       if (alt.tip === 'ilMeraKomisyonuKarari') return renderKarar1Paneli(alt);
       if (alt.tip === 'duyuru') return renderDuyuruPaneli(alt);
       if (alt.tip === 'duyuruTutanagi') return renderDuyuruTutanagiPaneli(alt);
@@ -189,6 +190,89 @@
       if (alt.tip === 'birlestir') return renderBirlestirPaneli();
       return renderManuelPaneli(alt);
     }
+
+    // ---- ADIM 0: KOMİSYON VE TEKNİK EKİP SEÇİMİ paneli ----
+    async function renderKomisyonTeknikEkipPaneli(alt) {
+      const govde = document.getElementById('veriPaneliGovde');
+      const v = alt.veri || {};
+
+      govde.innerHTML = `
+        <p class="text-muted small">
+          Bu 3T kaydı için GENEL referans olacak İl Mera Komisyonu ve
+          Teknik Ekip'i seç. Sonraki adımlar (İl Mera Komisyonu Kararı,
+          Muhtar otomatik doldurma vb.) bunları ÖN-SEÇİLİ olarak
+          kullanır, ama HER ADIM kendi içinde BAĞIMSIZ olarak farklı
+          bir komisyon/dönem seçebilir (bir kişi bu kararda imzacı
+          olmasa da başka belgelerde imzacı olabildiği için).
+        </p>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Yıl</label>
+          <input type="number" class="form-control form-control-sm" id="kteYil" style="max-width:140px;" value="${v.yil || new Date().getFullYear()}">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">İl Mera Komisyonu</label>
+          <select id="kteKomisyonSelect" class="form-select form-select-sm"><option value="">Yükleniyor...</option></select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Teknik Ekip</label>
+          <select id="kteTeknikEkipSelect" class="form-select form-select-sm"><option value="">Yükleniyor...</option></select>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="komisyonTeknikEkipKaydet()">Kaydet</button>
+        <button class="btn btn-link btn-sm text-muted" onclick="genelIslemsizTamamla()">Formu doldurmadan tamamlandı işaretle</button>
+        <div id="kteSonuc" class="mt-2"></div>
+      `;
+
+      await komisyonTeknikEkipSecenekleriniDoldur(v.komisyonId, v.teknikEkipId);
+
+      document.getElementById('kteYil').addEventListener('change', () => komisyonTeknikEkipYilaGoreOner());
+    }
+
+    async function komisyonTeknikEkipSecenekleriniDoldur(oncekiKomisyonId, oncekiTeknikEkipId) {
+      const komisyonJson = await fetch(`${API}/komisyon-adaylari?il=${encodeURIComponent(kayit.il)}`).then((r) => r.json());
+      const kSelect = document.getElementById('kteKomisyonSelect');
+      kSelect.innerHTML = (komisyonJson.success && komisyonJson.data.length)
+        ? '<option value="">— Seç —</option>' + komisyonJson.data.map((k) => `<option value="${k._id}" data-yil="${k.yil}" ${oncekiKomisyonId === k._id ? 'selected' : ''}>${k.yil} - ${k.il}</option>`).join('')
+        : '<option value="">Bu il için kayıtlı komisyon yok</option>';
+
+      const ekipJson = await fetch('/api/teknik-ekip').then((r) => r.json());
+      const tSelect = document.getElementById('kteTeknikEkipSelect');
+      const tumEkipler = (ekipJson.success ? ekipJson.data : [])
+        .flatMap((yilGrup) => yilGrup.ekipler.map((e) => ({ ...e, yil: yilGrup.yil })))
+        .filter((e) => (e.ilce || '').trim().toLocaleLowerCase('tr-TR') === (kayit.ilce || '').trim().toLocaleLowerCase('tr-TR'));
+      tSelect.innerHTML = tumEkipler.length
+        ? '<option value="">— Seç —</option>' + tumEkipler.map((e) => `<option value="${e._id}" data-yil="${e.yil}" ${oncekiTeknikEkipId === e._id ? 'selected' : ''}>${e.yil} - ${e.ekipNo ? e.ekipNo + ' Nolu ' : ''}${e.ilce} Teknik Ekibi</option>`).join('')
+        : '<option value="">Bu ilçe için kayıtlı ekip yok</option>';
+    }
+
+    /** Yil degistiginde, O YILA AIT komisyon/ekip varsa OTOMATIK oner (secili yap) - degistirilebilir kalir. */
+    function komisyonTeknikEkipYilaGoreOner() {
+      const yil = document.getElementById('kteYil').value;
+      const kSelect = document.getElementById('kteKomisyonSelect');
+      const tSelect = document.getElementById('kteTeknikEkipSelect');
+      const kEslesen = Array.from(kSelect.options).find((o) => o.dataset.yil === yil);
+      if (kEslesen) kSelect.value = kEslesen.value;
+      const tEslesen = Array.from(tSelect.options).find((o) => o.dataset.yil === yil);
+      if (tEslesen) tSelect.value = tEslesen.value;
+    }
+
+    window.komisyonTeknikEkipKaydet = async () => {
+      const sonucAlan = document.getElementById('kteSonuc');
+      const veri = {
+        yil: Number(document.getElementById('kteYil').value) || undefined,
+        komisyonId: document.getElementById('kteKomisyonSelect').value || null,
+        teknikEkipId: document.getElementById('kteTeknikEkipSelect').value || null,
+      };
+      sonucAlan.innerHTML = '<span class="text-muted small">Kaydediliyor...</span>';
+      const res = await fetch(`${API}/${id}/adim-veri`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, veri }),
+      });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json.message}</span>`; return; }
+      kayit = json.data;
+      renderSurec();
+      sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
+    };
 
     // ---- ADIM 1: İL MERA KOMİSYONU KARARI paneli ----
     let _karar1SeciliKomisyon = null;
@@ -263,16 +347,31 @@
         <div id="k1Sonuc" class="mt-2"></div>
       `;
 
+      // "Komisyon ve Teknik Ekip Secimi" on-adimindan (varsa) VARSAYILAN komisyonu al -
+      // ama BAGIMSIZ secim serbestligi korunur (kullanici burada FARKLI bir komisyon secebilir).
+      const kteAdim = kayit.surec.flatMap((a) => a.altAdimlar).find((a) => a.tip === 'komisyonTeknikEkipSecimi');
+      const varsayilanKomisyonId = oncekiVeri.komisyonId || kteAdim?.veri?.komisyonId || '';
+
       const komisyonJson = await fetch(`${API}/komisyon-adaylari?il=${encodeURIComponent(kayit.il)}`).then((r) => r.json());
       const select = document.getElementById('k1KomisyonSelect');
       if (komisyonJson.success && komisyonJson.data.length) {
-        select.innerHTML = '<option value="">— Seç —</option>' + komisyonJson.data.map((k) => `<option value="${k._id}" ${oncekiVeri.komisyonId === k._id ? 'selected' : ''}>${k.yil} - ${k.il}</option>`).join('');
+        select.innerHTML = '<option value="">— Seç —</option>' + komisyonJson.data.map((k) => `<option value="${k._id}" data-yil="${k.yil}" ${varsayilanKomisyonId === k._id ? 'selected' : ''}>${k.yil} - ${k.il}</option>`).join('');
       } else {
         select.innerHTML = '<option value="">Bu il için kayıtlı komisyon yok</option>';
       }
       select.addEventListener('change', karar1KomisyonSecildi);
       document.getElementById('k1VYYok').addEventListener('change', karar1BaskanlikGuncelle);
       document.getElementById('k1IlMudurYok').addEventListener('change', karar1BaskanlikGuncelle);
+
+      // Karar Tarihi girildiginde/degistiginde, O YILA AIT komisyon
+      // varsa OTOMATIK oner (secili yap) - komisyon secimi ve karar
+      // tarihi BAGIMSIZDIR, bu sadece bir KOLAYLIK onerisi, kullanici
+      // yine de BASKA bir yilin komisyonunu secebilir.
+      document.getElementById('k1Tarih').addEventListener('change', () => {
+        const secilenYil = document.getElementById('k1Tarih').value ? new Date(document.getElementById('k1Tarih').value).getFullYear().toString() : '';
+        const eslesen = Array.from(select.options).find((o) => o.dataset.yil === secilenYil);
+        if (eslesen) { select.value = eslesen.value; karar1KomisyonSecildi(); }
+      });
 
       if (select.value) await karar1KomisyonSecildi();
       karar1BaskanlikSorularinaGoster();
@@ -346,10 +445,14 @@
 
       const baskanTip = karar1BaskanTipi();
       // Il Muduru ve Teknik Personel, BASKAN OLMADIKLARI durumda normal katilimci listesinde gorunur.
+      // Milli Emlak Mudurlugu/Dairesi Baskanligi'ndan SADECE komisyonun
+      // milliEmlakTuru'na uyan biri gosterilir.
+      const gecerliMilliEmlakKodu = _karar1SeciliKomisyon.milliEmlakTuru === 'dairesiBaskanligi' ? 'milliEmlakDairesi' : 'milliEmlakMudurlugu';
       const gosterilecekKodlar = [
         ...(baskanTip !== 'ilMudur' ? ['ilMudur'] : []),
         ...(baskanTip !== 'teknikPersonel' ? ['teknikPersonel'] : []),
-        ...K1_DIGER_KURUM_KODLARI,
+        ...K1_DIGER_KURUM_KODLARI.filter((kod) => kod !== 'milliEmlakMudurlugu' && kod !== 'milliEmlakDairesi'),
+        gecerliMilliEmlakKodu,
       ];
 
       alan.innerHTML = `

@@ -44,10 +44,11 @@ async function komisyonOlustur({ yil, il }) {
   return IlMeraKomisyonu.create({ yil, il, uyeler: [] });
 }
 
-async function uyeleriGuncelle(id, uyeler) {
+async function uyeleriGuncelle(id, uyeler, milliEmlakTuru) {
   const kayit = await IlMeraKomisyonu.findById(id);
   if (!kayit) throw new Error(`İl Mera Komisyonu kaydı bulunamadı: ${id}`);
   kayit.uyeler = uyeler;
+  if (milliEmlakTuru) kayit.milliEmlakTuru = milliEmlakTuru;
   await kayit.save();
   return kayit;
 }
