@@ -19,6 +19,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 router.get('/kurumlar', controller.kurumlarHandler);
+router.get('/muhtar-bul', controller.muhtarBulHandler);
 router.get('/', controller.listeHandler);
 router.post('/', controller.olusturHandler);
 router.get('/:id', controller.getirHandler);

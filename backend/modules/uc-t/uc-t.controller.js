@@ -4,6 +4,7 @@
 
 const fs = require('fs');
 const service = require('./uc-t.service');
+const exportService = require('./uc-t.export');
 
 function basarili(res, data, mesaj = null) {
   return res.json({ success: true, data, message: mesaj });
@@ -116,6 +117,15 @@ async function birlestirVeDevamEtHandler(req, res) {
   }
 }
 
+async function adimVeriKaydetHandler(req, res) {
+  try {
+    const { anaAdimIndex, altAdimIndex, veri } = req.body;
+    return basarili(res, await service.adimVeriKaydet(req.params.id, anaAdimIndex, altAdimIndex, veri), 'Kaydedildi');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 async function komisyonAdaylariHandler(req, res) {
   try {
     return basarili(res, await service.komisyonAdaylari(req.query.il));
@@ -152,9 +162,37 @@ async function adimPdfGetirHandler(req, res) {
   }
 }
 
+async function adimDisaAktarHandler(req, res) {
+  try {
+    const { anaAdimIndex, altAdimIndex, format } = req.params;
+    const kayit = await service.getir(req.params.id);
+    const alt = kayit.surec[anaAdimIndex]?.altAdimlar[altAdimIndex];
+    if (!alt) return basarisiz(res, 'Adım bulunamadı', 404);
+
+    const veri = await exportService.adimDisaAktarVerisi(kayit, alt);
+    const dosyaAdiTemel = `${kayit.koyMahalle}_${alt.ekKodu || alt.ad}`.replace(/[^a-zA-Z0-9ıİğĞüÜşŞöÖçÇ_-]/g, '_');
+
+    if (format === 'word') {
+      const buffer = await exportService.adimBelgesiWordOlustur(veri);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename="${dosyaAdiTemel}.docx"`);
+      return res.send(buffer);
+    }
+    if (format === 'pdf') {
+      const buffer = await exportService.adimBelgesiPdfOlustur(veri);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${dosyaAdiTemel}.pdf"`);
+      return res.send(buffer);
+    }
+    return basarisiz(res, 'Geçersiz format');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 module.exports = {
   listeHandler, getirHandler, olusturHandler, silHandler,
   adimGuncelleHandler, ek4abSecHandler, ek4abAdaylariHandler,
   bbhbAdaylariHandler, cksAdaylariHandler, ek4aVeriCekHandler, ek4bVeriCekHandler, birlestirVeDevamEtHandler,
-  komisyonAdaylariHandler, karar1KaydetHandler, adimPdfGetirHandler,
+  komisyonAdaylariHandler, karar1KaydetHandler, adimPdfGetirHandler, adimVeriKaydetHandler, adimDisaAktarHandler,
 };

@@ -997,7 +997,7 @@
     }
 
     function imkUyeSatiriHtml(kurumTanimi, uye) {
-      const otomatikUnvanlar = { valiYardimcisi: 'Vali Yardımcısı', ilMudur: 'İl Tarım ve Orman Müdürü' };
+      const otomatikUnvanlar = { vali: 'Vali', valiYardimcisi: 'Vali Yardımcısı', ilMudur: 'İl Tarım ve Orman Müdürü' };
       const asilUnvanHtml = kurumTanimi.otomatikUnvan
         ? `<input type="text" class="form-control form-control-sm imk-asil-unvan" value="${otomatikUnvanlar[kurumTanimi.kod]}" readonly>`
         : `<input type="text" class="form-control form-control-sm imk-asil-unvan" value="${(uye.asilUnvan || '').replace(/"/g, '&quot;')}" placeholder="Unvan">`;

@@ -73,6 +73,15 @@ async function topluYukleHandler(req, res) {
   }
 }
 
+async function muhtarBulHandler(req, res) {
+  try {
+    const { yil, il, ilce, koyMahalle } = req.query;
+    return basarili(res, await service.muhtarBul(yil, il, ilce, koyMahalle));
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 module.exports = {
   kurumlarHandler,
   listeHandler,
@@ -81,4 +90,5 @@ module.exports = {
   uyeleriGuncelleHandler,
   silHandler,
   topluYukleHandler,
+  muhtarBulHandler,
 };

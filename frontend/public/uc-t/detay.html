@@ -64,9 +64,6 @@
       <!-- SAĞ: süreç ağacı -->
       <div class="mis-icerik-ikincil">
         <div class="mis-panel">
-          <h2>Ek-4ab Kaynağı</h2>
-          <div id="ek4abAlani" class="mb-3"></div>
-
           <h2>Süreç</h2>
           <div id="surecAgaci"></div>
         </div>
@@ -112,6 +109,23 @@
           </div>
         </div>`;
     }
+
+    /** Uretilen resmi metni bir textarea icinde, "Kopyala" butonuyla gosterir. */
+    function kopyalanabilirMetinHtml(benzersizId, metin) {
+      return `
+        <div class="mt-2">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label small fw-semibold mb-0">Kopyalanabilir Metin</label>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="metniKopyala('${benzersizId}')"><i class="bi bi-clipboard me-1"></i>Kopyala</button>
+          </div>
+          <textarea class="form-control form-control-sm" id="${benzersizId}" rows="7" readonly style="font-size:12px;">${metin}</textarea>
+        </div>`;
+    }
+    window.metniKopyala = (elId) => {
+      const el = document.getElementById(elId);
+      el.select();
+      navigator.clipboard.writeText(el.value);
+    };
 
     // ================= SAĞ: SÜREÇ AĞACI =================
     function renderSurec() {
@@ -168,6 +182,8 @@
       `;
 
       if (alt.tip === 'ilMeraKomisyonuKarari') return renderKarar1Paneli(alt);
+      if (alt.tip === 'duyuru') return renderDuyuruPaneli(alt);
+      if (alt.tip === 'duyuruTutanagi') return renderDuyuruTutanagiPaneli(alt);
       if (alt.tip === 'ek4a') return renderEk4aPaneli(alt);
       if (alt.tip === 'ek4b') return renderEk4bPaneli(alt);
       if (alt.tip === 'birlestir') return renderBirlestirPaneli();
@@ -282,6 +298,15 @@
       _karar1SeciliKomisyon = json.data;
       karar1KatilimcilariGuncelle();
       karar1BaskanlikGuncelle();
+
+      // Komisyonun YILINA gore Teknik Ekip'te bu koyun muhtari kayitli mi -
+      // varsa Muhtar alanini OTOMATIK doldur (BOSSA - kullanicinin
+      // girdigini EZME), her zaman DUZENLENEBILIR kalir.
+      const muhtarAdInput = document.getElementById('k1MuhtarAd');
+      if (muhtarAdInput && !muhtarAdInput.value.trim()) {
+        const mJson = await fetch(`/api/teknik-ekip/muhtar-bul?yil=${_karar1SeciliKomisyon.yil}&il=${encodeURIComponent(kayit.il)}&ilce=${encodeURIComponent(kayit.ilce)}&koyMahalle=${encodeURIComponent(kayit.koyMahalle)}`).then((r) => r.json());
+        if (mJson.success && mJson.data) muhtarAdInput.value = mJson.data.adSoyad;
+      }
     }
 
     /** Baskanligin KIM oldugunu ('vali'|'valiYardimcisi'|'ilMudur') dondurur. */
@@ -301,7 +326,8 @@
       const tip = karar1BaskanTipi();
 
       if (tip === 'vali') {
-        sonucAlan.innerHTML = `<label class="form-label small mb-1">Vali Adı Soyadı</label><input type="text" class="form-control form-control-sm" id="k1BaskanAdSoyad" placeholder="Vali adı soyadı">`;
+        const vali = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'vali') : null;
+        sonucAlan.innerHTML = `<div class="small"><strong>${guvenliMetin(vali?.asilAdSoyad || '(komisyon kaydında Vali bilgisi yok)')}</strong> - Vali</div>`;
         karar1KatilimcilariGuncelle();
         return;
       }
@@ -395,7 +421,8 @@
         tip,
       };
       if (tip === 'vali') {
-        b.adSoyad = (document.getElementById('k1BaskanAdSoyad')?.value || '').trim();
+        const vali = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'vali') : null;
+        b.adSoyad = vali?.asilAdSoyad || '';
         b.unvan = 'Vali';
       } else if (tip === 'valiYardimcisi') {
         const vy = _karar1SeciliKomisyon ? _karar1SeciliKomisyon.uyeler.find((u) => u.kurumKod === 'valiYardimcisi') : null;
@@ -458,6 +485,196 @@
       const json = await res.json();
       if (json.success) { kayit = json.data; renderSurec(); renderVeriPaneli(); }
     }
+
+    // ---- ADIM 2: DUYURU (Ek-1) paneli ----
+    async function renderDuyuruPaneli(alt) {
+      const govde = document.getElementById('veriPaneliGovde');
+      const v = alt.veri || {};
+
+      govde.innerHTML = `
+        <p class="text-muted small">İl/İlçe/Köy-Mahalle bu 3T kaydından otomatik alınır.</p>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Tespit ve Tahdit Başlangıç Tarihi *</label>
+          <input type="date" class="form-control form-control-sm" id="dyBaslangicTarihi" value="${v.baslangicTarihi ? v.baslangicTarihi.slice(0, 10) : ''}">
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" onclick="duyuruMetniOlustur()">Metni Oluştur</button>
+        <div id="dyMetinAlani"></div>
+        <hr>
+        <button class="btn btn-primary btn-sm" onclick="duyuruKaydet()">Kaydet</button>
+        <button class="btn btn-link btn-sm text-muted" onclick="genelIslemsizTamamla()">Formu doldurmadan tamamlandı işaretle</button>
+        <div id="dySonuc" class="mt-2"></div>
+        <div id="dyDisaAktarAlani" class="mt-2">
+          ${alt.tamamlandiMi ? `
+            <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/word"><i class="bi bi-file-earmark-word me-1"></i>Word</a>
+            <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
+          ` : ''}
+        </div>
+      `;
+
+      if (v.baslangicTarihi) duyuruMetniOlustur();
+    }
+
+    window.duyuruMetniOlustur = () => {
+      const tarih = document.getElementById('dyBaslangicTarihi').value;
+      const tarihGosterim = tarih ? new Date(tarih).toLocaleDateString('tr-TR') : '…/…/20….';
+      const metin = `4342 Sayılı Mera Kanunu gereği, ${tarihGosterim} tarihinde ${kayit.il} İli ${kayit.ilce} İlçesi ${kayit.koyMahalle} Köy/Mahallesinde Mera Komisyonu/Teknik Ekiplerince, mera, yaylak, kışlak, otlak, umuma ait çayırların tespit ve tahdit çalışmalarına başlanacaktır.
+
+4342 Sayılı Mera Kanunu'nun 7 nci maddesi gereği ilan olunur.`;
+      document.getElementById('dyMetinAlani').innerHTML = kopyalanabilirMetinHtml('dyMetin', metin);
+    };
+
+    window.duyuruKaydet = async () => {
+      const sonucAlan = document.getElementById('dySonuc');
+      const baslangicTarihi = document.getElementById('dyBaslangicTarihi').value;
+      if (!baslangicTarihi) { sonucAlan.innerHTML = '<span class="text-danger small">Başlangıç tarihi zorunludur.</span>'; return; }
+      sonucAlan.innerHTML = '<span class="text-muted small">Kaydediliyor...</span>';
+      const res = await fetch(`${API}/${id}/adim-veri`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, veri: { baslangicTarihi } }),
+      });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json.message}</span>`; return; }
+      kayit = json.data;
+      renderSurec();
+      sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
+      document.getElementById('dyDisaAktarAlani').innerHTML = `
+        <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/word"><i class="bi bi-file-earmark-word me-1"></i>Word</a>
+        <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>`;
+    };
+
+    // ---- ADIM 3: DUYURU TUTANAĞI (Ek-2) paneli ----
+    const DUYURU_TUTANAGI_GONDERIM_SECENEKLERI = [
+      'Köy/Mahalle Muhtarlığı', 'Belediye Başkanlığı', 'Orman Bölge Müdürlüğü', 'Devlet Su İşleri',
+      'Büyükşehir Belediyesi', 'Komşu İlçe Belediyeleri', 'Komşu Mahalle Muhtarlıkları',
+      'Milli Emlak Dairesi Başkanlığı', 'Milli Emlak Müdürlüğü',
+    ];
+    let _dtSeciliKomisyon = null;
+
+    async function renderDuyuruTutanagiPaneli(alt) {
+      const govde = document.getElementById('veriPaneliGovde');
+      const v = alt.veri || {};
+
+      // Adim 1'de (varsa) secilmis komisyonu on-secili getirmek icin
+      const karar1Adim = kayit.surec.flatMap((a) => a.altAdimlar).find((a) => a.tip === 'ilMeraKomisyonuKarari');
+      const onSeciliKomisyonId = v.komisyonId || karar1Adim?.veri?.komisyonId || '';
+
+      govde.innerHTML = `
+        <p class="text-muted small">İl/İlçe/Köy-Mahalle bu 3T kaydından otomatik alınır.</p>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">Tespit ve Tahdit Başlangıç Tarihi *</label>
+          <input type="date" class="form-control form-control-sm" id="dtBaslangicTarihi" value="${v.baslangicTarihi ? v.baslangicTarihi.slice(0, 10) : ''}">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">İl Mera Komisyonu * <span class="text-muted fw-normal">(imza için Vali Yardımcısı buradan alınır)</span></label>
+          <select id="dtKomisyonSelect" class="form-select form-select-sm"><option value="">Yükleniyor...</option></select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold d-block">Gönderilecek Kurumlar</label>
+          ${DUYURU_TUTANAGI_GONDERIM_SECENEKLERI.map((k) => `
+            <div class="form-check">
+              <input class="form-check-input dt-gonderim-check" type="checkbox" value="${k}" id="dtG_${k.replace(/[^a-zA-Z0-9]/g, '')}" ${(v.gonderimKurumlari || []).includes(k) ? 'checked' : ''}>
+              <label class="form-check-label small" for="dtG_${k.replace(/[^a-zA-Z0-9]/g, '')}">${k}</label>
+            </div>`).join('')}
+          <label class="form-label small fw-semibold mt-2">Diğer Kurumlar (elle)</label>
+          <input type="text" class="form-control form-control-sm" id="dtDigerKurumlar" placeholder="Aralarına virgül koyarak yaz" value="${guvenliMetin(v.digerKurumlar || '')}">
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" onclick="duyuruTutanagiMetniOlustur()">Metni Oluştur</button>
+        <div id="dtMetinAlani"></div>
+        <hr>
+        <button class="btn btn-primary btn-sm" onclick="duyuruTutanagiKaydet()">Kaydet</button>
+        <button class="btn btn-link btn-sm text-muted" onclick="genelIslemsizTamamla()">Formu doldurmadan tamamlandı işaretle</button>
+        <div id="dtSonuc" class="mt-2"></div>
+        <div id="dtDisaAktarAlani" class="mt-2"></div>
+      `;
+
+      const komisyonJson = await fetch(`${API}/komisyon-adaylari?il=${encodeURIComponent(kayit.il)}`).then((r) => r.json());
+      const select = document.getElementById('dtKomisyonSelect');
+      select.innerHTML = (komisyonJson.success && komisyonJson.data.length)
+        ? '<option value="">— Seç —</option>' + komisyonJson.data.map((k) => `<option value="${k._id}" ${onSeciliKomisyonId === k._id ? 'selected' : ''}>${k.yil} - ${k.il}</option>`).join('')
+        : '<option value="">Bu il için kayıtlı komisyon yok</option>';
+
+      if (select.value) {
+        const kj = await fetch(`/api/il-mera-komisyonu/${select.value}`).then((r) => r.json());
+        if (kj.success) _dtSeciliKomisyon = kj.data;
+      }
+      select.addEventListener('change', async () => {
+        if (!select.value) { _dtSeciliKomisyon = null; return; }
+        const kj = await fetch(`/api/il-mera-komisyonu/${select.value}`).then((r) => r.json());
+        if (kj.success) _dtSeciliKomisyon = kj.data;
+      });
+
+      if (v.baslangicTarihi && v.komisyonId) duyuruTutanagiMetniOlustur();
+      if (alt.tamamlandiMi) duyuruTutanagiDisaAktarButonlariniGoster();
+    }
+
+    function duyuruTutanagiVerileriniTopla() {
+      const tarih = document.getElementById('dtBaslangicTarihi').value;
+      const komisyon = _dtSeciliKomisyon;
+      const yil = komisyon ? komisyon.yil : '20..';
+      const tarihGosterim = tarih ? new Date(tarih).toLocaleDateString('tr-TR') : `…/…/${yil}`;
+
+      const secilenKurumlar = Array.from(document.querySelectorAll('.dt-gonderim-check:checked')).map((c) => c.value);
+      const digerKurumlar = document.getElementById('dtDigerKurumlar').value.trim();
+      const kurumListesi = [...secilenKurumlar, ...(digerKurumlar ? [digerKurumlar] : [])].join(', ') || '……………………………';
+
+      const vy = komisyon ? komisyon.uyeler.find((u) => u.kurumKod === 'valiYardimcisi') : null;
+      const imzaAdSoyad = vy?.asilAdSoyad || '……………………………';
+
+      const govdeMetni = `4342 Sayılı Mera Kanunu'na göre ${kayit.il} İli ${kayit.ilce} İlçesi ${kayit.koyMahalle} Köyü/Mahallesi sınırları içerisinde bulunan mera / yaylak / kışlak / otlak / çayırların tespit ve tahdit çalışmalarına ${tarihGosterim} tarihinde başlanacağını belirten duyuru, 4342 Sayılı Mera Kanunu'nun 7 nci maddesi gereği …/…/${yil} ile …/…/${yil} tarihleri arasında ilan edilmek ve ${kurumListesi}'na asılmak üzere ${kayit.il} İli Mera Komisyonundan teslim alınıp, belirtilen tarihler arasında usulüne uygun şekilde ilan yapıldığını gösterir işbu tutanak tarafımızdan düzenlenerek imza altına alınmıştır.`;
+
+      return {
+        govdeMetni, tarihSatiri: `…../…../${yil}`,
+        imzaAdSoyad, imzaUnvan: 'Vali Yardımcısı', imzaAltYazi: 'İl Mera Komisyonu Başkanı',
+      };
+    }
+
+    window.duyuruTutanagiMetniOlustur = () => {
+      const p = duyuruTutanagiVerileriniTopla();
+      const metin = `${p.govdeMetni}\n\n${p.tarihSatiri}\n\n\n                                                                        ${p.imzaAdSoyad}\n                                                                        ${p.imzaUnvan}\n                                                                        ${p.imzaAltYazi}`;
+      document.getElementById('dtMetinAlani').innerHTML = kopyalanabilirMetinHtml('dtMetin', metin);
+    };
+
+    window.duyuruTutanagiKaydet = async () => {
+      const sonucAlan = document.getElementById('dtSonuc');
+      const baslangicTarihi = document.getElementById('dtBaslangicTarihi').value;
+      const komisyonId = document.getElementById('dtKomisyonSelect').value;
+      if (!baslangicTarihi) { sonucAlan.innerHTML = '<span class="text-danger small">Başlangıç tarihi zorunludur.</span>'; return; }
+      if (!komisyonId) { sonucAlan.innerHTML = '<span class="text-danger small">İl Mera Komisyonu seçilmelidir.</span>'; return; }
+
+      const veri = {
+        baslangicTarihi, komisyonId,
+        gonderimKurumlari: Array.from(document.querySelectorAll('.dt-gonderim-check:checked')).map((c) => c.value),
+        digerKurumlar: document.getElementById('dtDigerKurumlar').value.trim(),
+      };
+
+      sonucAlan.innerHTML = '<span class="text-muted small">Kaydediliyor...</span>';
+      const res = await fetch(`${API}/${id}/adim-veri`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, veri }),
+      });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json.message}</span>`; return; }
+      kayit = json.data;
+      renderSurec();
+      sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
+      duyuruTutanagiDisaAktarButonlariniGoster();
+    };
+
+    function duyuruTutanagiDisaAktarButonlariniGoster() {
+      const alan = document.getElementById('dtDisaAktarAlani');
+      if (!alan) return;
+      alan.innerHTML = `
+        <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/word"><i class="bi bi-file-earmark-word me-1"></i>Word</a>
+        <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
+      `;
+    }
+
+    // "Formu doldurmadan tamamla" - genel (Duyuru/Duyuru Tutanağı gibi
+    // adimlar icin) - ILERIDE kullanici yetkilerinde GATE EDILECEK.
+    window.genelIslemsizTamamla = async () => {
+      if (!confirm('Bu adımı, formu doldurmadan tamamlandı olarak işaretlemek istediğine emin misin?')) return;
+      await adimKaydetIslemsiz();
+    };
 
     // ---- MANUEL (varsayılan) panel ----
     function renderManuelPaneli(alt) {
@@ -677,53 +894,6 @@
       kayit = json.data;
       renderSurec();
       renderBirlestirPaneli();
-      await renderEk4ab();
-    };
-
-    // ================= EK-4AB KAYNAĞI =================
-    async function renderEk4ab() {
-      const alan = document.getElementById('ek4abAlani');
-
-      if (kayit.ek4abKaydiId) {
-        const e = kayit.ek4abKaydiId;
-        alan.innerHTML = `
-          <div class="ek4ab-secili mb-2">
-            <strong>${guvenliMetin(e.uretimYili || '-')} üretim yılı</strong>
-            <div class="text-muted">Toplam BBHB: ${(e.genelToplamBBHB || 0).toFixed(2)}</div>
-            <a href="/ek4ab/?id=${e._id}" class="small" target="_blank">Görüntüle →</a>
-          </div>
-          <button class="btn btn-sm btn-outline-secondary" onclick="ek4abSecimiKaldir()">Değiştir</button>
-        `;
-        return;
-      }
-
-      alan.innerHTML = '<div class="text-muted small">Aranıyor...</div>';
-      const res = await fetch(`${API}/ek4ab-adaylari?il=${encodeURIComponent(kayit.il)}&ilce=${encodeURIComponent(kayit.ilce)}&koyMahalle=${encodeURIComponent(kayit.koyMahalle)}`);
-      const json = await res.json();
-      if (!json.success || json.data.length === 0) {
-        alan.innerHTML = `<div class="text-muted small mb-2">Hazır Ek-4ab kaydı yok.</div><a href="/ek4ab/" class="btn btn-sm btn-outline-primary" target="_blank">Ek-4ab'ye git</a>`;
-        return;
-      }
-      alan.innerHTML = json.data.map((e) => `
-        <div class="ek4ab-aday">
-          <div><strong>${e.uretimYili || '-'}</strong><div class="text-muted">BBHB: ${(e.genelToplamBBHB || 0).toFixed(2)}</div></div>
-          <button class="btn btn-sm btn-primary" onclick="ek4abSec('${e._id}')">Seç</button>
-        </div>`).join('');
-    }
-
-    window.ek4abSec = async (ek4abKaydiId) => {
-      const res = await fetch(`${API}/${id}/ek4ab-sec`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ek4abKaydiId }),
-      });
-      const json = await res.json();
-      if (json.success) await yukle();
-    };
-    window.ek4abSecimiKaldir = async () => {
-      const res = await fetch(`${API}/${id}/ek4ab-sec`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ek4abKaydiId: null }),
-      });
-      const json = await res.json();
-      if (json.success) await yukle();
     };
 
     window.silKayit = async () => {
@@ -763,7 +933,6 @@
       if (seciliAna === null) sonKalinanAdimiSecVeAc(); // SADECE ilk yuklemede - kullanicinin sonraki tiklamalarini EZME
       renderSurec();
       renderVeriPaneli();
-      await renderEk4ab();
     }
     yukle();
   </script>

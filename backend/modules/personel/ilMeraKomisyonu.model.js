@@ -24,6 +24,7 @@ const mongoose = require('mongoose');
 
 /** İMZA SIRASINA GORE sabit kurum listesi. */
 const KOMISYON_KURUMLARI = [
+  { kod: 'vali', ad: 'Vali', otomatikUnvan: true, yedekVar: false, koyeOzgu: false },
   { kod: 'valiYardimcisi', ad: 'Vali Yardımcısı', otomatikUnvan: true, yedekVar: false, koyeOzgu: false },
   { kod: 'ilMudur', ad: 'İl Tarım ve Orman Müdürü', otomatikUnvan: true, yedekVar: false, koyeOzgu: false },
   { kod: 'teknikPersonel', ad: 'Teknik Personel', otomatikUnvan: false, yedekVar: true, koyeOzgu: false },

@@ -96,6 +96,23 @@ async function adimGuncelle(id, anaAdimIndex, altAdimIndex, { tamamlandiMi, not 
   return kayit;
 }
 
+/**
+ * GENEL AMAÇLI: herhangi bir adimin `veri` alanini set edip
+ * TAMAMLANDI isaretler - Duyuru/Duyuru Tutanagi gibi PDF YUKLEMEYEN,
+ * SADECE bilgi girisi + uretilen kopyalanabilir metin iceren
+ * adimlar icin (ileride benzer adimlarda da yeniden kullanilabilir).
+ */
+async function adimVeriKaydet(id, anaAdimIndex, altAdimIndex, veri) {
+  const kayit = await UcT.findById(id);
+  if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
+  const altAdim = kayit.surec[anaAdimIndex].altAdimlar[altAdimIndex];
+  altAdim.veri = veri;
+  altAdim.tamamlandiMi = true;
+  altAdim.tamamlanmaTarihi = new Date();
+  await kayit.save();
+  return kayit;
+}
+
 /** Bu 3T kaydına TEMEL alınacak Ek-4ab kaydını SEÇER (elle - Birleştirme adımı OTOMATİK de yapabilir). */
 async function ek4abSec(id, ek4abKaydiId) {
   const kayit = await UcT.findById(id);
@@ -281,7 +298,7 @@ async function komisyonAdaylari(il) {
 }
 
 module.exports = {
-  listele, getir, olustur, sil, adimGuncelle, ek4abSec, koyIcinEk4abAdaylari,
+  listele, getir, olustur, sil, adimGuncelle, adimVeriKaydet, ek4abSec, koyIcinEk4abAdaylari,
   koyIcinBbhbAdaylari, koyIcinCksAdaylari, ek4aVeriCek, ek4bVeriCek, birlestirVeDevamEt,
   karar1Kaydet, komisyonAdaylari,
 };

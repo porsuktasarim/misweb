@@ -25,8 +25,8 @@ const TESPIT_TAHDIT_ANA_ADIMLAR = [
   {
     ad: 'A. Tespit ve Tahdit Öncesi Hazırlık',
     altAdimlar: [
-      { ad: 'Duyuru (30 gün önceden Köy Muhtarlığı/Belediye Başkanlığına)', ekKodu: 'Ek-1', ciktiVarMi: true },
-      { ad: 'Duyuru Tutanağı', ekKodu: 'Ek-2', ciktiVarMi: true },
+      { ad: 'Duyuru (30 gün önceden Köy Muhtarlığı/Belediye Başkanlığına)', ekKodu: 'Ek-1', ciktiVarMi: true, tip: 'duyuru' },
+      { ad: 'Duyuru Tutanağı', ekKodu: 'Ek-2', ciktiVarMi: true, tip: 'duyuruTutanagi' },
       { ad: 'Tebliğ Belgesi (ilgili kurumlara: Orman, Tarım Reformu, Tapu, Milli Emlak)', ekKodu: 'Ek-3', ciktiVarMi: true },
       { ad: 'Bilgi Cetveli', ekKodu: 'Ek-3/a', ciktiVarMi: true },
     ],

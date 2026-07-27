@@ -78,6 +78,27 @@ async function topluUyeYukle(id, dosyaYolu) {
   return { kayit, eklenenSayisi: yeniUyeler.length };
 }
 
+/**
+ * VERILEN yil + il/ilce/koyMahalle icin, o yilin Teknik Ekiplerinde
+ * kayitli "muhtarlik" kurumlu (secilenYer ile eslesen) uyeyi bulur -
+ * 3T'nin Muhtar alanini ONCEDEN doldurmak icin kullanilir.
+ */
+async function muhtarBul(yil, il, ilce, koyMahalle) {
+  const esitMi = (a, b) => (a || '').trim().toLocaleLowerCase('tr-TR') === (b || '').trim().toLocaleLowerCase('tr-TR');
+  const ekipler = await TeknikEkip.find({ yil: Number(yil), ilce }).select('uyeler');
+  for (const ekip of ekipler) {
+    const uye = ekip.uyeler.find((u) => (
+      u.kurumKod === 'muhtarlik'
+      && u.secilenYer
+      && esitMi(u.secilenYer.il, il)
+      && esitMi(u.secilenYer.ilce, ilce)
+      && esitMi(u.secilenYer.mahalle, koyMahalle)
+    ));
+    if (uye) return { adSoyad: uye.adSoyad, unvan: uye.unvan };
+  }
+  return null;
+}
+
 module.exports = {
   hepsiniListele,
   ekipGetir,
@@ -86,4 +107,5 @@ module.exports = {
   uyeleriGuncelle,
   ekipSil,
   topluUyeYukle,
+  muhtarBul,
 };
