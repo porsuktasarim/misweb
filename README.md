@@ -49,13 +49,21 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   ayrı tamamlanabilir, ardından "4/a ve 4/b Birleştirme Onayı" adımı
   ile devam edilir. Diğer adımlar (Ek-2, Ek-3, Ek-4/c-h, Ek-5, Ek-6)
   ŞİMDİLİK manuel tamamlandı işaretlemesi + not alanı ile takip
-  edilir (gerçek veri formları kademeli olarak eklenecek). Tahsis
-  (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
+  edilir (gerçek veri formları kademeli olarak eklenecek). ADIM 1
+  (İl Mera Komisyonu Kararı) artık GERÇEK FORM: karar tarihi/sayısı,
+  İl Mera Komisyonu Üyeleri'nden komisyon seçimi (kurum başına
+  asıl/yedek temsilci seçimi), Polis/Jandarma/İkisi de güvenlik
+  kurumu seçimi, PDF karar belgesi yükleme. Diğer adımlar henüz
+  manuel işaretleme. Tahsis (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
 - **Personel Yönetimi** (Ayarlar içinde) — Teknik Ekip Üyeleri: yıl/ilçe
   bazlı akordiyon, kurum seçimine göre otomatik imza metni üretimi
   (Muhtarlık/Mahalli Bilirkişi/Belediye vb.), toplu üye yükleme
-  (xlsx/xls/csv/json). Kullanıcılar ve İl Mera Komisyonu Üyeleri
-  bölümleri iskelet halinde (henüz doldurulmadı)
+  (xlsx/xls/csv/json). İl Mera Komisyonu Üyeleri: yıl/il bazlı
+  akordiyon, kurum başına asıl+yedek temsilci, güvenlik kurumları
+  (Polis/Jandarma) için ayrı etiket (3T Adım 1'in filtrelemesi için).
+  Kullanıcılar bölümü hâlâ iskelet halinde (henüz doldurulmadı) -
+  3T'de planlanan "adımı işlemsiz tamamlama izni" bu bölüme bağlı
+  olacak.
 - **Mevzuat** — Anayasadan yönetmeliğe, mahkeme kararına kadar hukuki
   kaynak arşivi. mevzuat.gov.tr URL'si yapıştırılınca içerik otomatik
   çekilir (bedesten.adalet.gov.tr API'si; HTML veya PDF formatını
@@ -106,8 +114,9 @@ pdf-parse, diff (jsdiff, CDN), Docker/Coolify.
   (mock) isteklerle test edildi - canlı ortamda ilk kullanımda
   doğrulanması önerilir.
 - Ek-4ab raporu şu an sadece Excel formatında (Word/PDF henüz yok).
-- Personel Yönetimi'nde Kullanıcılar ve İl Mera Komisyonu Üyeleri
-  bölümleri henüz yapılmadı (placeholder).
+- Personel Yönetimi'nde Kullanıcılar bölümü henüz yapılmadı
+  (placeholder) - kullanıcı yetki sistemi (3T'de "adımı işlemsiz
+  tamamlama izni" dahil) bu bölüme bağlı olarak ileride kurulacak.
 - 3T modülünde Tahsis (Ek-7, 7/a-f, Ek-8, Ek-9, Ek-10) henüz yok -
   sadece Tespit/Tahdit (A/B/C bölümleri) var. B bölümünde Ek-4/a ve
   Ek-4/b BBHB+ÇKS'den otomatik hesaplanıyor, geri kalan adımlar

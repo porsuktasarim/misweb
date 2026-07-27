@@ -16,6 +16,7 @@ const ekgbDonemService = require('./backend/modules/ekgb/ekgb.donem.service');
 const cksRoutes = require('./backend/modules/cks/cks.routes');
 const ek4abRoutes = require('./backend/modules/ek4ab/ek4ab.routes');
 const teknikEkipRoutes = require('./backend/modules/personel/teknikEkip.routes');
+const ilMeraKomisyonuRoutes = require('./backend/modules/personel/ilMeraKomisyonu.routes');
 const mevzuatRoutes = require('./backend/modules/mevzuat/mevzuat.routes');
 const mevzuatService = require('./backend/modules/mevzuat/mevzuat.service');
 const ucTRoutes = require('./backend/modules/uc-t/uc-t.routes');
@@ -34,6 +35,7 @@ app.use('/api/ekgb', ekgbRoutes);
 app.use('/api/cks', cksRoutes);
 app.use('/api/ek4ab', ek4abRoutes);
 app.use('/api/teknik-ekip', teknikEkipRoutes);
+app.use('/api/il-mera-komisyonu', ilMeraKomisyonuRoutes);
 app.use('/api/mevzuat', mevzuatRoutes);
 app.use('/api/uc-t', ucTRoutes);
 

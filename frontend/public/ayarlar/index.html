@@ -166,7 +166,16 @@
                 </div>
 
                 <div class="tab-pane fade" id="il-mera-komisyonu-alt-tab">
-                  <p class="text-muted small">Bu bölüm henüz yapılmadı.</p>
+                  <p class="text-muted small">
+                    İl Mera Komisyonu üyeleri yıla ve ile göre değişir. Her
+                    kurumun bir asıl bir de yedek temsilcisi kaydedilir -
+                    hangisinin belirli bir kararda imzaladığı, o kararın
+                    kendisinde (3T modülünde) seçilir. Güvenlik kurumu
+                    (Emniyet/Jandarma) eklerken "Güvenlik Tipi" alanını
+                    işaretlemeyi unutma - 3T bunu buna göre filtreler.
+                  </p>
+                  <button type="button" class="btn btn-sm btn-primary mb-3" id="yeniKomisyonYiliBtn">+ Yeni Yıl/İl Ekle</button>
+                  <div id="ilMeraKomisyonuAccordion" class="accordion"></div>
                 </div>
               </div>
             </div>
@@ -905,6 +914,169 @@
 
     document.getElementById('teknikEkipAltTabBtn').addEventListener('shown.bs.tab', () => {
       teknikEkipleriYukle();
+    });
+
+    // ================= İL MERA KOMİSYONU ÜYELERİ =================
+    async function ilMeraKomisyonlariniYukle() {
+      const alan = document.getElementById('ilMeraKomisyonuAccordion');
+      const json = await apiGet('/api/il-mera-komisyonu');
+      if (!json.success) { alan.innerHTML = `<div class="alert alert-danger">${json.message}</div>`; return; }
+      if (json.data.length === 0) {
+        alan.innerHTML = '<div class="text-muted small">Henüz kayıtlı yıl yok. "+ Yeni Yıl/İl Ekle" ile başla.</div>';
+        return;
+      }
+
+      alan.innerHTML = json.data.map((yilGrup) => `
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#imk-yil-${yilGrup.yil}-collapse">
+              ${yilGrup.yil} Yılı İl Mera Komisyonları
+            </button>
+          </h2>
+          <div id="imk-yil-${yilGrup.yil}-collapse" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              <button type="button" class="btn btn-sm btn-outline-primary mb-2 mis-yeni-il-btn" data-yil="${yilGrup.yil}">+ Yeni İl Ekle</button>
+              <div class="accordion">
+                ${yilGrup.komisyonlar.map((k) => `
+                  <div class="accordion-item">
+                    <h2 class="accordion-header d-flex align-items-center">
+                      <button class="accordion-button collapsed flex-grow-1" type="button" data-bs-toggle="collapse" data-bs-target="#imk-collapse-${k._id}">
+                        ${k.il} <span class="text-muted small ms-2">(${k.uyeler.length} kurum)</span>
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-danger mis-imk-sil-btn me-2" data-id="${k._id}">Sil</button>
+                    </h2>
+                    <div id="imk-collapse-${k._id}" class="accordion-collapse collapse">
+                      <div class="accordion-body" id="imk-govde-${k._id}"></div>
+                    </div>
+                  </div>`).join('')}
+              </div>
+            </div>
+          </div>
+        </div>`).join('');
+
+      json.data.forEach((yilGrup) => {
+        yilGrup.komisyonlar.forEach((k) => {
+          const collapseEl = document.getElementById(`imk-collapse-${k._id}`);
+          if (collapseEl) collapseEl.addEventListener('shown.bs.collapse', () => imkUyeFormunuKur(k), { once: true });
+        });
+      });
+
+      document.querySelectorAll('.mis-yeni-il-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const yil = btn.dataset.yil;
+          const il = prompt('İl adı:');
+          if (!il || !il.trim()) return;
+          const res = await fetch('/api/il-mera-komisyonu', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ yil: parseInt(yil, 10), il: il.trim() }),
+          });
+          const json2 = await res.json();
+          if (!json2.success) { alert(json2.message); return; }
+          ilMeraKomisyonlariniYukle();
+        });
+      });
+
+      document.querySelectorAll('.mis-imk-sil-btn').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (!confirm('Bu il komisyonu kaydını silmek istediğine emin misin?')) return;
+          const res = await fetch(`/api/il-mera-komisyonu/${btn.dataset.id}`, { method: 'DELETE' });
+          const json2 = await res.json();
+          if (json2.success) ilMeraKomisyonlariniYukle();
+          else alert(json2.message);
+        });
+      });
+    }
+
+    function imkUyeSatiriHtml(uye, idx) {
+      return `
+        <tr data-idx="${idx}">
+          <td><input type="text" class="form-control form-control-sm imk-kurum-adi" value="${(uye.kurumAdi || '').replace(/"/g, '&quot;')}" placeholder="Kurum adı"></td>
+          <td>
+            <select class="form-select form-select-sm imk-guvenlik-tipi">
+              <option value="" ${!uye.guvenlikTipi ? 'selected' : ''}>—</option>
+              <option value="polis" ${uye.guvenlikTipi === 'polis' ? 'selected' : ''}>Polis</option>
+              <option value="jandarma" ${uye.guvenlikTipi === 'jandarma' ? 'selected' : ''}>Jandarma</option>
+            </select>
+          </td>
+          <td><input type="text" class="form-control form-control-sm imk-asil-ad" value="${(uye.asilAdSoyad || '').replace(/"/g, '&quot;')}" placeholder="Ad Soyad"></td>
+          <td><input type="text" class="form-control form-control-sm imk-asil-unvan" value="${(uye.asilUnvan || '').replace(/"/g, '&quot;')}" placeholder="Unvan"></td>
+          <td><input type="text" class="form-control form-control-sm imk-yedek-ad" value="${(uye.yedekAdSoyad || '').replace(/"/g, '&quot;')}" placeholder="Ad Soyad"></td>
+          <td><input type="text" class="form-control form-control-sm imk-yedek-unvan" value="${(uye.yedekUnvan || '').replace(/"/g, '&quot;')}" placeholder="Unvan"></td>
+          <td><button type="button" class="btn btn-sm btn-outline-danger imk-satir-sil-btn">×</button></td>
+        </tr>`;
+    }
+
+    function imkUyeFormunuKur(komisyon) {
+      const govde = document.getElementById(`imk-govde-${komisyon._id}`);
+      govde.innerHTML = `
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Kurum</th><th>Güvenlik Tipi</th>
+                <th>Asıl Ad Soyad</th><th>Asıl Unvan</th>
+                <th>Yedek Ad Soyad</th><th>Yedek Unvan</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="imk-tablo-${komisyon._id}">
+              ${komisyon.uyeler.map((u, i) => imkUyeSatiriHtml(u, i)).join('')}
+            </tbody>
+          </table>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-secondary imk-satir-ekle-btn">+ Kurum Ekle</button>
+        <button type="button" class="btn btn-sm btn-primary imk-kaydet-btn">Kaydet</button>
+        <span class="imk-sonuc small ms-2"></span>
+      `;
+
+      const tablo = document.getElementById(`imk-tablo-${komisyon._id}`);
+
+      govde.querySelector('.imk-satir-ekle-btn').addEventListener('click', () => {
+        tablo.insertAdjacentHTML('beforeend', imkUyeSatiriHtml({}, tablo.children.length));
+        tablo.lastElementChild.querySelector('.imk-satir-sil-btn').addEventListener('click', (e) => e.target.closest('tr').remove());
+      });
+
+      tablo.querySelectorAll('.imk-satir-sil-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => e.target.closest('tr').remove());
+      });
+
+      govde.querySelector('.imk-kaydet-btn').addEventListener('click', async () => {
+        const sonucAlan = govde.querySelector('.imk-sonuc');
+        const uyeler = Array.from(tablo.querySelectorAll('tr')).map((tr) => ({
+          kurumAdi: tr.querySelector('.imk-kurum-adi').value.trim(),
+          guvenlikTipi: tr.querySelector('.imk-guvenlik-tipi').value || null,
+          asilAdSoyad: tr.querySelector('.imk-asil-ad').value.trim(),
+          asilUnvan: tr.querySelector('.imk-asil-unvan').value.trim(),
+          yedekAdSoyad: tr.querySelector('.imk-yedek-ad').value.trim(),
+          yedekUnvan: tr.querySelector('.imk-yedek-unvan').value.trim(),
+        })).filter((u) => u.kurumAdi);
+
+        sonucAlan.textContent = 'Kaydediliyor...';
+        const res = await fetch(`/api/il-mera-komisyonu/${komisyon._id}/uyeler`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ uyeler }),
+        });
+        const json2 = await res.json();
+        sonucAlan.innerHTML = json2.success ? '<span class="text-success">Kaydedildi.</span>' : `<span class="text-danger">${json2.message}</span>`;
+        if (json2.success) ilMeraKomisyonlariniYukle();
+      });
+    }
+
+    document.getElementById('yeniKomisyonYiliBtn').addEventListener('click', async () => {
+      const yil = prompt('Yıl:', new Date().getFullYear());
+      if (!yil) return;
+      const il = prompt('İl adı:');
+      if (!il || !il.trim()) return;
+      const res = await fetch('/api/il-mera-komisyonu', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ yil: parseInt(yil, 10), il: il.trim() }),
+      });
+      const json = await res.json();
+      if (!json.success) { alert(json.message); return; }
+      ilMeraKomisyonlariniYukle();
+    });
+
+    document.querySelector('[data-bs-target="#il-mera-komisyonu-alt-tab"]').addEventListener('shown.bs.tab', () => {
+      ilMeraKomisyonlariniYukle();
     });
   </script>
 </body>

@@ -2,6 +2,7 @@
  * uc-t.controller.js
  */
 
+const fs = require('fs');
 const service = require('./uc-t.service');
 
 function basarili(res, data, mesaj = null) {
@@ -115,8 +116,44 @@ async function birlestirVeDevamEtHandler(req, res) {
   }
 }
 
+async function komisyonAdaylariHandler(req, res) {
+  try {
+    return basarili(res, await service.komisyonAdaylari(req.query.il));
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function karar1KaydetHandler(req, res) {
+  try {
+    const { anaAdimIndex, altAdimIndex, kararTarihi, kararSayisi, komisyonId, guvenlikSecimi } = req.body;
+    const katilimcilar = req.body.katilimcilar ? JSON.parse(req.body.katilimcilar) : [];
+    return basarili(
+      res,
+      await service.karar1Kaydet(req.params.id, anaAdimIndex, altAdimIndex, { kararTarihi, kararSayisi, komisyonId, guvenlikSecimi, katilimcilar }, req.file),
+      'Karar kaydedildi'
+    );
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function adimPdfGetirHandler(req, res) {
+  try {
+    const kayit = await service.getir(req.params.id);
+    const altAdim = kayit.surec[req.params.anaAdimIndex]?.altAdimlar[req.params.altAdimIndex];
+    if (!altAdim || !altAdim.pdfDosyaYolu || !fs.existsSync(altAdim.pdfDosyaYolu)) return basarisiz(res, 'PDF bulunamadı', 404);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(altAdim.pdfOrijinalAd || 'belge')}.pdf"`);
+    fs.createReadStream(altAdim.pdfDosyaYolu).pipe(res);
+  } catch (err) {
+    return basarisiz(res, err.message, 404);
+  }
+}
+
 module.exports = {
   listeHandler, getirHandler, olusturHandler, silHandler,
   adimGuncelleHandler, ek4abSecHandler, ek4abAdaylariHandler,
   bbhbAdaylariHandler, cksAdaylariHandler, ek4aVeriCekHandler, ek4bVeriCekHandler, birlestirVeDevamEtHandler,
+  komisyonAdaylariHandler, karar1KaydetHandler, adimPdfGetirHandler,
 };

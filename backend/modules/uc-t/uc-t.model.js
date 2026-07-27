@@ -19,7 +19,7 @@ const TESPIT_TAHDIT_ANA_ADIMLAR = [
   {
     ad: '0. Süreç Başlangıcı',
     altAdimlar: [
-      { ad: 'İl Mera Komisyonu Kararı (Tespit ve Tahdit çalışmalarına başlanmasına ilişkin)', ekKodu: null, ciktiVarMi: false },
+      { ad: 'İl Mera Komisyonu Kararı (Tespit ve Tahdit çalışmalarına başlanmasına ilişkin)', ekKodu: null, ciktiVarMi: true, tip: 'ilMeraKomisyonuKarari' },
     ],
   },
   {
@@ -90,6 +90,8 @@ const altAdimSchema = new mongoose.Schema(
     kaynakBbhbSonucId: { type: mongoose.Schema.Types.ObjectId, ref: 'BbhbSonuc' },
     kaynakCksSonucId: { type: mongoose.Schema.Types.ObjectId, ref: 'CksSonuc' },
     veri: mongoose.Schema.Types.Mixed,
+    pdfDosyaYolu: String,   // orn. Ek-1 gibi tek-dosya cikti gerektiren adimlar icin
+    pdfOrijinalAd: String,
   },
   { _id: false }
 );

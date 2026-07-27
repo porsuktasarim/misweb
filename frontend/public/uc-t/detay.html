@@ -151,10 +151,199 @@
         <div id="veriPaneliGovde"></div>
       `;
 
+      if (alt.tip === 'ilMeraKomisyonuKarari') return renderKarar1Paneli(alt);
       if (alt.tip === 'ek4a') return renderEk4aPaneli(alt);
       if (alt.tip === 'ek4b') return renderEk4bPaneli(alt);
       if (alt.tip === 'birlestir') return renderBirlestirPaneli();
       return renderManuelPaneli(alt);
+    }
+
+    // ---- ADIM 1: İL MERA KOMİSYONU KARARI paneli ----
+    let _karar1SeciliKomisyon = null;
+    let _karar1Secimler = {}; // { kurumAdi: 'asil'|'yedek' }
+
+    async function renderKarar1Paneli(alt) {
+      const govde = document.getElementById('veriPaneliGovde');
+      const oncekiVeri = alt.veri || {};
+      _karar1Secimler = {};
+      (oncekiVeri.katilimcilar || []).forEach((k) => { _karar1Secimler[k.kurumAdi] = k.temsilciTipi; });
+
+      govde.innerHTML = `
+        <div class="row g-2 mb-2">
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">Karar Tarihi *</label>
+            <input type="date" class="form-control form-control-sm" id="k1Tarih" value="${oncekiVeri.kararTarihi ? oncekiVeri.kararTarihi.slice(0, 10) : ''}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">Karar Sayısı *</label>
+            <input type="text" class="form-control form-control-sm" id="k1Sayi" value="${guvenliMetin(oncekiVeri.kararSayisi || '')}">
+          </div>
+        </div>
+
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">İl Mera Komisyonu *</label>
+          <select id="k1KomisyonSelect" class="form-select form-select-sm"><option value="">Yükleniyor...</option></select>
+          <div class="form-text small">Listede yoksa Ayarlar → Personel Yönetimi → İl Mera Komisyonu Üyeleri'nden ekle.</div>
+        </div>
+
+        <div class="mb-2">
+          <label class="form-label small fw-semibold d-block">Güvenlik Kurumu</label>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="k1Guvenlik" id="k1GPolis" value="polis" ${oncekiVeri.guvenlikSecimi === 'polis' ? 'checked' : ''}>
+            <label class="form-check-label small" for="k1GPolis">Polis</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="k1Guvenlik" id="k1GJandarma" value="jandarma" ${oncekiVeri.guvenlikSecimi === 'jandarma' ? 'checked' : ''}>
+            <label class="form-check-label small" for="k1GJandarma">Jandarma</label>
+          </div>
+          <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="k1Guvenlik" id="k1GIkisi" value="ikisi" ${oncekiVeri.guvenlikSecimi === 'ikisi' ? 'checked' : ''}>
+            <label class="form-check-label small" for="k1GIkisi">İkisi de</label>
+          </div>
+        </div>
+
+        <div id="k1KatilimcilarAlani" class="mb-3"></div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Karar Belgesi (PDF)</label>
+          <input type="file" class="form-control form-control-sm" id="k1PdfInput" accept="application/pdf">
+          ${alt.pdfDosyaYolu ? `<div class="form-text small"><i class="bi bi-file-earmark-pdf text-danger me-1"></i><a href="${API}/${id}/adim-pdf/${seciliAna}/${seciliAlt}" target="_blank">Mevcut belgeyi görüntüle</a> (yeni dosya seçersen değişir)</div>` : ''}
+        </div>
+
+        <button class="btn btn-primary btn-sm" onclick="karar1Kaydet()">Kaydet</button>
+        <button class="btn btn-link btn-sm text-muted" onclick="karar1IslemsizTamamla()">Formu doldurmadan tamamlandı işaretle</button>
+        <div id="k1Sonuc" class="mt-2"></div>
+      `;
+
+      const komisyonJson = await fetch(`${API}/komisyon-adaylari?il=${encodeURIComponent(kayit.il)}`).then((r) => r.json());
+      const select = document.getElementById('k1KomisyonSelect');
+      if (komisyonJson.success && komisyonJson.data.length) {
+        select.innerHTML = komisyonJson.data.map((k) => `<option value="${k._id}" ${oncekiVeri.komisyonId === k._id ? 'selected' : ''}>${k.yil} - ${k.il} (${k.uyeler.length} kurum)</option>`).join('');
+      } else {
+        select.innerHTML = '<option value="">Bu il için kayıtlı komisyon yok</option>';
+      }
+      select.addEventListener('change', karar1KomisyonSecildi);
+      document.querySelectorAll('input[name="k1Guvenlik"]').forEach((r) => r.addEventListener('change', karar1KatilimcilariGuncelle));
+
+      if (select.value) await karar1KomisyonSecildi();
+    }
+
+    async function karar1KomisyonSecildi() {
+      const komisyonId = document.getElementById('k1KomisyonSelect').value;
+      if (!komisyonId) { _karar1SeciliKomisyon = null; document.getElementById('k1KatilimcilarAlani').innerHTML = ''; return; }
+      const json = await fetch(`/api/il-mera-komisyonu/${komisyonId}`).then((r) => r.json());
+      if (!json.success) return;
+      _karar1SeciliKomisyon = json.data;
+      karar1KatilimcilariGuncelle();
+    }
+
+    function karar1KatilimcilariGuncelle() {
+      const alan = document.getElementById('k1KatilimcilarAlani');
+      if (!_karar1SeciliKomisyon) { alan.innerHTML = ''; return; }
+      const guvenlikSecimi = (document.querySelector('input[name="k1Guvenlik"]:checked') || {}).value;
+
+      const gosterilecekUyeler = _karar1SeciliKomisyon.uyeler.filter((u) => {
+        if (!u.guvenlikTipi) return true; // guvenlik disi kurumlar HER ZAMAN gosterilir
+        if (!guvenlikSecimi) return false; // guvenlik secimi yapilmadan guvenlik kurumlari gizli
+        if (guvenlikSecimi === 'ikisi') return true;
+        return u.guvenlikTipi === guvenlikSecimi;
+      });
+
+      if (gosterilecekUyeler.length === 0) {
+        alan.innerHTML = '<div class="text-muted small">Bu komisyonda henüz kurum/üye eklenmemiş.</div>';
+        return;
+      }
+
+      alan.innerHTML = `
+        <label class="form-label small fw-semibold d-block">Katılımcılar (kurum başına asıl veya yedek seç)</label>
+        <table class="table table-sm">
+          <thead><tr><th>Kurum</th><th>Asıl</th><th>Yedek</th></tr></thead>
+          <tbody>
+            ${gosterilecekUyeler.map((u) => {
+              const secilen = _karar1Secimler[u.kurumAdi] || 'asil';
+              return `
+                <tr>
+                  <td class="small">${guvenliMetin(u.kurumAdi)}</td>
+                  <td>
+                    <label class="small"><input type="radio" name="k1_${guvenliMetin(u.kurumAdi)}" value="asil" ${secilen === 'asil' ? 'checked' : ''} onchange="_karar1Secimler['${u.kurumAdi.replace(/'/g, "\\'")}']='asil'">
+                    ${guvenliMetin(u.asilAdSoyad || '-')}${u.asilUnvan ? ' (' + guvenliMetin(u.asilUnvan) + ')' : ''}</label>
+                  </td>
+                  <td>
+                    <label class="small"><input type="radio" name="k1_${guvenliMetin(u.kurumAdi)}" value="yedek" ${secilen === 'yedek' ? 'checked' : ''} onchange="_karar1Secimler['${u.kurumAdi.replace(/'/g, "\\'")}']='yedek'">
+                    ${guvenliMetin(u.yedekAdSoyad || '-')}${u.yedekUnvan ? ' (' + guvenliMetin(u.yedekUnvan) + ')' : ''}</label>
+                  </td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function karar1KatilimciListesiniTopla() {
+      if (!_karar1SeciliKomisyon) return [];
+      const guvenlikSecimi = (document.querySelector('input[name="k1Guvenlik"]:checked') || {}).value;
+      const gosterilecekUyeler = _karar1SeciliKomisyon.uyeler.filter((u) => {
+        if (!u.guvenlikTipi) return true;
+        if (!guvenlikSecimi) return false;
+        if (guvenlikSecimi === 'ikisi') return true;
+        return u.guvenlikTipi === guvenlikSecimi;
+      });
+      return gosterilecekUyeler.map((u) => {
+        const tip = _karar1Secimler[u.kurumAdi] || 'asil';
+        return {
+          kurumAdi: u.kurumAdi, temsilciTipi: tip,
+          adSoyad: tip === 'asil' ? u.asilAdSoyad : u.yedekAdSoyad,
+          unvan: tip === 'asil' ? u.asilUnvan : u.yedekUnvan,
+        };
+      });
+    }
+
+    window.karar1Kaydet = async () => {
+      const sonucAlan = document.getElementById('k1Sonuc');
+      const kararTarihi = document.getElementById('k1Tarih').value;
+      const kararSayisi = document.getElementById('k1Sayi').value.trim();
+      const komisyonId = document.getElementById('k1KomisyonSelect').value;
+      const guvenlikSecimi = (document.querySelector('input[name="k1Guvenlik"]:checked') || {}).value || '';
+      const pdfDosya = document.getElementById('k1PdfInput').files[0];
+
+      if (!kararTarihi || !kararSayisi) { sonucAlan.innerHTML = '<span class="text-danger small">Karar tarihi ve sayısı zorunludur.</span>'; return; }
+      if (!komisyonId) { sonucAlan.innerHTML = '<span class="text-danger small">İl Mera Komisyonu seçilmelidir.</span>'; return; }
+
+      const formData = new FormData();
+      formData.append('anaAdimIndex', seciliAna);
+      formData.append('altAdimIndex', seciliAlt);
+      formData.append('kararTarihi', kararTarihi);
+      formData.append('kararSayisi', kararSayisi);
+      formData.append('komisyonId', komisyonId);
+      formData.append('guvenlikSecimi', guvenlikSecimi);
+      formData.append('katilimcilar', JSON.stringify(karar1KatilimciListesiniTopla()));
+      if (pdfDosya) formData.append('pdf', pdfDosya);
+
+      sonucAlan.innerHTML = '<span class="text-muted small">Kaydediliyor...</span>';
+      const res = await fetch(`${API}/${id}/karar1-kaydet`, { method: 'PUT', body: formData });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json.message}</span>`; return; }
+
+      kayit = json.data;
+      renderSurec();
+      sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
+    };
+
+    // "Formu doldurmadan tamamla" - ILERIDE kullanici yetkilerinde
+    // "3T adimini islemsiz tamamlama izni" ile GATE EDILECEK. Simdilik
+    // herkese acik (izin sistemi henuz yok).
+    window.karar1IslemsizTamamla = async () => {
+      if (!confirm('Bu adımı, formu doldurmadan tamamlandı olarak işaretlemek istediğine emin misin?')) return;
+      await adimKaydetIslemsiz();
+    };
+
+    async function adimKaydetIslemsiz() {
+      const res = await fetch(`${API}/${id}/adim`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, tamamlandiMi: true }),
+      });
+      const json = await res.json();
+      if (json.success) { kayit = json.data; renderSurec(); renderVeriPaneli(); }
     }
 
     // ---- MANUEL (varsayılan) panel ----

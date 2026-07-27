@@ -8,9 +8,47 @@ const Ek4abSonuc = require('../ek4ab/ek4ab.model');
 const BbhbSonuc = require('../bbhb/bbhb.model');
 const CksSonuc = require('../cks/cks.model');
 const ek4abService = require('../ek4ab/ek4ab.service');
+const ilMeraKomisyonuService = require('../personel/ilMeraKomisyonu.service');
+const fs = require('fs/promises');
 
 async function listele() {
   return UcT.find({ aktif: true }).sort({ createdAt: -1 });
+}
+
+/**
+ * ADIM 1: İl Mera Komisyonu Kararı. PDF (varsa - multer zaten diske
+ * yazdi, sadece yolunu aliyoruz) + karar tarih/sayisi + SECILEN
+ * komisyonun ONAYLI SNAPSHOT'i (kurum basina asil/yedekten HANGISI
+ * imzaladiysa o) kaydedilir. Guvenlik kurumu (Polis/Jandarma/Ikisi)
+ * secimine gore ilgili kurum satir(lar)i katilimcilara dahil edilir -
+ * bu FILTRELEME FRONTEND'DE yapilip HAZIR katilimci listesi
+ * gonderilir (backend sadece SNAPSHOT'i saklar, tekrar sorgu atmaz).
+ */
+async function karar1Kaydet(id, anaAdimIndex, altAdimIndex, { kararTarihi, kararSayisi, komisyonId, guvenlikSecimi, katilimcilar }, dosya) {
+  const kayit = await UcT.findById(id);
+  if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
+  if (!kararTarihi || !kararSayisi) throw new Error('Karar tarihi ve sayısı zorunludur.');
+  if (!komisyonId) throw new Error('İl Mera Komisyonu seçilmelidir.');
+
+  const altAdim = kayit.surec[anaAdimIndex].altAdimlar[altAdimIndex];
+
+  if (dosya) {
+    // Eski PDF varsa (guncelleme durumu) diskten SIL
+    if (altAdim.pdfDosyaYolu) await fs.unlink(altAdim.pdfDosyaYolu).catch(() => {});
+    altAdim.pdfDosyaYolu = dosya.path;
+    altAdim.pdfOrijinalAd = dosya.originalname;
+  }
+
+  altAdim.veri = {
+    kararTarihi, kararSayisi, komisyonId,
+    guvenlikSecimi: guvenlikSecimi || null,
+    katilimcilar: katilimcilar || [],
+  };
+  altAdim.tamamlandiMi = true;
+  altAdim.tamamlanmaTarihi = new Date();
+
+  await kayit.save();
+  return kayit;
 }
 
 async function getir(id) {
@@ -237,7 +275,13 @@ async function birlestirVeDevamEt(id, anaAdimIndex, altAdimIndex) {
   return kayit;
 }
 
+/** 3T kaydinin iline gore Il Mera Komisyonu adaylarini (secim listesi icin) getirir. */
+async function komisyonAdaylari(il) {
+  return ilMeraKomisyonuService.ilIcinKomisyonlar(il);
+}
+
 module.exports = {
   listele, getir, olustur, sil, adimGuncelle, ek4abSec, koyIcinEk4abAdaylari,
   koyIcinBbhbAdaylari, koyIcinCksAdaylari, ek4aVeriCek, ek4bVeriCek, birlestirVeDevamEt,
+  karar1Kaydet, komisyonAdaylari,
 };
