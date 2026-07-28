@@ -75,20 +75,28 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   özgü Muhtar bilgisi (varsa o yılın Teknik Ekip listesinden OTOMATİK
   doldurulur, düzenlenebilir), PDF karar belgesi yükleme + indirmeden
   açılır-kapanır görüntüleme. ADIM 2 (Duyuru/Ek-1) ve ADIM 3 (Duyuru
-  Tutanağı/Ek-2): il/ilçe/köy otomatik, tarih girişi, Duyuru
-  Tutanağı'nda ayrıca gönderim kurumları işaretlemeli listesi (Köy/
-  Mahalle Muhtarlığı, Belediye Başkanlığı, Orman Bölge Müdürlüğü, DSİ,
+  Tutanağı/Ek-2): il/ilçe/köy otomatik alınır; Tespit ve Tahdit
+  Başlangıç Tarihi SADECE Duyuru'da girilir, Duyuru Tutanağı bunu
+  Duyuru'dan OKUR (tekrar giriş yok, tek kaynak). Duyuru Tutanağı'nda
+  ayrıca gönderim kurumları işaretlemeli listesi (Köy/Mahalle
+  Muhtarlığı, Belediye Başkanlığı, Orman Bölge Müdürlüğü, DSİ,
   Büyükşehir Belediyesi, Komşu İlçe Belediyeleri, Komşu Mahalle
   Muhtarlıkları, Milli Emlak Dairesi Başkanlığı/Müdürlüğü + serbest
-  "diğer kurumlar"), imza bloğu Adım 1'de GERÇEKTEN belirlenen
-  başkanın (Vali Yardımcısı/İl Müdürü/Teknik Personel, hangisiyse)
-  adı+unvanını kullanır, altında "İl Mera Komisyonu Başkanı", sayfa
-  3 sütuna bölünmüş gibi düşünülüp sağ sütunda ortalı - hem ekranda
-  hem Word/PDF çıktısında. Her iki adımda da girilen bilgilerle
-  OTOMATİK ÜRETİLEN, panoya kopyalanabilen resmi metin var. Sağ
-  sütundaki ayrı "Ek-4ab Kaynağı" bloğu kaldırıldı (Birleştirme adımı
-  zaten otomatik bağlıyor). NOT: Duyuru Tutanağı'nın tam resmi formatı
-  en iyi yorumla kuruldu, canlıda doğrulanması önerilir. Tahsis
+  "diğer kurumlar"). Her iki adımın komisyon seçimi "Komisyon ve
+  Teknik Ekip Seçimi" ön-adımından VE Adım 1'den varsayılan alır
+  (bağımsız kalır, değiştirilebilir). İMZA BLOKLARI ORİJİNAL Ek-1/
+  Ek-2 şablonlarına göre DÜZELTİLDİ: Duyuru (Ek-1) sağda TEK kişi,
+  SADECE "Komisyon Başkanı" unvanı (isim yazılmaz - orijinal şablonda
+  da yok); Duyuru Tutanağı (Ek-2) 4 EŞİT SÜTUNA bölünmüş, çok açık
+  gri imza çizgisi + altında aynı gri renkte "Adı Soyadı"/"Ünvanı"
+  etiketleriyle BOŞ ŞABLON (Köylerde Muhtar+3 İhtiyar Heyeti Üyesi,
+  Belediyelerde Belediye Başkanı+3 yetkili - sistem bu kişileri
+  bilmediği için basılıp elle doldurulur) - hem ekranda hem Word/PDF
+  çıktısında (test edilip doğrulandı). Her iki adımda da girilen
+  bilgilerle OTOMATİK ÜRETİLEN, panoya kopyalanabilen resmi metin
+  var. Sağ sütundaki ayrı "Ek-4ab Kaynağı" bloğu kaldırıldı
+  (Birleştirme adımı zaten otomatik bağlıyor). Tebliğ Belgesi (Ek-3)
+  HENÜZ gerçek forma dönüştürülmedi (manuel işaretleme). Tahsis
   (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
 - **Personel Yönetimi** (Ayarlar içinde) — Teknik Ekip Üyeleri: yıl/ilçe
   bazlı akordiyon, kurum seçimine göre otomatik imza metni üretimi
