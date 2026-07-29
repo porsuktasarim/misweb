@@ -69,18 +69,56 @@ function duyuruVerileriniOlustur(kayit, veri) {
   };
 }
 
+/** (Ek-3) TEBLİĞ BELGESİ icin export verisini uretir. */
+function tebligBelgesiVerileriniOlustur(kayit, veri) {
+  const duyuruAdim = kayit.surec.flatMap((a) => a.altAdimlar).find((a) => a.tip === 'duyuru');
+  const tarih = duyuruAdim?.veri?.baslangicTarihi;
+  const tarihGosterim = tarih ? new Date(tarih).toLocaleDateString('tr-TR') : '…/…/20….';
+
+  const sabitAlicilar = ['İlgili Orman Teşkilatı', 'İlgili Tarım Reformu Teşkilatı', 'Tapu Müdürlüğü', 'Milli Emlak'];
+  const secilenAlicilar = veri.aliciKurumlar || sabitAlicilar;
+  const aliciSatirlari = [
+    `${kayit.koyMahalle} Muhtarlığına`,
+    `${kayit.ilce} Belediye Başkanlığına`,
+    ...secilenAlicilar.map((a) => `${a}na`),
+    ...(veri.digerKurumlar ? [veri.digerKurumlar] : []),
+  ].join('\n');
+
+  const govdeMetni = `4342 Sayılı Mera Kanunu gereği, ${tarihGosterim} tarihinde ${kayit.il} İli ${kayit.ilce} İlçesi ${kayit.koyMahalle} Köy/Mahallesinde Mera Komisyonu/Teknik Ekiplerince mera, yaylak, kışlak, otlak, umuma ait çayırların tespit ve tahdit çalışmalarına başlanacaktır.\n\n4342 Sayılı Mera Kanunu'nun 7 nci maddesi gereği başlama tarihi ile çalışma yapılacak yeri bildiren alanlarda mevcut mera, yaylak, kışlak, otlak ve umuma ait çayır alanları mevcut ise bu alanların durumunu belirten bilgi ve belgelerin, 4342 sayılı Mera Kanunu'nun 8 inci maddesi gereği tebliğden itibaren otuz gün içerisinde Komisyonumuza teslim edilmesi tebliğ olunur.`;
+
+  return {
+    baslik: 'TEBLİĞ BELGESİ (Ek-3)',
+    aliciBasligi: aliciSatirlari,
+    govdeMetni,
+    tarihSatiri: '…../…../20..',
+    imzaTipi: 'tek',
+    imzaAltYazi: 'Komisyon Başkanı',
+    altNot: 'Ek: Mera, Yaylak, Kışlak, Otlak, Umuma ait Çayır Bilgi Cetveli (Ek-3/a)',
+  };
+}
+
 /** Adim TIPINE gore dogru veri-uretici fonksiyonu cagirir. */
 async function adimDisaAktarVerisi(kayit, alt) {
   if (alt.tip === 'duyuruTutanagi') return duyuruTutanagiVerileriniOlustur(kayit, alt.veri || {});
   if (alt.tip === 'duyuru') return duyuruVerileriniOlustur(kayit, alt.veri || {});
+  if (alt.tip === 'tebligBelgesi') return tebligBelgesiVerileriniOlustur(kayit, alt.veri || {});
   throw new Error('Bu adım için dışa aktarma henüz desteklenmiyor.');
 }
 
 async function adimBelgesiWordOlustur(v) {
-  const cocuklar = [
+  const cocuklar = [];
+
+  if (v.aliciBasligi) {
+    v.aliciBasligi.split('\n').forEach((satir) => {
+      cocuklar.push(new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: satir, size: 22, font: 'Times New Roman' })] }));
+    });
+    cocuklar.push(new Paragraph({ text: '', spacing: { after: 200 } }));
+  }
+
+  cocuklar.push(
     new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 300 }, children: [new TextRun({ text: v.baslik, bold: true, size: 28, font: 'Times New Roman' })] }),
     new Paragraph({ alignment: AlignmentType.JUSTIFIED, spacing: { after: 300 }, children: [new TextRun({ text: v.govdeMetni, size: 22, font: 'Times New Roman' })] }),
-  ];
+  );
 
   if (v.tarihSatiri) {
     cocuklar.push(new Paragraph({ alignment: v.imzaTipi === 'tek' ? AlignmentType.RIGHT : AlignmentType.LEFT, spacing: { after: 600 }, children: [new TextRun({ text: v.tarihSatiri, size: 22, font: 'Times New Roman' })] }));
@@ -125,6 +163,10 @@ async function adimBelgesiWordOlustur(v) {
     cocuklar.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ children: [etiketHucresi(), etiketHucresi(), etiketHucresi(), etiketHucresi()] })] }));
   }
 
+  if (v.altNot) {
+    cocuklar.push(new Paragraph({ spacing: { before: 400 }, children: [new TextRun({ text: v.altNot, italics: true, size: 20, font: 'Times New Roman' })] }));
+  }
+
   const doc = new Document({
     sections: [{
       properties: { page: { margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 } } },
@@ -144,6 +186,11 @@ function adimBelgesiPdfOlustur(v) {
 
     doc.registerFont('normal', FONT_NORMAL);
     doc.registerFont('kalin', FONT_KALIN);
+
+    if (v.aliciBasligi) {
+      doc.font('normal').fontSize(10).text(v.aliciBasligi);
+      doc.moveDown(1);
+    }
 
     doc.font('kalin').fontSize(13).text(v.baslik, { align: 'center' });
     doc.moveDown(1);
@@ -177,6 +224,11 @@ function adimBelgesiPdfOlustur(v) {
         doc.text('Ünvanı', x, cizgiY + 18, { width: sutunGenisligi, align: 'center' });
       }
       doc.fillColor('#000000');
+    }
+
+    if (v.altNot) {
+      doc.moveDown(2);
+      doc.font('normal').fontSize(9).text(v.altNot, { oblique: true });
     }
 
     doc.end();

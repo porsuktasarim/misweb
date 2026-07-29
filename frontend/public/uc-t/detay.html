@@ -185,6 +185,7 @@
       if (alt.tip === 'ilMeraKomisyonuKarari') return renderKarar1Paneli(alt);
       if (alt.tip === 'duyuru') return renderDuyuruPaneli(alt);
       if (alt.tip === 'duyuruTutanagi') return renderDuyuruTutanagiPaneli(alt);
+      if (alt.tip === 'tebligBelgesi') return renderTebligBelgesiPaneli(alt);
       if (alt.tip === 'ek4a') return renderEk4aPaneli(alt);
       if (alt.tip === 'ek4b') return renderEk4bPaneli(alt);
       if (alt.tip === 'birlestir') return renderBirlestirPaneli();
@@ -796,6 +797,100 @@
         <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
       `;
     }
+
+    // ---- ADIM: TEBLİĞ BELGESİ (Ek-3) paneli ----
+    const TEBLIG_ALICI_SECENEKLERI = [
+      'İlgili Orman Teşkilatı', 'İlgili Tarım Reformu Teşkilatı', 'Tapu Müdürlüğü', 'Milli Emlak',
+    ];
+
+    async function renderTebligBelgesiPaneli(alt) {
+      const govde = document.getElementById('veriPaneliGovde');
+      const v = alt.veri || {};
+
+      // Baslangic tarihi ARTIK BURADA GIRILMIYOR - Duyuru (Ek-1)
+      // adimindan OKUNUYOR (ayni kaynak, tekrar giris yok).
+      const duyuruAdim = kayit.surec.flatMap((a) => a.altAdimlar).find((a) => a.tip === 'duyuru');
+      const baslangicTarihi = duyuruAdim?.veri?.baslangicTarihi || null;
+
+      govde.innerHTML = `
+        <p class="text-muted small">İl/İlçe/Köy-Mahalle bu 3T kaydından, başlangıç tarihi Duyuru (Ek-1) adımından otomatik alınır. Muhtarlık ve Belediye Başkanlığı'na (köyün/mahallenin kendisine) her zaman tebliğ edilir, ayrıca aşağıdakilerden ilgili olanları işaretle.</p>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold d-block">Tespit ve Tahdit Başlangıç Tarihi</label>
+          ${baslangicTarihi
+            ? `<div class="small">${new Date(baslangicTarihi).toLocaleDateString('tr-TR')} <span class="text-muted">(Duyuru/Ek-1 adımından alındı)</span></div>`
+            : `<div class="alert alert-warning small py-2 mb-0">Önce Duyuru (Ek-1) adımında başlangıç tarihi girilmeli.</div>`}
+        </div>
+        <div class="mb-2">
+          <label class="form-label small fw-semibold d-block">Ayrıca Tebliğ Edilecek Kurumlar</label>
+          ${TEBLIG_ALICI_SECENEKLERI.map((k) => `
+            <div class="form-check">
+              <input class="form-check-input tb-alici-check" type="checkbox" value="${k}" id="tbA_${k.replace(/[^a-zA-Z0-9]/g, '')}" ${(v.aliciKurumlar || TEBLIG_ALICI_SECENEKLERI).includes(k) ? 'checked' : ''}>
+              <label class="form-check-label small" for="tbA_${k.replace(/[^a-zA-Z0-9]/g, '')}">${k}</label>
+            </div>`).join('')}
+          <label class="form-label small fw-semibold mt-2">Diğer Kurumlar (elle)</label>
+          <input type="text" class="form-control form-control-sm" id="tbDigerKurumlar" placeholder="Aralarına virgül koyarak yaz" value="${guvenliMetin(v.digerKurumlar || '')}">
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" onclick="tebligBelgesiMetniOlustur()" ${!baslangicTarihi ? 'disabled' : ''}>Metni Oluştur</button>
+        <div id="tbMetinAlani"></div>
+        <hr>
+        <button class="btn btn-primary btn-sm" onclick="tebligBelgesiKaydet()" ${!baslangicTarihi ? 'disabled' : ''}>Kaydet</button>
+        <button class="btn btn-link btn-sm text-muted" onclick="genelIslemsizTamamla()">Formu doldurmadan tamamlandı işaretle</button>
+        <div id="tbSonuc" class="mt-2"></div>
+        <div id="tbDisaAktarAlani" class="mt-2">
+          ${alt.tamamlandiMi ? `
+            <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/word"><i class="bi bi-file-earmark-word me-1"></i>Word</a>
+            <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
+          ` : ''}
+        </div>
+      `;
+
+      if (baslangicTarihi) tebligBelgesiMetniOlustur();
+    }
+
+    function tebligBelgesiVerileriniTopla() {
+      const duyuruAdim = kayit.surec.flatMap((a) => a.altAdimlar).find((a) => a.tip === 'duyuru');
+      const tarih = duyuruAdim?.veri?.baslangicTarihi;
+      const tarihGosterim = tarih ? new Date(tarih).toLocaleDateString('tr-TR') : '…/…/20….';
+
+      const aliciBasligi = `……………………… Muhtarlığına\n……………………… Belediye Başkanlığına\n${Array.from(document.querySelectorAll('.tb-alici-check:checked')).map((c) => c.value + 'na').join('\n')}${document.getElementById('tbDigerKurumlar').value.trim() ? '\n' + document.getElementById('tbDigerKurumlar').value.trim() : ''}\nTapu, Milli Emlak ve ilgili tüm Kurumlara tebliğ edilecek`;
+
+      const govdeMetni = `4342 Sayılı Mera Kanunu gereği, ${tarihGosterim} tarihinde ${kayit.il} İli ${kayit.ilce} İlçesi ${kayit.koyMahalle} Köy/Mahallesinde Mera Komisyonu/Teknik Ekiplerince mera, yaylak, kışlak, otlak, umuma ait çayırların tespit ve tahdit çalışmalarına başlanacaktır.
+
+4342 Sayılı Mera Kanunu'nun 7 nci maddesi gereği başlama tarihi ile çalışma yapılacak yeri bildiren alanlarda mevcut mera, yaylak, kışlak, otlak ve umuma ait çayır alanları mevcut ise bu alanların durumunu belirten bilgi ve belgelerin, 4342 sayılı Mera Kanunu'nun 8 inci maddesi gereği tebliğden itibaren otuz gün içerisinde Komisyonumuza teslim edilmesi tebliğ olunur.`;
+
+      return { aliciBasligi, govdeMetni, tarihSatiri: '…../…../20..' };
+    }
+
+    window.tebligBelgesiMetniOlustur = () => {
+      const p = tebligBelgesiVerileriniTopla();
+      const metin = `${p.aliciBasligi}\n\n(TEBLİĞ BELGESİ)\n\n${p.govdeMetni}\n\n${p.tarihSatiri}\n\nEk: Mera, Yaylak, Kışlak, Otlak, Umuma ait Çayır Bilgi Cetveli (Ek-3/a)`;
+      document.getElementById('tbMetinAlani').innerHTML = kopyalanabilirMetinHtml('tbMetin', metin);
+    };
+
+    window.tebligBelgesiKaydet = async () => {
+      const sonucAlan = document.getElementById('tbSonuc');
+      const duyuruAdim = kayit.surec.flatMap((a) => a.altAdimlar).find((a) => a.tip === 'duyuru');
+      if (!duyuruAdim?.veri?.baslangicTarihi) { sonucAlan.innerHTML = '<span class="text-danger small">Önce Duyuru (Ek-1) adımında başlangıç tarihi girilmeli.</span>'; return; }
+
+      const veri = {
+        aliciKurumlar: Array.from(document.querySelectorAll('.tb-alici-check:checked')).map((c) => c.value),
+        digerKurumlar: document.getElementById('tbDigerKurumlar').value.trim(),
+      };
+
+      sonucAlan.innerHTML = '<span class="text-muted small">Kaydediliyor...</span>';
+      const res = await fetch(`${API}/${id}/adim-veri`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, veri }),
+      });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json.message}</span>`; return; }
+      kayit = json.data;
+      renderSurec();
+      sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
+      document.getElementById('tbDisaAktarAlani').innerHTML = `
+        <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/word"><i class="bi bi-file-earmark-word me-1"></i>Word</a>
+        <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>`;
+    };
 
     // "Formu doldurmadan tamamla" - genel (Duyuru/Duyuru Tutanağı gibi
     // adimlar icin) - ILERIDE kullanici yetkilerinde GATE EDILECEK.

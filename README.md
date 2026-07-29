@@ -96,8 +96,16 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   bilgilerle OTOMATİK ÜRETİLEN, panoya kopyalanabilen resmi metin
   var. Sağ sütundaki ayrı "Ek-4ab Kaynağı" bloğu kaldırıldı
   (Birleştirme adımı zaten otomatik bağlıyor). Tebliğ Belgesi (Ek-3)
-  HENÜZ gerçek forma dönüştürülmedi (manuel işaretleme). Tahsis
-  (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
+  ARTIK GERÇEK FORM: il/ilçe/köy otomatik, başlangıç tarihi Duyuru'dan
+  (tek kaynak) okunur, "kime tebliğ edilecek" kurumları (Muhtarlık+
+  Belediye Başkanlığı köyün kendisinden otomatik, + İlgili Orman
+  Teşkilatı/Tarım Reformu Teşkilatı/Tapu/Milli Emlak işaretlemeli +
+  serbest "diğer kurumlar") üstte alıcı listesi olarak, gövde
+  metninde m.7 (başlama) VE m.8 (30 gün belge teslimi) paragrafları,
+  tek imza ("Komisyon Başkanı", Duyuru ile aynı format), altında
+  "Ek: ... Bilgi Cetveli (Ek-3/a)" notu ile üretilir - Word/PDF
+  çıktısı test edilip doğrulandı. Tahsis (Ek-7 ve sonrası) HENÜZ
+  EKLENMEDİ.
 - **Personel Yönetimi** (Ayarlar içinde) — Teknik Ekip Üyeleri: yıl/ilçe
   bazlı akordiyon, kurum seçimine göre otomatik imza metni üretimi
   (Muhtarlık/Mahalli Bilirkişi/Belediye vb.), toplu üye yükleme
