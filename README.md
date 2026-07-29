@@ -84,28 +84,36 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   Muhtarlıkları, Milli Emlak Dairesi Başkanlığı/Müdürlüğü + serbest
   "diğer kurumlar"). Her iki adımın komisyon seçimi "Komisyon ve
   Teknik Ekip Seçimi" ön-adımından VE Adım 1'den varsayılan alır
-  (bağımsız kalır, değiştirilebilir). İMZA BLOKLARI ORİJİNAL Ek-1/
-  Ek-2 şablonlarına göre DÜZELTİLDİ: Duyuru (Ek-1) sağda TEK kişi,
-  SADECE "Komisyon Başkanı" unvanı (isim yazılmaz - orijinal şablonda
-  da yok); Duyuru Tutanağı (Ek-2) 4 EŞİT SÜTUNA bölünmüş, çok açık
-  gri imza çizgisi + altında aynı gri renkte "Adı Soyadı"/"Ünvanı"
-  etiketleriyle BOŞ ŞABLON (Köylerde Muhtar+3 İhtiyar Heyeti Üyesi,
-  Belediyelerde Belediye Başkanı+3 yetkili - sistem bu kişileri
-  bilmediği için basılıp elle doldurulur) - hem ekranda hem Word/PDF
-  çıktısında (test edilip doğrulandı). Her iki adımda da girilen
-  bilgilerle OTOMATİK ÜRETİLEN, panoya kopyalanabilen resmi metin
-  var. Sağ sütundaki ayrı "Ek-4ab Kaynağı" bloğu kaldırıldı
-  (Birleştirme adımı zaten otomatik bağlıyor). Tebliğ Belgesi (Ek-3)
-  ARTIK GERÇEK FORM: il/ilçe/köy otomatik, başlangıç tarihi Duyuru'dan
-  (tek kaynak) okunur, "kime tebliğ edilecek" kurumları (Muhtarlık+
-  Belediye Başkanlığı köyün kendisinden otomatik, + İlgili Orman
-  Teşkilatı/Tarım Reformu Teşkilatı/Tapu/Milli Emlak işaretlemeli +
-  serbest "diğer kurumlar") üstte alıcı listesi olarak, gövde
+  (bağımsız kalır, değiştirilebilir). İMZA BLOKLARI İKİNCİ KEZ
+  GÖZDEN GEÇİRİLDİ (kullanıcı geri bildirimiyle): Duyuru (Ek-1) ve
+  Tebliğ Belgesi (Ek-3) sağ (3.) sütunda ORTALI - tarih, 3 satır
+  boşluk (2.sinde "İMZA" - Belge Görünüm Ayarları'ndaki renkte), Ad
+  Soyad (Adım 1'de GERÇEKTEN belirlenen başkandan - Vali Yardımcısı/
+  İl Müdürü/Teknik Personel, hangisiyse), Unvan, "İl Mera Komisyonu
+  Başkanı". Duyuru Tutanağı (Ek-2): tarih ARTIK AYRI SATIR DEĞİL,
+  "...imza altına alınmıştır." cümlesinin HEMEN SONUNA eklenir; 4
+  EŞİT SÜTUN: gri imza çizgisi + 1 satır boşluk + "Adı Soyadı"/
+  "Ünvanı" etiketleri (BOŞ ŞABLON - Köylerde Muhtar+3 İhtiyar Heyeti
+  Üyesi, Belediyelerde Belediye Başkanı+3 yetkili elle doldurur).
+  HER BELGENİN SOL ÜST KÖŞESİNDE "(Ek-1)"/"(Ek-2)"/"(Ek-3)" etiketi
+  (İMZA rengiyle, orijinal şablonlara uygun). Word/docx.js'in \n
+  karakterini paragraf saymadığı GERÇEK HATASI düzeltildi - her
+  paragraf artık GERÇEKTEN AYRI bir Paragraph nesnesi (test edilip
+  doğrulandı: Word'de gerçekten 2+ ayrı paragraf görünüyor). Sağ
+  sütundaki ayrı "Ek-4ab Kaynağı" bloğu kaldırıldı (Birleştirme adımı
+  zaten otomatik bağlıyor). Tebliğ Belgesi (Ek-3) ARTIK GERÇEK FORM:
+  il/ilçe/köy + başlangıç tarihi (Duyuru'dan, tek kaynak) otomatik,
+  ÜSTTEKİ ALICI BAŞLIĞI KALDIRILDI (kullanıcı isteğiyle), komisyon
+  adı "{İl} İl Mera Komisyonu Teknik Ekiplerince" formatında, gövde
   metninde m.7 (başlama) VE m.8 (30 gün belge teslimi) paragrafları,
-  tek imza ("Komisyon Başkanı", Duyuru ile aynı format), altında
-  "Ek: ... Bilgi Cetveli (Ek-3/a)" notu ile üretilir - Word/PDF
-  çıktısı test edilip doğrulandı. Tahsis (Ek-7 ve sonrası) HENÜZ
-  EKLENMEDİ.
+  Duyuru ile AYNI gerçek-başkan imza formatı, altında "Ek: ... Bilgi
+  Cetveli (Ek-3/a)" notu - Word/PDF çıktısı test edilip doğrulandı.
+  YENİ "Belge Görünüm Ayarları" (Ayarlar sayfasında): İMZA rengi
+  (renk seçici + hex) ve Word yazı tipi (Times New Roman vb.) BURADAN
+  yönetilir, TÜM 3T çıktılarında (ekranda VE Word/PDF'te) tutarlı
+  kullanılır - PDF Türkçe karakter desteği için sabit gömülü font
+  (DejaVu Serif) kullanır, yazı tipi ayarı sadece Word'ü etkiler.
+  Tahsis (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
 - **Personel Yönetimi** (Ayarlar içinde) — Teknik Ekip Üyeleri: yıl/ilçe
   bazlı akordiyon, kurum seçimine göre otomatik imza metni üretimi
   (Muhtarlık/Mahalli Bilirkişi/Belediye vb.), toplu üye yükleme

@@ -111,6 +111,14 @@
     }
 
     /** Uretilen resmi metni bir textarea icinde, "Kopyala" butonuyla gosterir. */
+    let _belgeAyarlari = null;
+    async function belgeAyarlariniGetir() {
+      if (_belgeAyarlari) return _belgeAyarlari;
+      const json = await fetch('/api/belge-ayarlari').then((r) => r.json());
+      _belgeAyarlari = json.success ? json.data : { imzaRengi: '#999999', wordYaziTipi: 'Times New Roman' };
+      return _belgeAyarlari;
+    }
+
     function kopyalanabilirMetinHtml(benzersizId, metin) {
       return `
         <div class="mt-2">
@@ -582,6 +590,46 @@
     }
 
     // ---- ADIM 2: DUYURU (Ek-1) paneli ----
+    /** TEK imzali belgeler (Duyuru/Tebliğ) icin sag sutunda ortali imza blogu HTML'i. */
+    async function tekImzaHtmlOlustur(tarihSatiri, adSoyad, unvan, altYazi) {
+      const ayarlar = await belgeAyarlariniGetir();
+      return `
+        <div style="display:flex; margin-top:1rem;">
+          <div style="flex:1;"></div>
+          <div style="flex:1;"></div>
+          <div style="flex:1; text-align:center;">
+            <div>${guvenliMetin(tarihSatiri)}</div>
+            <div style="height:1.3em;"></div>
+            <div style="color:${ayarlar.imzaRengi}; font-size:12px;">İMZA</div>
+            <div style="height:1.3em;"></div>
+            <div style="font-weight:600;">${guvenliMetin(adSoyad)}</div>
+            <div>${guvenliMetin(unvan)}</div>
+            <div>${guvenliMetin(altYazi)}</div>
+          </div>
+        </div>`;
+    }
+
+    /** DORTLU (Duyuru Tutanağı) imza izgarasi HTML'i - imza cizgisi + 1 satir bosluk + etiketler. */
+    async function dortluImzaHtmlOlustur() {
+      const ayarlar = await belgeAyarlariniGetir();
+      const sutun = () => `
+        <td style="width:25%; text-align:center; vertical-align:bottom; padding: 0 8px 4px;">
+          <div style="border-bottom: 1px solid #d8d8d8; height: 34px;"></div>
+          <div style="height:1em;"></div>
+          <div style="color:${ayarlar.imzaRengi}; font-size:11px;">Adı Soyadı</div>
+          <div style="color:${ayarlar.imzaRengi}; font-size:11px;">Ünvanı</div>
+        </td>`;
+      return `<table style="width:100%; border-collapse:collapse;"><tr>${sutun()}${sutun()}${sutun()}${sutun()}</tr></table>`;
+    }
+
+    /** Adim 1'de belirlenen GERCEK baskanlik bilgisini (yoksa bos sablon) dondurur. */
+    function baskanlikBilgisiniGetir() {
+      const karar1Adim = kayit.surec.flatMap((a) => a.altAdimlar).find((a) => a.tip === 'ilMeraKomisyonuKarari');
+      const b = karar1Adim?.veri?.baskanlik;
+      if (b && b.adSoyad) return { adSoyad: b.adSoyad, unvan: b.unvan };
+      return { adSoyad: '……………………………', unvan: '……………………………' };
+    }
+
     async function renderDuyuruPaneli(alt) {
       const govde = document.getElementById('veriPaneliGovde');
       const v = alt.veri || {};
@@ -594,6 +642,7 @@
         </div>
         <button class="btn btn-outline-secondary btn-sm" onclick="duyuruMetniOlustur()">Metni Oluştur</button>
         <div id="dyMetinAlani"></div>
+        <div id="dyImzaAlani"></div>
         <hr>
         <button class="btn btn-primary btn-sm" onclick="duyuruKaydet()">Kaydet</button>
         <button class="btn btn-link btn-sm text-muted" onclick="genelIslemsizTamamla()">Formu doldurmadan tamamlandı işaretle</button>
@@ -609,17 +658,18 @@
       if (v.baslangicTarihi) duyuruMetniOlustur();
     }
 
-    window.duyuruMetniOlustur = () => {
+    window.duyuruMetniOlustur = async () => {
       const tarih = document.getElementById('dyBaslangicTarihi').value;
       const tarihGosterim = tarih ? new Date(tarih).toLocaleDateString('tr-TR') : '…/…/20….';
       const yil = tarih ? new Date(tarih).getFullYear() : '20..';
-      const metin = `4342 Sayılı Mera Kanunu gereği, ${tarihGosterim} tarihinde ${kayit.il} İli ${kayit.ilce} İlçesi ${kayit.koyMahalle} Köy/Mahallesinde Mera Komisyonu/Teknik Ekiplerince, mera, yaylak, kışlak, otlak, umuma ait çayırların tespit ve tahdit çalışmalarına başlanacaktır.
+      const komisyonAdi = `${kayit.il} İl Mera Komisyonu`;
+      const metin = `4342 Sayılı Mera Kanunu gereği, ${tarihGosterim} tarihinde ${kayit.il} İli ${kayit.ilce} İlçesi ${kayit.koyMahalle} Köy/Mahallesinde ${komisyonAdi} Teknik Ekiplerince, mera, yaylak, kışlak, otlak, umuma ait çayırların tespit ve tahdit çalışmalarına başlanılacaktır.
 
-4342 Sayılı Mera Kanunu'nun 7 nci maddesi gereği ilan olunur.
-
-                                                                        …../…../${yil}
-                                                                        Komisyon Başkanı`;
+4342 Sayılı Mera Kanunu'nun 7 nci maddesi gereği ilan olunur.`;
       document.getElementById('dyMetinAlani').innerHTML = kopyalanabilirMetinHtml('dyMetin', metin);
+
+      const baskan = baskanlikBilgisiniGetir();
+      document.getElementById('dyImzaAlani').innerHTML = await tekImzaHtmlOlustur(`…../…../${yil}`, baskan.adSoyad, baskan.unvan, 'İl Mera Komisyonu Başkanı');
     };
 
     window.duyuruKaydet = async () => {
@@ -729,38 +779,19 @@
       const digerKurumlar = document.getElementById('dtDigerKurumlar').value.trim();
       const kurumListesi = [...secilenKurumlar, ...(digerKurumlar ? [digerKurumlar] : [])].join(', ') || '……………………………';
 
-      const govdeMetni = `4342 Sayılı Mera Kanunu'na göre ${kayit.il} İli ${kayit.ilce} İlçesi ${kayit.koyMahalle} Köyü/Mahallesi sınırları içerisinde bulunan mera / yaylak / kışlak / otlak / çayırların tespit ve tahdit çalışmalarına ${tarihGosterim} tarihinde başlanacağını belirten duyuru, 4342 Sayılı Mera Kanunu'nun 7 nci maddesi gereği …/…/${yil} ile …/…/${yil} tarihleri arasında ilan edilmek ve ${kurumListesi}'na asılmak üzere ${kayit.il} İli Mera Komisyonundan teslim alınıp, belirtilen tarihler arasında usulüne uygun şekilde ilan yapıldığını gösterir işbu tutanak tarafımızdan düzenlenerek imza altına alınmıştır.`;
+      // ONEMLI: tarih ARTIK AYRI SATIR DEGIL - "imza altına alınmıştır."
+      // cumlesinin HEMEN SONUNA eklenir.
+      const govdeMetni = `4342 Sayılı Mera Kanunu'na göre ${kayit.il} İli ${kayit.ilce} İlçesi ${kayit.koyMahalle} Köyü/Mahallesi sınırları içerisinde bulunan mera / yaylak / kışlak / otlak / çayırların tespit ve tahdit çalışmalarına ${tarihGosterim} tarihinde başlanacağını belirten duyuru, 4342 Sayılı Mera Kanunu'nun 7 nci maddesi gereği …/…/${yil} ile …/…/${yil} tarihleri arasında ilan edilmek ve ${kurumListesi}'na asılmak üzere ${kayit.il} İli Mera Komisyonundan teslim alınıp, belirtilen tarihler arasında usulüne uygun şekilde ilan yapıldığını gösterir işbu tutanak tarafımızdan düzenlenerek imza altına alınmıştır. …../…../${yil}`;
 
-      return { govdeMetni, tarihSatiri: `…../…../${yil}` };
+      return { govdeMetni };
     }
 
-    /**
-     * Ek-2'nin GERCEK orijinal imza blogu: 4 ESIT PARCAYA bolunmus,
-     * her birinde COK ACIK GRI bir imza CIZGISI, birkac satir bosluktan
-     * sonra AYNI gri renkte "Adı Soyadı" / "Ünvanı" ETIKETLERI (BOS
-     * SABLON - Koylerde Muhtar+3 Ihtiyar Heyeti Uyesi, Belediyelerde
-     * Belediye Baskani+3 yetkili elle doldurur - sistem BU ISIMLERI
-     * BILMEDIGI icin sablon olarak birakilir).
-     */
-    function dtImzaBlogunuOlustur() {
-      const sutun = () => `
-        <td style="width:25%; text-align:center; vertical-align:bottom; padding: 0 8px 4px;">
-          <div style="border-bottom: 1px solid #d8d8d8; height: 34px;"></div>
-          <div style="color:#aaaaaa; font-size:11px; margin-top:4px;">Adı Soyadı</div>
-          <div style="color:#aaaaaa; font-size:11px;">Ünvanı</div>
-        </td>`;
-      document.getElementById('dtImzaAlani').innerHTML = `
-        <div class="mt-3">
-          <div class="small text-muted mb-1">İmza Bloğu (Köylerde: Muhtar ve Üç İhtiyar Kurulu Üyesi · Belediyelerde: Belediye Başkanı ve Diğer Üç Yetkili - basılıp elle doldurulur)</div>
-          <table style="width:100%; border-collapse:collapse;"><tr>${sutun()}${sutun()}${sutun()}${sutun()}</tr></table>
-        </div>`;
-    }
-
-    window.duyuruTutanagiMetniOlustur = () => {
+    window.duyuruTutanagiMetniOlustur = async () => {
       const p = duyuruTutanagiVerileriniTopla();
-      const metin = `${p.govdeMetni}\n\n${p.tarihSatiri}`;
-      document.getElementById('dtMetinAlani').innerHTML = kopyalanabilirMetinHtml('dtMetin', metin);
-      dtImzaBlogunuOlustur();
+      document.getElementById('dtMetinAlani').innerHTML = kopyalanabilirMetinHtml('dtMetin', p.govdeMetni);
+      document.getElementById('dtImzaAlani').innerHTML = `
+        <div class="small text-muted mb-1 mt-2">İmza Bloğu (Köylerde: Muhtar ve Üç İhtiyar Kurulu Üyesi · Belediyelerde: Belediye Başkanı ve Diğer Üç Yetkili - basılıp elle doldurulur)</div>
+        ${await dortluImzaHtmlOlustur()}`;
     };
 
     window.duyuruTutanagiKaydet = async () => {
@@ -813,25 +844,16 @@
       const baslangicTarihi = duyuruAdim?.veri?.baslangicTarihi || null;
 
       govde.innerHTML = `
-        <p class="text-muted small">İl/İlçe/Köy-Mahalle bu 3T kaydından, başlangıç tarihi Duyuru (Ek-1) adımından otomatik alınır. Muhtarlık ve Belediye Başkanlığı'na (köyün/mahallenin kendisine) her zaman tebliğ edilir, ayrıca aşağıdakilerden ilgili olanları işaretle.</p>
+        <p class="text-muted small">İl/İlçe/Köy-Mahalle bu 3T kaydından, başlangıç tarihi Duyuru (Ek-1) adımından otomatik alınır.</p>
         <div class="mb-2">
           <label class="form-label small fw-semibold d-block">Tespit ve Tahdit Başlangıç Tarihi</label>
           ${baslangicTarihi
             ? `<div class="small">${new Date(baslangicTarihi).toLocaleDateString('tr-TR')} <span class="text-muted">(Duyuru/Ek-1 adımından alındı)</span></div>`
             : `<div class="alert alert-warning small py-2 mb-0">Önce Duyuru (Ek-1) adımında başlangıç tarihi girilmeli.</div>`}
         </div>
-        <div class="mb-2">
-          <label class="form-label small fw-semibold d-block">Ayrıca Tebliğ Edilecek Kurumlar</label>
-          ${TEBLIG_ALICI_SECENEKLERI.map((k) => `
-            <div class="form-check">
-              <input class="form-check-input tb-alici-check" type="checkbox" value="${k}" id="tbA_${k.replace(/[^a-zA-Z0-9]/g, '')}" ${(v.aliciKurumlar || TEBLIG_ALICI_SECENEKLERI).includes(k) ? 'checked' : ''}>
-              <label class="form-check-label small" for="tbA_${k.replace(/[^a-zA-Z0-9]/g, '')}">${k}</label>
-            </div>`).join('')}
-          <label class="form-label small fw-semibold mt-2">Diğer Kurumlar (elle)</label>
-          <input type="text" class="form-control form-control-sm" id="tbDigerKurumlar" placeholder="Aralarına virgül koyarak yaz" value="${guvenliMetin(v.digerKurumlar || '')}">
-        </div>
         <button class="btn btn-outline-secondary btn-sm" onclick="tebligBelgesiMetniOlustur()" ${!baslangicTarihi ? 'disabled' : ''}>Metni Oluştur</button>
         <div id="tbMetinAlani"></div>
+        <div id="tbImzaAlani"></div>
         <hr>
         <button class="btn btn-primary btn-sm" onclick="tebligBelgesiKaydet()" ${!baslangicTarihi ? 'disabled' : ''}>Kaydet</button>
         <button class="btn btn-link btn-sm text-muted" onclick="genelIslemsizTamamla()">Formu doldurmadan tamamlandı işaretle</button>
@@ -851,20 +873,23 @@
       const duyuruAdim = kayit.surec.flatMap((a) => a.altAdimlar).find((a) => a.tip === 'duyuru');
       const tarih = duyuruAdim?.veri?.baslangicTarihi;
       const tarihGosterim = tarih ? new Date(tarih).toLocaleDateString('tr-TR') : '…/…/20….';
+      const yil = tarih ? new Date(tarih).getFullYear() : '20..';
+      const komisyonAdi = `${kayit.il} İl Mera Komisyonu`;
 
-      const aliciBasligi = `……………………… Muhtarlığına\n……………………… Belediye Başkanlığına\n${Array.from(document.querySelectorAll('.tb-alici-check:checked')).map((c) => c.value + 'na').join('\n')}${document.getElementById('tbDigerKurumlar').value.trim() ? '\n' + document.getElementById('tbDigerKurumlar').value.trim() : ''}\nTapu, Milli Emlak ve ilgili tüm Kurumlara tebliğ edilecek`;
-
-      const govdeMetni = `4342 Sayılı Mera Kanunu gereği, ${tarihGosterim} tarihinde ${kayit.il} İli ${kayit.ilce} İlçesi ${kayit.koyMahalle} Köy/Mahallesinde Mera Komisyonu/Teknik Ekiplerince mera, yaylak, kışlak, otlak, umuma ait çayırların tespit ve tahdit çalışmalarına başlanacaktır.
+      const govdeMetni = `4342 Sayılı Mera Kanunu gereği, ${tarihGosterim} tarihinde ${kayit.il} İli ${kayit.ilce} İlçesi ${kayit.koyMahalle} Köy/Mahallesinde ${komisyonAdi} Teknik Ekiplerince mera, yaylak, kışlak, otlak, umuma ait çayırların tespit ve tahdit çalışmalarına başlanacaktır.
 
 4342 Sayılı Mera Kanunu'nun 7 nci maddesi gereği başlama tarihi ile çalışma yapılacak yeri bildiren alanlarda mevcut mera, yaylak, kışlak, otlak ve umuma ait çayır alanları mevcut ise bu alanların durumunu belirten bilgi ve belgelerin, 4342 sayılı Mera Kanunu'nun 8 inci maddesi gereği tebliğden itibaren otuz gün içerisinde Komisyonumuza teslim edilmesi tebliğ olunur.`;
 
-      return { aliciBasligi, govdeMetni, tarihSatiri: '…../…../20..' };
+      return { govdeMetni, tarihSatiri: `…../…../${yil}` };
     }
 
-    window.tebligBelgesiMetniOlustur = () => {
+    window.tebligBelgesiMetniOlustur = async () => {
       const p = tebligBelgesiVerileriniTopla();
-      const metin = `${p.aliciBasligi}\n\n(TEBLİĞ BELGESİ)\n\n${p.govdeMetni}\n\n${p.tarihSatiri}\n\nEk: Mera, Yaylak, Kışlak, Otlak, Umuma ait Çayır Bilgi Cetveli (Ek-3/a)`;
+      const metin = `${p.govdeMetni}\n\nEk: Mera, Yaylak, Kışlak, Otlak, Umuma ait Çayır Bilgi Cetveli (Ek-3/a)`;
       document.getElementById('tbMetinAlani').innerHTML = kopyalanabilirMetinHtml('tbMetin', metin);
+
+      const baskan = baskanlikBilgisiniGetir();
+      document.getElementById('tbImzaAlani').innerHTML = await tekImzaHtmlOlustur(p.tarihSatiri, baskan.adSoyad, baskan.unvan, 'İl Mera Komisyonu Başkanı');
     };
 
     window.tebligBelgesiKaydet = async () => {
@@ -872,15 +897,10 @@
       const duyuruAdim = kayit.surec.flatMap((a) => a.altAdimlar).find((a) => a.tip === 'duyuru');
       if (!duyuruAdim?.veri?.baslangicTarihi) { sonucAlan.innerHTML = '<span class="text-danger small">Önce Duyuru (Ek-1) adımında başlangıç tarihi girilmeli.</span>'; return; }
 
-      const veri = {
-        aliciKurumlar: Array.from(document.querySelectorAll('.tb-alici-check:checked')).map((c) => c.value),
-        digerKurumlar: document.getElementById('tbDigerKurumlar').value.trim(),
-      };
-
       sonucAlan.innerHTML = '<span class="text-muted small">Kaydediliyor...</span>';
       const res = await fetch(`${API}/${id}/adim-veri`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, veri }),
+        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, veri: {} }),
       });
       const json = await res.json();
       if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json.message}</span>`; return; }
