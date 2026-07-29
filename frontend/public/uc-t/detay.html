@@ -126,7 +126,7 @@
             <label class="form-label small fw-semibold mb-0">Kopyalanabilir Metin</label>
             <button type="button" class="btn btn-sm btn-outline-secondary" onclick="metniKopyala('${benzersizId}')"><i class="bi bi-clipboard me-1"></i>Kopyala</button>
           </div>
-          <textarea class="form-control form-control-sm" id="${benzersizId}" rows="7" readonly style="font-size:12px;">${metin}</textarea>
+          <textarea class="form-control form-control-sm" id="${benzersizId}" rows="7" readonly style="font-size:12px; line-height:1.5;">${metin}</textarea>
         </div>`;
     }
     window.metniKopyala = (elId) => {
@@ -194,6 +194,7 @@
       if (alt.tip === 'duyuru') return renderDuyuruPaneli(alt);
       if (alt.tip === 'duyuruTutanagi') return renderDuyuruTutanagiPaneli(alt);
       if (alt.tip === 'tebligBelgesi') return renderTebligBelgesiPaneli(alt);
+      if (alt.tip === 'ek3aBilgiCetveli') return renderEk3aPaneli(alt);
       if (alt.tip === 'ek4a') return renderEk4aPaneli(alt);
       if (alt.tip === 'ek4b') return renderEk4bPaneli(alt);
       if (alt.tip === 'birlestir') return renderBirlestirPaneli();
@@ -613,14 +614,57 @@
     async function dortluImzaHtmlOlustur() {
       const ayarlar = await belgeAyarlariniGetir();
       const sutun = () => `
-        <td style="width:25%; text-align:center; vertical-align:bottom; padding: 0 8px 4px;">
-          <div style="border-bottom: 1px solid #d8d8d8; height: 34px;"></div>
+        <td style="width:25%; text-align:center; vertical-align:top; padding: 8px;">
+          <div style="height:1em;"></div>
+          <div style="color:${ayarlar.imzaRengi}; font-size:11px;">İMZA</div>
           <div style="height:1em;"></div>
           <div style="color:${ayarlar.imzaRengi}; font-size:11px;">Adı Soyadı</div>
           <div style="color:${ayarlar.imzaRengi}; font-size:11px;">Ünvanı</div>
         </td>`;
       return `<table style="width:100%; border-collapse:collapse;"><tr>${sutun()}${sutun()}${sutun()}${sutun()}</tr></table>`;
     }
+
+    /** Duyuru Tutanağı/Tebliğ Belgesi gibi PDF EKLENEBILEN adimlar icin ORTAK dosya ekleme blogu. */
+    function dosyaEklemeHtml(prefix, alt, ekKodu) {
+      const varsayilanAd = `3T_${kayit.ilce}_${kayit.koyMahalle}_${ekKodu}`.replace(/\s+/g, '');
+      return `
+        <div class="mt-3 p-2 border rounded">
+          <label class="form-label small fw-semibold d-block">Dosya Ekle (PDF)</label>
+          ${pdfGomuluGoruntuleyiciHtml(alt, `${API}/${id}/adim-pdf/${seciliAna}/${seciliAlt}`)}
+          <div class="row g-2 mt-1">
+            <div class="col-md-7">
+              <input type="file" class="form-control form-control-sm" id="${prefix}DosyaInput" accept="application/pdf">
+            </div>
+            <div class="col-md-5">
+              <input type="text" class="form-control form-control-sm" id="${prefix}DosyaAdi" placeholder="Dosya adı (evrak no)" value="${guvenliMetin(alt.pdfOrijinalAd || varsayilanAd)}">
+            </div>
+          </div>
+          <button class="btn btn-sm btn-outline-secondary mt-2" onclick="genelDosyaYukle('${prefix}')">Yükle</button>
+          <span id="${prefix}DosyaSonuc" class="small ms-2"></span>
+        </div>`;
+    }
+
+    window.genelDosyaYukle = async (prefix) => {
+      const dosyaInput = document.getElementById(`${prefix}DosyaInput`);
+      const dosyaAdi = document.getElementById(`${prefix}DosyaAdi`).value.trim();
+      const sonucAlan = document.getElementById(`${prefix}DosyaSonuc`);
+      const dosya = dosyaInput.files[0];
+      if (!dosya) { sonucAlan.innerHTML = '<span class="text-danger">Dosya seçilmedi.</span>'; return; }
+
+      const formData = new FormData();
+      formData.append('anaAdimIndex', seciliAna);
+      formData.append('altAdimIndex', seciliAlt);
+      formData.append('dosyaAdi', dosyaAdi);
+      formData.append('dosya', dosya);
+
+      sonucAlan.innerHTML = 'Yükleniyor...';
+      const res = await fetch(`${API}/${id}/adim-dosya-yukle`, { method: 'PUT', body: formData });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
+      kayit = json.data;
+      renderSurec();
+      renderVeriPaneli();
+    };
 
     /** Adim 1'de belirlenen GERCEK baskanlik bilgisini (yoksa bos sablon) dondurur. */
     function baskanlikBilgisiniGetir() {
@@ -746,6 +790,7 @@
         <button class="btn btn-link btn-sm text-muted" onclick="genelIslemsizTamamla()">Formu doldurmadan tamamlandı işaretle</button>
         <div id="dtSonuc" class="mt-2"></div>
         <div id="dtDisaAktarAlani" class="mt-2"></div>
+        <div id="dtDosyaAlani">${dosyaEklemeHtml('dt', alt, 'ek-2')}</div>
       `;
 
       const komisyonJson = await fetch(`${API}/komisyon-adaylari?il=${encodeURIComponent(kayit.il)}`).then((r) => r.json());
@@ -864,6 +909,7 @@
             <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
           ` : ''}
         </div>
+        <div id="tbDosyaAlani">${dosyaEklemeHtml('tb', alt, 'ek-3')}</div>
       `;
 
       if (baslangicTarihi) tebligBelgesiMetniOlustur();
@@ -910,6 +956,159 @@
       document.getElementById('tbDisaAktarAlani').innerHTML = `
         <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/word"><i class="bi bi-file-earmark-word me-1"></i>Word</a>
         <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>`;
+    };
+
+    // ---- EK-3/A: BİLGİ CETVELİ paneli ----
+    const EK3A_YARARLANMA_SECENEKLERI = ['Otlatarak', 'Kuru ot olarak biçilerek', 'Silaj yapılarak'];
+    let _ek3aSeciliCks = null;
+
+    async function renderEk3aPaneli(alt) {
+      const govde = document.getElementById('veriPaneliGovde');
+      const v = alt.veri || {};
+
+      govde.innerHTML = `
+        <p class="text-muted small">İl/İlçe/Köy-Mahalle bu 3T kaydından otomatik alınır.</p>
+
+        <div class="mb-2">
+          <label class="form-label small fw-semibold">5. Aile Sayısı *</label>
+          <input type="number" class="form-control form-control-sm" id="e3aAileSayisi" style="max-width:160px;" value="${v.aileSayisi ?? ''}">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">6. Çiftçi Aile Sayısı - ÇKS Kaydından</label>
+          <select id="e3aCksSelect" class="form-select form-select-sm"><option value="">Yükleniyor...</option></select>
+          <div id="e3aCksSonuc" class="small text-muted mt-1"></div>
+        </div>
+
+        <div class="mb-3 p-2 border rounded">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="e3aAraziModulu" ${v.araziModulundenGelecek !== false ? 'checked' : ''} disabled>
+            <label class="form-check-label small" for="e3aAraziModulu">7. Arazinin Cinsi/Miktarı/Parça Adedi/Mevki bilgileri - <strong>Mera Modülü</strong>nden gelecek (henüz kurulmadı, şimdilik boş)</label>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">8. Mevcut Hayvan Varlığı - BBHB Kaydından</label>
+          <select id="e3aBbhbSelect" class="form-select form-select-sm"><option value="">Yükleniyor...</option></select>
+          <div id="e3aBbhbOnizleme" class="mt-2"></div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold d-block">9. Kullanılan Alanlardan Yararlanma Şekli</label>
+          ${EK3A_YARARLANMA_SECENEKLERI.map((s) => `
+            <div class="form-check">
+              <input class="form-check-input e3a-yararlanma-check" type="checkbox" value="${s}" id="e3aY_${s.replace(/[^a-zA-Z0-9]/g, '')}" ${(v.yararlanmaSekilleri || []).includes(s) ? 'checked' : ''}>
+              <label class="form-check-label small" for="e3aY_${s.replace(/[^a-zA-Z0-9]/g, '')}">${s}</label>
+            </div>`).join('')}
+          <input type="text" class="form-control form-control-sm mt-1" id="e3aDigerYararlanma" placeholder="Diğer (elle)" value="${guvenliMetin(v.digerYararlanmaSekli || '')}">
+        </div>
+
+        <div class="mb-3 p-2 border rounded">
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="e3aHaritaModulu" ${v.haritaModulundenGelecek !== false ? 'checked' : ''} disabled>
+            <label class="form-check-label small" for="e3aHaritaModulu">10. Harita, Kroki, Pafta ve diğer bilgiler - <strong>Mera Modülü</strong>nden gelecek (henüz kurulmadı, şimdilik boş)</label>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">11. 5 inci Maddedeki Şartları Taşıyıp Taşımadığına Dair Belgeler</label>
+          <input type="text" class="form-control form-control-sm" id="e3aMadde11" placeholder="Not (opsiyonel)" value="${guvenliMetin(v.madde11Notu || '')}">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">12. Kullanılan Alanlardan Yararlanma Miktar ve Şekli</label>
+          <textarea class="form-control form-control-sm" id="e3aMadde12" rows="3">${guvenliMetin(v.madde12Metni || '')}</textarea>
+        </div>
+
+        <button class="btn btn-primary btn-sm" onclick="ek3aKaydet()">Kaydet</button>
+        <button class="btn btn-link btn-sm text-muted" onclick="genelIslemsizTamamla()">Formu doldurmadan tamamlandı işaretle</button>
+        <div id="e3aSonuc" class="mt-2"></div>
+      `;
+
+      const cksJson = await fetch(`${API}/cks-adaylari?il=${encodeURIComponent(kayit.il)}&ilce=${encodeURIComponent(kayit.ilce)}&koyMahalle=${encodeURIComponent(kayit.koyMahalle)}`).then((r) => r.json());
+      const cksSelect = document.getElementById('e3aCksSelect');
+      cksSelect.innerHTML = (cksJson.success && cksJson.data.length)
+        ? '<option value="">— Seç —</option>' + cksJson.data.map((c) => `<option value="${c._id}" ${v.cksSonucId === c._id ? 'selected' : ''}>${c.uretimYili || '-'} üretim yılı · ${c.ciftciler.length} çiftçi</option>`).join('')
+        : '<option value="">Kayıt bulunamadı</option>';
+      cksSelect.addEventListener('change', () => {
+        const secilen = cksJson.data.find((c) => c._id === cksSelect.value);
+        _ek3aSeciliCks = secilen || null;
+        document.getElementById('e3aCksSonuc').textContent = secilen ? `Çiftçi Aile Sayısı: ${secilen.ciftciler.length}` : '';
+      });
+      if (cksSelect.value) {
+        _ek3aSeciliCks = cksJson.data.find((c) => c._id === cksSelect.value) || null;
+        document.getElementById('e3aCksSonuc').textContent = _ek3aSeciliCks ? `Çiftçi Aile Sayısı: ${_ek3aSeciliCks.ciftciler.length}` : '';
+      }
+
+      const bbhbJson = await fetch(`${API}/bbhb-adaylari?il=${encodeURIComponent(kayit.il)}&ilce=${encodeURIComponent(kayit.ilce)}&koyMahalle=${encodeURIComponent(kayit.koyMahalle)}`).then((r) => r.json());
+      const bbhbSelect = document.getElementById('e3aBbhbSelect');
+      bbhbSelect.innerHTML = (bbhbJson.success && bbhbJson.data.length)
+        ? '<option value="">— Seç —</option>' + bbhbJson.data.map((b) => `<option value="${b._id}" ${v.bbhbSonucId === b._id ? 'selected' : ''}>${tarihFormatla(b.hesaplamaTarihi)} · Toplam BBHB: ${b.bolumToplamBBHB.toFixed(2)}</option>`).join('')
+        : '<option value="">Kayıt bulunamadı</option>';
+
+      if (v.kategoriToplamlari) ek3aBbhbOnizlemeGoster(v);
+    }
+
+    function ek3aBbhbOnizlemeGoster(v) {
+      const t = v.kategoriToplamlari;
+      document.getElementById('e3aBbhbOnizleme').innerHTML = `
+        <table class="table table-sm">
+          <thead><tr><th></th><th>İnek</th><th>Dana-Düve</th></tr></thead>
+          <tbody>
+            <tr><th>Kültür</th><td>${t.kulturIrki.inek}</td><td>${t.kulturIrki.duveDana}</td></tr>
+            <tr><th>Kültür Melezi</th><td>${t.kulturMelezi.inek}</td><td>${t.kulturMelezi.duveDana}</td></tr>
+            <tr><th>Yerli</th><td>${t.yerliIrk.inek}</td><td>${t.yerliIrk.duveDana}</td></tr>
+          </tbody>
+        </table>
+        <div class="small">Küçükbaş: Koyun ${t.kucukbas.koyun} · Keçi ${t.kucukbas.kec}</div>
+        <div class="small text-muted">Toplam BBHB: ${v.bbhbToplam.toFixed(2)}</div>`;
+    }
+
+    window.ek3aKaydet = async () => {
+      const sonucAlan = document.getElementById('e3aSonuc');
+      const aileSayisi = document.getElementById('e3aAileSayisi').value;
+      const bbhbSonucId = document.getElementById('e3aBbhbSelect').value;
+
+      sonucAlan.innerHTML = '<span class="text-muted small">Kaydediliyor...</span>';
+
+      // Madde 8 (BBHB kategori kirilimi) - EK-4/B ILE AYNI BACKEND
+      // MANTIGI yeniden kullanilir (kod tekrari yok).
+      let kategoriVerisi = {};
+      if (bbhbSonucId) {
+        const res = await fetch(`${API}/${id}/ek4b-veri-cek`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, bbhbSonucId }),
+        });
+        const json = await res.json();
+        if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json.message}</span>`; return; }
+        kayit = json.data;
+        const guncelAlt = kayit.surec[seciliAna].altAdimlar[seciliAlt];
+        kategoriVerisi = { bbhbSonucId, bbhbBolumIndex: guncelAlt.veri.bbhbBolumIndex, kategoriToplamlari: guncelAlt.veri.kategoriToplamlari, bbhbToplam: guncelAlt.veri.bbhbToplam };
+      }
+
+      const veri = {
+        aileSayisi: aileSayisi ? Number(aileSayisi) : null,
+        cksSonucId: document.getElementById('e3aCksSelect').value || null,
+        ciftciAileSayisi: _ek3aSeciliCks ? _ek3aSeciliCks.ciftciler.length : null,
+        araziModulundenGelecek: true,
+        ...kategoriVerisi,
+        yararlanmaSekilleri: Array.from(document.querySelectorAll('.e3a-yararlanma-check:checked')).map((c) => c.value),
+        digerYararlanmaSekli: document.getElementById('e3aDigerYararlanma').value.trim(),
+        haritaModulundenGelecek: true,
+        madde11Notu: document.getElementById('e3aMadde11').value.trim(),
+        madde12Metni: document.getElementById('e3aMadde12').value.trim(),
+      };
+
+      const res2 = await fetch(`${API}/${id}/adim-veri`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, veri }),
+      });
+      const json2 = await res2.json();
+      if (!json2.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json2.message}</span>`; return; }
+      kayit = json2.data;
+      renderSurec();
+      sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
+      if (kategoriVerisi.kategoriToplamlari) ek3aBbhbOnizlemeGoster(kategoriVerisi);
     };
 
     // "Formu doldurmadan tamamla" - genel (Duyuru/Duyuru Tutanağı gibi

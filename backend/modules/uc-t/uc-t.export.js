@@ -118,30 +118,36 @@ async function adimDisaAktarVerisi(kayit, alt) {
 
 // ============ WORD ============
 
+/** 1.5 satir araligi (docx'te 360=1.5x, 240=1x) TUM paragraflara UYGULANIR. */
+function pOlustur(opsiyonlar) {
+  const { spacing, ...gerisi } = opsiyonlar;
+  return new Paragraph({ ...gerisi, spacing: { line: 360, lineRule: 'auto', ...(spacing || {}) } });
+}
+
 async function adimBelgesiWordOlustur(v) {
   const yaziTipi = v.wordYaziTipi || 'Times New Roman';
   const imzaRengiHex = (v.imzaRengi || '#999999').replace('#', '');
   const cocuklar = [];
 
   if (v.ekKodu) {
-    cocuklar.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: v.ekKodu, color: imzaRengiHex, size: 20, font: yaziTipi })] }));
+    cocuklar.push(pOlustur({ spacing: { after: 200 }, children: [new TextRun({ text: v.ekKodu, color: imzaRengiHex, size: 20, font: yaziTipi })] }));
   }
 
   if (v.aliciBasligi) {
     v.aliciBasligi.split('\n').forEach((satir) => {
-      cocuklar.push(new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: satir, size: 22, font: yaziTipi })] }));
+      cocuklar.push(pOlustur({ spacing: { after: 40 }, children: [new TextRun({ text: satir, size: 22, font: yaziTipi })] }));
     });
-    cocuklar.push(new Paragraph({ text: '', spacing: { after: 200 } }));
+    cocuklar.push(pOlustur({ text: '', spacing: { after: 200 } }));
   }
 
-  cocuklar.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 300 }, children: [new TextRun({ text: v.baslik, bold: true, size: 28, font: yaziTipi })] }));
+  cocuklar.push(pOlustur({ alignment: AlignmentType.CENTER, spacing: { after: 300 }, children: [new TextRun({ text: v.baslik, bold: true, size: 28, font: yaziTipi })] }));
 
   // GOVDE: HER PARAGRAF GERCEKTEN AYRI Paragraph nesnesi (docx.js
   // metin icindeki \n karakterini paragraf sayilmiyor - bu yuzden
   // govdeMetni/govdeParagraflari birbirinden AYRISTIRILIYOR).
   const paragraflar = v.govdeParagraflari || (v.govdeMetni ? [v.govdeMetni] : []);
   paragraflar.forEach((p) => {
-    cocuklar.push(new Paragraph({ alignment: AlignmentType.JUSTIFIED, spacing: { after: 300 }, children: [new TextRun({ text: p, size: 22, font: yaziTipi })] }));
+    cocuklar.push(pOlustur({ alignment: AlignmentType.JUSTIFIED, spacing: { after: 300 }, children: [new TextRun({ text: p, size: 22, font: yaziTipi })] }));
   });
 
   const hucreKenarsiz = { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } };
@@ -149,44 +155,38 @@ async function adimBelgesiWordOlustur(v) {
   if (v.imzaTipi === 'tek') {
     // Duyuru/Tebliğ Belgesi: SAG (3.) SUTUNDA ORTALI - tarih + 3 satir
     // (2.sinde "İMZA") + Ad Soyad + Unvan + "İl Mera Komisyonu Başkanı".
-    const bosHucre = () => new TableCell({ width: { size: 33, type: WidthType.PERCENTAGE }, borders: hucreKenarsiz, children: [new Paragraph('')] });
+    const bosHucre = () => new TableCell({ width: { size: 33, type: WidthType.PERCENTAGE }, borders: hucreKenarsiz, children: [pOlustur({ text: '' })] });
     const sagSutunParagraflari = [
-      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: v.tarihSatiri || '', size: 22, font: yaziTipi })] }),
-      new Paragraph({ text: '' }),
-      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'İMZA', color: imzaRengiHex, size: 20, font: yaziTipi })] }),
-      new Paragraph({ text: '' }),
-      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: v.imzaAdSoyad, bold: true, size: 22, font: yaziTipi })] }),
-      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: v.imzaUnvan, size: 22, font: yaziTipi })] }),
-      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: v.imzaAltYazi, size: 22, font: yaziTipi })] }),
+      pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: v.tarihSatiri || '', size: 22, font: yaziTipi })] }),
+      pOlustur({ text: '' }),
+      pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'İMZA', color: imzaRengiHex, size: 20, font: yaziTipi })] }),
+      pOlustur({ text: '' }),
+      pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: v.imzaAdSoyad, bold: true, size: 22, font: yaziTipi })] }),
+      pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: v.imzaUnvan, size: 22, font: yaziTipi })] }),
+      pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: v.imzaAltYazi, size: 22, font: yaziTipi })] }),
     ];
     cocuklar.push(new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
       rows: [new TableRow({ children: [bosHucre(), bosHucre(), new TableCell({ width: { size: 34, type: WidthType.PERCENTAGE }, borders: hucreKenarsiz, children: sagSutunParagraflari })] })],
     }));
   } else if (v.imzaTipi === 'dortlu') {
-    // Duyuru Tutanağı: 4 ESIT SUTUN, imza cizgisi + 1 satir bosluk +
-    // "Adı Soyadı"/"Ünvanı" etiketleri (BOS SABLON).
-    const grisSinirAlt = { style: BorderStyle.SINGLE, size: 4, color: 'D8D8D8' };
-    const imzaHucresi = () => new TableCell({
-      width: { size: 25, type: WidthType.PERCENTAGE },
-      borders: { top: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, bottom: grisSinirAlt },
-      margins: { bottom: 100 },
-      children: [new Paragraph({ text: '' }), new Paragraph({ text: '' })],
-    });
-    const etiketHucresi = () => new TableCell({
+    // Duyuru Tutanağı: 4 ESIT SUTUN - CIZGI YOK, "İMZA" yazisi +
+    // "Adı Soyadı"/"Ünvanı" etiketleri (BOS SABLON, hepsi imzaRengi).
+    const imzaSutunHucresi = () => new TableCell({
       width: { size: 25, type: WidthType.PERCENTAGE }, borders: hucreKenarsiz,
       children: [
-        new Paragraph({ text: '' }), // 1 satir bosluk (imza cizgisi ile etiket arasinda)
-        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Adı Soyadı', size: 18, color: imzaRengiHex, font: yaziTipi })] }),
-        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Ünvanı', size: 18, color: imzaRengiHex, font: yaziTipi })] }),
+        pOlustur({ text: '' }),
+        pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'İMZA', size: 18, color: imzaRengiHex, font: yaziTipi })] }),
+        pOlustur({ text: '' }),
+        pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Adı Soyadı', size: 18, color: imzaRengiHex, font: yaziTipi })] }),
+        pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Ünvanı', size: 18, color: imzaRengiHex, font: yaziTipi })] }),
       ],
     });
-    cocuklar.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ children: [imzaHucresi(), imzaHucresi(), imzaHucresi(), imzaHucresi()] })] }));
-    cocuklar.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ children: [etiketHucresi(), etiketHucresi(), etiketHucresi(), etiketHucresi()] })] }));
+    cocuklar.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ children: [imzaSutunHucresi(), imzaSutunHucresi(), imzaSutunHucresi(), imzaSutunHucresi()] })] }));
   }
 
   if (v.altNot) {
-    cocuklar.push(new Paragraph({ spacing: { before: 400 }, children: [new TextRun({ text: v.altNot, italics: true, size: 20, font: yaziTipi })] }));
+    cocuklar.push(pOlustur({ spacing: { before: 400 }, children: [new TextRun({ text: v.altNot, italics: true, size: 20, font: yaziTipi })] }));
   }
 
   const doc = new Document({
@@ -211,6 +211,7 @@ function adimBelgesiPdfOlustur(v) {
     doc.registerFont('normal', FONT_NORMAL);
     doc.registerFont('kalin', FONT_KALIN);
     const imzaRengi = v.imzaRengi || '#999999';
+    const SATIR_ARALIGI = { lineGap: 5 }; // ~1.5 satir araligi yaklasik degeri
 
     if (v.ekKodu) {
       doc.fillColor(imzaRengi).font('normal').fontSize(10).text(v.ekKodu, { align: 'left' });
@@ -219,7 +220,7 @@ function adimBelgesiPdfOlustur(v) {
     }
 
     if (v.aliciBasligi) {
-      doc.font('normal').fontSize(10).text(v.aliciBasligi);
+      doc.font('normal').fontSize(10).text(v.aliciBasligi, SATIR_ARALIGI);
       doc.moveDown(1);
     }
 
@@ -229,7 +230,7 @@ function adimBelgesiPdfOlustur(v) {
     const paragraflar = v.govdeParagraflari || (v.govdeMetni ? [v.govdeMetni] : []);
     doc.font('normal').fontSize(10);
     paragraflar.forEach((p) => {
-      doc.text(p, { align: 'justify' });
+      doc.text(p, { align: 'justify', ...SATIR_ARALIGI });
       doc.moveDown(1);
     });
 
@@ -249,21 +250,21 @@ function adimBelgesiPdfOlustur(v) {
       doc.font('normal').text(v.imzaUnvan, sagSutunX, doc.y, { width: sutunGenisligi, align: 'center' });
       doc.text(v.imzaAltYazi, sagSutunX, doc.y, { width: sutunGenisligi, align: 'center' });
     } else if (v.imzaTipi === 'dortlu') {
-      doc.moveDown(2);
+      // Duyuru Tutanağı: 4 ESIT SUTUN - CIZGI YOK, "İMZA" yazisi +
+      // "Adı Soyadı"/"Ünvanı" etiketleri (BOS SABLON, imzaRengi).
+      doc.moveDown(1.5);
       const sutunGenisligi = sayfaGenisligi / 4;
-      const cizgiY = doc.y;
-      doc.strokeColor('#D8D8D8').lineWidth(1);
-      for (let i = 0; i < 4; i++) {
-        const x1 = doc.page.margins.left + i * sutunGenisligi + 10;
-        const x2 = doc.page.margins.left + (i + 1) * sutunGenisligi - 10;
-        doc.moveTo(x1, cizgiY).lineTo(x2, cizgiY).stroke();
-      }
-      // 1 satir bosluk (~14pt) sonra etiketler
-      doc.fillColor(imzaRengi).font('normal').fontSize(8);
+      const baslangicY = doc.y;
+      doc.fillColor(imzaRengi).font('normal').fontSize(9);
       for (let i = 0; i < 4; i++) {
         const x = doc.page.margins.left + i * sutunGenisligi;
-        doc.text('Adı Soyadı', x, cizgiY + 16, { width: sutunGenisligi, align: 'center' });
-        doc.text('Ünvanı', x, cizgiY + 28, { width: sutunGenisligi, align: 'center' });
+        doc.text('İMZA', x, baslangicY, { width: sutunGenisligi, align: 'center' });
+      }
+      doc.fontSize(8);
+      for (let i = 0; i < 4; i++) {
+        const x = doc.page.margins.left + i * sutunGenisligi;
+        doc.text('Adı Soyadı', x, baslangicY + 30, { width: sutunGenisligi, align: 'center' });
+        doc.text('Ünvanı', x, baslangicY + 42, { width: sutunGenisligi, align: 'center' });
       }
       doc.fillColor('#000000');
     }

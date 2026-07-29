@@ -113,6 +113,26 @@ async function adimVeriKaydet(id, anaAdimIndex, altAdimIndex, veri) {
   return kayit;
 }
 
+/**
+ * GENEL AMACLI dosya yukleme - Duyuru Tutanagi/Teblig Belgesi gibi
+ * PDF EKLENEBILEN (ama zorunlu olmayan) adimlar icin. `dosyaAdi`
+ * BOSSA kullanici tarafindan verilmemis demektir - VARSAYILAN adi
+ * (frontend'de uretilir, orn. "3T_Silivri_Bekirli_ek-3") kullanilir.
+ */
+async function adimDosyaYukle(id, anaAdimIndex, altAdimIndex, dosyaAdi, dosya) {
+  const kayit = await UcT.findById(id);
+  if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
+  if (!dosya) throw new Error('Dosya seçilmedi.');
+
+  const altAdim = kayit.surec[anaAdimIndex].altAdimlar[altAdimIndex];
+  if (altAdim.pdfDosyaYolu) await fs.unlink(altAdim.pdfDosyaYolu).catch(() => {});
+  altAdim.pdfDosyaYolu = dosya.path;
+  altAdim.pdfOrijinalAd = dosyaAdi || dosya.originalname;
+
+  await kayit.save();
+  return kayit;
+}
+
 /** Bu 3T kaydına TEMEL alınacak Ek-4ab kaydını SEÇER (elle - Birleştirme adımı OTOMATİK de yapabilir). */
 async function ek4abSec(id, ek4abKaydiId) {
   const kayit = await UcT.findById(id);
@@ -298,7 +318,7 @@ async function komisyonAdaylari(il) {
 }
 
 module.exports = {
-  listele, getir, olustur, sil, adimGuncelle, adimVeriKaydet, ek4abSec, koyIcinEk4abAdaylari,
+  listele, getir, olustur, sil, adimGuncelle, adimVeriKaydet, adimDosyaYukle, ek4abSec, koyIcinEk4abAdaylari,
   koyIcinBbhbAdaylari, koyIcinCksAdaylari, ek4aVeriCek, ek4bVeriCek, birlestirVeDevamEt,
   karar1Kaydet, komisyonAdaylari,
 };

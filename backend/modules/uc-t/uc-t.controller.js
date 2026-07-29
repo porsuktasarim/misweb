@@ -126,6 +126,15 @@ async function adimVeriKaydetHandler(req, res) {
   }
 }
 
+async function adimDosyaYukleHandler(req, res) {
+  try {
+    const { anaAdimIndex, altAdimIndex, dosyaAdi } = req.body;
+    return basarili(res, await service.adimDosyaYukle(req.params.id, anaAdimIndex, altAdimIndex, dosyaAdi, req.file), 'Dosya yüklendi');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 async function komisyonAdaylariHandler(req, res) {
   try {
     return basarili(res, await service.komisyonAdaylari(req.query.il));
@@ -194,5 +203,5 @@ module.exports = {
   listeHandler, getirHandler, olusturHandler, silHandler,
   adimGuncelleHandler, ek4abSecHandler, ek4abAdaylariHandler,
   bbhbAdaylariHandler, cksAdaylariHandler, ek4aVeriCekHandler, ek4bVeriCekHandler, birlestirVeDevamEtHandler,
-  komisyonAdaylariHandler, karar1KaydetHandler, adimPdfGetirHandler, adimVeriKaydetHandler, adimDisaAktarHandler,
+  komisyonAdaylariHandler, karar1KaydetHandler, adimPdfGetirHandler, adimVeriKaydetHandler, adimDisaAktarHandler, adimDosyaYukleHandler,
 };

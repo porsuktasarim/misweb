@@ -42,6 +42,7 @@ router.put('/:id/ek4a-veri-cek', controller.ek4aVeriCekHandler);
 router.put('/:id/ek4b-veri-cek', controller.ek4bVeriCekHandler);
 router.put('/:id/birlestir', controller.birlestirVeDevamEtHandler);
 router.put('/:id/karar1-kaydet', upload.single('pdf'), controller.karar1KaydetHandler);
+router.put('/:id/adim-dosya-yukle', upload.single('dosya'), controller.adimDosyaYukleHandler);
 router.get('/:id/adim-pdf/:anaAdimIndex/:altAdimIndex', controller.adimPdfGetirHandler);
 router.get('/:id/adim-disa-aktar/:anaAdimIndex/:altAdimIndex/:format', controller.adimDisaAktarHandler);
 

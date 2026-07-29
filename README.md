@@ -108,12 +108,29 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   metninde m.7 (başlama) VE m.8 (30 gün belge teslimi) paragrafları,
   Duyuru ile AYNI gerçek-başkan imza formatı, altında "Ek: ... Bilgi
   Cetveli (Ek-3/a)" notu - Word/PDF çıktısı test edilip doğrulandı.
+  TÜM ÇIKTILARDA satır aralığı 1.5 (Word: satır aralığı ayarı test
+  edilip doğrulandı; PDF: yaklaşık lineGap). Duyuru Tutanağı'nın 4'lü
+  imza bloğundaki GRİ ÇİZGİLER KALDIRILDI, her sütuna "İMZA" yazısı
+  eklendi (tek-imza bloğuyla tutarlı - hem ekranda hem Word/PDF'te
+  test edildi). Duyuru Tutanağı ve Tebliğ Belgesi'ne artık DOSYA
+  EKLENEBİLİYOR (PDF, opsiyonel) - dosya adı elle girilebilir (evrak
+  no), VARSAYILAN olarak "3T_{İlçe}_{KöyMahalle}_ek-X" deseni önerilir
+  (test edildi), eklenen dosya indirmeden açılır-kapanır görüntülenir.
   YENİ "Belge Görünüm Ayarları" (Ayarlar sayfasında): İMZA rengi
   (renk seçici + hex) ve Word yazı tipi (Times New Roman vb.) BURADAN
   yönetilir, TÜM 3T çıktılarında (ekranda VE Word/PDF'te) tutarlı
   kullanılır - PDF Türkçe karakter desteği için sabit gömülü font
   (DejaVu Serif) kullanır, yazı tipi ayarı sadece Word'ü etkiler.
-  Tahsis (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
+  EK-3/A (Bilgi Cetveli) ARTIK GERÇEK FORM: il/ilçe/köy otomatik;
+  Aile Sayısı elle; Çiftçi Aile Sayısı ÇKS kaydından seçilerek
+  (ciftciler.length); Arazi bölümü (m.7) VE Harita/Kroki (m.10) "Mera
+  Modülü"nden gelecek diye İŞARETLENİP boş bırakıldı (henüz
+  kurulmadı); Mevcut Hayvan Varlığı (m.8) BBHB kaydından - Ek-4/b ile
+  AYNI backend mantığı (kod tekrarı yok) - kategori kırılımı olarak
+  çekilir; Kullanılan Alanlardan Yararlanma Şekli (m.9) işaretlemeli
+  (Otlatarak/Kuru ot olarak biçilerek/Silaj yapılarak + serbest
+  "diğer"); m.11 basit not alanı ("olduğu gibi" - özel işlem yok);
+  m.12 serbest metin. Tahsis (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
 - **Personel Yönetimi** (Ayarlar içinde) — Teknik Ekip Üyeleri: yıl/ilçe
   bazlı akordiyon, kurum seçimine göre otomatik imza metni üretimi
   (Muhtarlık/Mahalli Bilirkişi/Belediye vb.), toplu üye yükleme
