@@ -102,12 +102,40 @@ function tebligBelgesiVerileriniOlustur(kayit, veri) {
   };
 }
 
+/** (Ek-3/a) BİLGİ CETVELİ icin export verisini uretir - IMZASIZ (cetvel/tablo formati). */
+function ek3aVerileriniOlustur(kayit, veri) {
+  const t = veri.kategoriToplamlari;
+  const hayvanMetni = t
+    ? `Kültür: İnek ${t.kulturIrki.inek}, Dana-Düve ${t.kulturIrki.duveDana} · Kültür Melezi: İnek ${t.kulturMelezi.inek}, Dana-Düve ${t.kulturMelezi.duveDana} · Yerli: İnek ${t.yerliIrk.inek}, Dana-Düve ${t.yerliIrk.duveDana} · Küçükbaş: Koyun ${t.kucukbas.koyun}, Keçi ${t.kucukbas.kec} (Toplam BBHB: ${(veri.bbhbToplam || 0).toFixed(2)})`
+    : '……………………………';
+
+  const yararlanma = [...(veri.yararlanmaSekilleri || []), ...(veri.digerYararlanmaSekli ? [veri.digerYararlanmaSekli] : [])].join(', ') || '……………………………';
+
+  const govdeParagraflari = [
+    `1. İli: ${kayit.il}`,
+    `2. İlçesi: ${kayit.ilce}`,
+    `3. Mahalle: ${kayit.koyMahalle}`,
+    `4. Köyü: ${kayit.koyMahalle}`,
+    `5. Aile Sayısı: ${veri.aileSayisi ?? '……'}`,
+    `6. Çiftçi Aile Sayısı: ${veri.ciftciAileSayisi ?? '……'}`,
+    `7. Arazinin Cinsi, Miktarı, Parça Adedi, Mevki ve Diğer Bilgileri: (Mera Modülünden alınacak)`,
+    `8. Mevcut Hayvan Varlığı: ${hayvanMetni}`,
+    `9. Kullanılan Alanlardan Yararlanma Şekli: ${yararlanma}`,
+    `10. Harita, Kroki, Pafta ve Ellerinde Mevcut Diğer Bilgiler: (Mera Modülünden alınacak)`,
+    `11. 5 inci Maddedeki Şartları Taşıyıp Taşımadığı ile İlgili Belgeler: ${veri.madde11Notu || '……'}`,
+    `12. Kullanılan Alanlardan Yararlanma Miktar ve Şekli: ${veri.madde12Metni || '……'}`,
+  ];
+
+  return { ekKodu: '(Ek-3/a)', baslik: 'MERA/YAYLAK/KIŞLAK/OTLAK/ÇAYIR BİLGİ CETVELİ', govdeParagraflari };
+}
+
 /** Adim TIPINE gore dogru veri-uretici fonksiyonu cagirir + Belge Ayarlarini ekler. */
 async function adimDisaAktarVerisi(kayit, alt) {
   let v;
   if (alt.tip === 'duyuruTutanagi') v = await duyuruTutanagiVerileriniOlustur(kayit, alt.veri || {});
   else if (alt.tip === 'duyuru') v = duyuruVerileriniOlustur(kayit, alt.veri || {});
   else if (alt.tip === 'tebligBelgesi') v = tebligBelgesiVerileriniOlustur(kayit, alt.veri || {});
+  else if (alt.tip === 'ek3aBilgiCetveli') v = ek3aVerileriniOlustur(kayit, alt.veri || {});
   else throw new Error('Bu adım için dışa aktarma henüz desteklenmiyor.');
 
   const ayarlar = await belgeAyarlariService.ayarlariGetir();

@@ -121,16 +121,23 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   yönetilir, TÜM 3T çıktılarında (ekranda VE Word/PDF'te) tutarlı
   kullanılır - PDF Türkçe karakter desteği için sabit gömülü font
   (DejaVu Serif) kullanır, yazı tipi ayarı sadece Word'ü etkiler.
-  EK-3/A (Bilgi Cetveli) ARTIK GERÇEK FORM: il/ilçe/köy otomatik;
-  Aile Sayısı elle; Çiftçi Aile Sayısı ÇKS kaydından seçilerek
+  EK-3/A (Bilgi Cetveli) ARTIK NUMARALI GÖRÜNÜM + EXPORT: "1. İli:
+  {değer}" şeklinde 12 madde numaralı gösterilir; OTOMATİK gelen
+  1-4 (İli/İlçesi/Mahalle/Köyü) DEĞİŞTİRİLEMEZ (salt okunur); Aile
+  Sayısı elle; Çiftçi Aile Sayısı ÇKS kaydından seçilerek
   (ciftciler.length); Arazi bölümü (m.7) VE Harita/Kroki (m.10) "Mera
   Modülü"nden gelecek diye İŞARETLENİP boş bırakıldı (henüz
   kurulmadı); Mevcut Hayvan Varlığı (m.8) BBHB kaydından - Ek-4/b ile
   AYNI backend mantığı (kod tekrarı yok) - kategori kırılımı olarak
-  çekilir; Kullanılan Alanlardan Yararlanma Şekli (m.9) işaretlemeli
-  (Otlatarak/Kuru ot olarak biçilerek/Silaj yapılarak + serbest
-  "diğer"); m.11 basit not alanı ("olduğu gibi" - özel işlem yok);
-  m.12 serbest metin. Tahsis (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
+  çekilir; Kullanılan Alanlardan Yararlanma Şekli (m.9) GENİŞLETİLDİ
+  ve tutarlı pasif ifadeyle düzeltildi: Otlatılarak / Kuru ot (saman)
+  olarak biçilerek / Yeşil ot (yem) olarak biçilerek / Silaj yapılarak
+  / Dinlendirilerek (nadasa bırakılarak) + serbest "diğer" (elle);
+  m.11 basit not alanı ("olduğu gibi" - özel işlem yok); m.12 serbest
+  metin. ARTIK Word/PDF EXPORT var (imzasız, sade cetvel formatında -
+  test edilip doğrulandı) VE dosya ekleme (PDF, varsayılan ad
+  "3T_{İlçe}_{KöyMahalle}_ek-3a") mevcut. Tahsis (Ek-7 ve sonrası)
+  HENÜZ EKLENMEDİ.
 - **Personel Yönetimi** (Ayarlar içinde) — Teknik Ekip Üyeleri: yıl/ilçe
   bazlı akordiyon, kurum seçimine göre otomatik imza metni üretimi
   (Muhtarlık/Mahalli Bilirkişi/Belediye vb.), toplu üye yükleme

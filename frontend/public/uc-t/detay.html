@@ -8,6 +8,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
   <link href="/assets/css/layout.css?v=12" rel="stylesheet" />
   <style>
+    .ek3a-madde { font-size: 13px; padding: .2rem 0; }
     /* ---- Sağ sütun: süreç ağacı ---- */
     .ana-adim-blok { margin-bottom: 1rem; }
     .ana-adim-baslik { display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700; color: #4a6358; text-transform: uppercase; letter-spacing: .02em; padding: .3rem .1rem; }
@@ -959,7 +960,13 @@
     };
 
     // ---- EK-3/A: BİLGİ CETVELİ paneli ----
-    const EK3A_YARARLANMA_SECENEKLERI = ['Otlatarak', 'Kuru ot olarak biçilerek', 'Silaj yapılarak'];
+    // Otlatma disinda bilinen diger yaygin kullanim sekilleri de
+    // eklendi (yesil ot/dinlendirme), ifadeler digerleriyle (biçilerek/
+    // yapılarak) TUTARLI pasif kalip olacak sekilde duzeltildi.
+    const EK3A_YARARLANMA_SECENEKLERI = [
+      'Otlatılarak', 'Kuru ot (saman) olarak biçilerek', 'Yeşil ot (yem) olarak biçilerek',
+      'Silaj yapılarak', 'Dinlendirilerek (nadasa bırakılarak)',
+    ];
     let _ek3aSeciliCks = null;
 
     async function renderEk3aPaneli(alt) {
@@ -967,7 +974,12 @@
       const v = alt.veri || {};
 
       govde.innerHTML = `
-        <p class="text-muted small">İl/İlçe/Köy-Mahalle bu 3T kaydından otomatik alınır.</p>
+        <p class="text-muted small">Otomatik gelen alanlar (1-4) değiştirilemez. Diğer alanlarda kaynak seçimi (ÇKS/BBHB) veya elle giriş yapılabilir.</p>
+
+        <div class="ek3a-madde"><strong>1. İli:</strong> ${guvenliMetin(kayit.il)}</div>
+        <div class="ek3a-madde"><strong>2. İlçesi:</strong> ${guvenliMetin(kayit.ilce)}</div>
+        <div class="ek3a-madde"><strong>3. Mahalle:</strong> ${guvenliMetin(kayit.koyMahalle)}</div>
+        <div class="ek3a-madde mb-2"><strong>4. Köyü:</strong> ${guvenliMetin(kayit.koyMahalle)}</div>
 
         <div class="mb-2">
           <label class="form-label small fw-semibold">5. Aile Sayısı *</label>
@@ -977,12 +989,12 @@
         <div class="mb-3">
           <label class="form-label small fw-semibold">6. Çiftçi Aile Sayısı - ÇKS Kaydından</label>
           <select id="e3aCksSelect" class="form-select form-select-sm"><option value="">Yükleniyor...</option></select>
-          <div id="e3aCksSonuc" class="small text-muted mt-1"></div>
+          <div id="e3aCksSonuc" class="small text-muted mt-1">${v.ciftciAileSayisi != null ? `Çiftçi Aile Sayısı: ${v.ciftciAileSayisi}` : ''}</div>
         </div>
 
         <div class="mb-3 p-2 border rounded">
           <div class="form-check">
-            <input type="checkbox" class="form-check-input" id="e3aAraziModulu" ${v.araziModulundenGelecek !== false ? 'checked' : ''} disabled>
+            <input type="checkbox" class="form-check-input" id="e3aAraziModulu" checked disabled>
             <label class="form-check-label small" for="e3aAraziModulu">7. Arazinin Cinsi/Miktarı/Parça Adedi/Mevki bilgileri - <strong>Mera Modülü</strong>nden gelecek (henüz kurulmadı, şimdilik boş)</label>
           </div>
         </div>
@@ -1005,7 +1017,7 @@
 
         <div class="mb-3 p-2 border rounded">
           <div class="form-check">
-            <input type="checkbox" class="form-check-input" id="e3aHaritaModulu" ${v.haritaModulundenGelecek !== false ? 'checked' : ''} disabled>
+            <input type="checkbox" class="form-check-input" id="e3aHaritaModulu" checked disabled>
             <label class="form-check-label small" for="e3aHaritaModulu">10. Harita, Kroki, Pafta ve diğer bilgiler - <strong>Mera Modülü</strong>nden gelecek (henüz kurulmadı, şimdilik boş)</label>
           </div>
         </div>
@@ -1023,6 +1035,13 @@
         <button class="btn btn-primary btn-sm" onclick="ek3aKaydet()">Kaydet</button>
         <button class="btn btn-link btn-sm text-muted" onclick="genelIslemsizTamamla()">Formu doldurmadan tamamlandı işaretle</button>
         <div id="e3aSonuc" class="mt-2"></div>
+        <div id="e3aDisaAktarAlani" class="mt-2">
+          ${alt.tamamlandiMi ? `
+            <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/word"><i class="bi bi-file-earmark-word me-1"></i>Word</a>
+            <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
+          ` : ''}
+        </div>
+        <div id="e3aDosyaAlani">${dosyaEklemeHtml('e3a', alt, 'ek-3a')}</div>
       `;
 
       const cksJson = await fetch(`${API}/cks-adaylari?il=${encodeURIComponent(kayit.il)}&ilce=${encodeURIComponent(kayit.ilce)}&koyMahalle=${encodeURIComponent(kayit.koyMahalle)}`).then((r) => r.json());
@@ -1037,7 +1056,6 @@
       });
       if (cksSelect.value) {
         _ek3aSeciliCks = cksJson.data.find((c) => c._id === cksSelect.value) || null;
-        document.getElementById('e3aCksSonuc').textContent = _ek3aSeciliCks ? `Çiftçi Aile Sayısı: ${_ek3aSeciliCks.ciftciler.length}` : '';
       }
 
       const bbhbJson = await fetch(`${API}/bbhb-adaylari?il=${encodeURIComponent(kayit.il)}&ilce=${encodeURIComponent(kayit.ilce)}&koyMahalle=${encodeURIComponent(kayit.koyMahalle)}`).then((r) => r.json());
@@ -1109,6 +1127,9 @@
       renderSurec();
       sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
       if (kategoriVerisi.kategoriToplamlari) ek3aBbhbOnizlemeGoster(kategoriVerisi);
+      document.getElementById('e3aDisaAktarAlani').innerHTML = `
+        <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/word"><i class="bi bi-file-earmark-word me-1"></i>Word</a>
+        <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>`;
     };
 
     // "Formu doldurmadan tamamla" - genel (Duyuru/Duyuru Tutanağı gibi
