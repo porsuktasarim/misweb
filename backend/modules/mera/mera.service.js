@@ -3,6 +3,8 @@
  */
 
 const MeraParseli = require('./mera.model');
+const meraImport = require('./mera.import');
+const meraExport = require('./mera.export');
 
 function logEkle(kayit, islem, detay, kullaniciAdi) {
   kayit.loglar.push({ islem, detay, kullaniciAdi: kullaniciAdi || '', tarih: new Date() });
@@ -84,7 +86,45 @@ async function notDosyaEkle(id, notIndex, dosya, kullaniciAdi) {
   return kayit;
 }
 
+/**
+ * Excel/CSV dosyasindan TOPLU YUKLEME - eslesen (il+ilce+koyMahalle+
+ * adaNo+parselNo) kayit VARSA GUNCELLENIR, YOKSA YENI olusturulur
+ * (UPSERT) - ayni sablon TEKRAR yuklenirse kayit COGALMAZ.
+ */
+async function topluYukle(dosyaYolu, kullaniciAdi) {
+  const parseller = await meraImport.dosyaOku(dosyaYolu);
+  let eklenen = 0;
+  let guncellenen = 0;
+
+  for (const veri of parseller) {
+    const mevcut = await MeraParseli.findOne({ il: veri.il, ilce: veri.ilce, koyMahalle: veri.koyMahalle, adaNo: veri.adaNo, parselNo: veri.parselNo });
+    if (mevcut) {
+      Object.assign(mevcut, veri);
+      logEkle(mevcut, 'guncellendi', 'Toplu yükleme ile güncellendi', kullaniciAdi);
+      await mevcut.save();
+      guncellenen += 1;
+    } else {
+      const yeni = new MeraParseli(veri);
+      logEkle(yeni, 'olusturuldu', 'Toplu yükleme ile oluşturuldu', kullaniciAdi);
+      await yeni.save();
+      eklenen += 1;
+    }
+  }
+
+  return { toplam: parseller.length, eklenen, guncellenen };
+}
+
+async function sablonIndir() {
+  return meraExport.sablonOlustur();
+}
+
+async function raporIndir(filtre) {
+  const parseller = await listele(filtre);
+  return meraExport.raporOlustur(parseller);
+}
+
 module.exports = {
   listele, getir, olustur, guncelle, sil, notEkle, notDuzenle, notDosyaEkle,
+  topluYukle, sablonIndir, raporIndir,
   ARAZI_NITELIKLERI: MeraParseli.ARAZI_NITELIKLERI, ARAZI_KAYNAKLARI: MeraParseli.ARAZI_KAYNAKLARI, TOPRAK_SINIFLARI: MeraParseli.TOPRAK_SINIFLARI,
 };

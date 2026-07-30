@@ -22,8 +22,18 @@ const storage = multer.diskStorage({
 // Not'a eklenecek BELGE herhangi bir turde olabilir (PDF, fotograf,
 // vb.) - bu yuzden PDF filtresi UYGULANMAZ, sadece boyut sinirlanir.
 const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } });
+// Toplu yukleme SADECE .xlsx/.xls/.csv kabul eder.
+const tabloFiltresi = (req, file, cb) => {
+  const izinliUzantilar = ['.xlsx', '.xls', '.csv'];
+  if (!izinliUzantilar.includes(path.extname(file.originalname).toLowerCase())) return cb(new Error('Sadece .xlsx, .xls veya .csv dosyası yüklenebilir.'));
+  cb(null, true);
+};
+const tabloUpload = multer({ storage, fileFilter: tabloFiltresi, limits: { fileSize: 50 * 1024 * 1024 } });
 
 router.get('/sabitler', controller.sabitlerHandler);
+router.get('/sablon-indir', controller.sablonIndirHandler);
+router.get('/rapor-indir', controller.raporIndirHandler);
+router.post('/toplu-yukle', tabloUpload.single('dosya'), controller.topluYukleHandler);
 router.get('/', controller.listeHandler);
 router.post('/', controller.olusturHandler);
 router.get('/:id', controller.getirHandler);

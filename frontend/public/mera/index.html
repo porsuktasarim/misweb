@@ -28,6 +28,16 @@
           <h2>Mera Modülü - Parsel Kayıtları</h2>
           <p class="text-muted small">Her kayıt bir Ada/Parsel'e karşılık gelir. 3T sürecindeki Ek-3/a (Arazinin Cinsi/Miktarı) ve Ek-4/c-h aşamalarının veri kaynağı buradan beslenecektir.</p>
 
+          <div class="d-flex gap-2 mb-3 flex-wrap">
+            <a class="btn btn-outline-secondary btn-sm" href="/api/mera/sablon-indir"><i class="bi bi-download me-1"></i>Toplu Yükleme Şablonu</a>
+            <label class="btn btn-outline-secondary btn-sm mb-0">
+              <i class="bi bi-upload me-1"></i>Toplu Yükle (Excel/CSV)
+              <input type="file" class="d-none" id="topluYukleInput" accept=".xlsx,.xls,.csv">
+            </label>
+            <a class="btn btn-outline-secondary btn-sm" href="/api/mera/rapor-indir"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Rapor İndir (Tüm Veriler)</a>
+            <span id="topluYukleSonuc" class="small align-self-center"></span>
+          </div>
+
           <div class="row g-2 mb-3">
             <div class="col-md-3"><select id="filtreIl" class="form-select form-select-sm"></select></div>
             <div class="col-md-3"><select id="filtreIlce" class="form-select form-select-sm"></select></div>
@@ -119,6 +129,23 @@
 
     document.getElementById('yeniParselBtn').addEventListener('click', () => {
       new bootstrap.Modal(document.getElementById('yeniParselModal')).show();
+    });
+
+    document.getElementById('topluYukleInput').addEventListener('change', async (e) => {
+      const dosya = e.target.files[0];
+      if (!dosya) return;
+      const sonucAlan = document.getElementById('topluYukleSonuc');
+      const formData = new FormData();
+      formData.append('dosya', dosya);
+      formData.append('kullaniciAdi', localStorage.getItem('meraKullaniciAdi') || '');
+
+      sonucAlan.innerHTML = 'Yükleniyor...';
+      const res = await fetch('/api/mera/toplu-yukle', { method: 'POST', body: formData });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
+      sonucAlan.innerHTML = `<span class="text-success">${json.data.eklenen} eklendi, ${json.data.guncellenen} güncellendi (toplam ${json.data.toplam}).</span>`;
+      parselleriYukle();
+      e.target.value = '';
     });
 
     misYerSeciciKur({ ilSelectId: 'ypIl', ilceSelectId: 'ypIlce', mahalleSelectId: 'ypMahalle' });

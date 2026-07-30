@@ -249,7 +249,21 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   (Genel Bilgiler/Notlar/Log Kaydı). NOT: 3T sürecindeki Ek-3/a (m.7
   - Arazinin Cinsi/Miktarı) ve Ek-4/c-h aşamalarının GERÇEK veri
   kaynağı bu modül OLACAK ama entegrasyon HENÜZ YAPILMADI (ayrı bir
-  aşama) - şu an bağımsız bir modül olarak çalışıyor.
+  aşama) - şu an bağımsız bir modül olarak çalışıyor. TOPLU YÜKLEME
+  EKLENDİ: "Toplu Yükleme Şablonu" indirilebilir (.xlsx, açıklamalı +
+  1 örnek satır + geçerli seçenek listeleri notu - gri başlık, sarı
+  vurgulu örnek satır), .xlsx/.xls/.csv yüklenebilir - eşleşen (İl+
+  İlçe+Köy/Mahalle+Ada+Parsel) kayıt VARSA GÜNCELLENİR, YOKSA
+  OLUŞTURULUR (UPSERT, aynı şablon tekrar yüklenirse çoğalmaz).
+  ÖNEMLİ DÜZELTME: Türkçe gün.ay.yıl tarih formatı ("01.03.2026" = 1
+  Mart) ilk yazımda `new Date()` tarafından ABD formatı (ay.gün.yıl)
+  sanılıp YANLIŞ parse ediliyordu - fark edilip düzeltildi, round-trip
+  testle (şablon üret → geri oku) doğrulandı. RAPOR İNDİR: tüm
+  kayıtların TÜM alanlarını içeren tek tıkla Excel raporu (aynı sütun
+  şeması, filtre destekli), geri okunup doğrulandı. Sırada (kullanıcı
+  bir sonraki adımda detaylandıracak): parsel detayında sağ tarafta
+  Verim Bilgileri/Otlatma Kapasitesi/Toplam Ot Verimi alanları - HENÜZ
+  EKLENMEDİ, hesaplama mantığı bekleniyor.
 
 ## Menü Yapısı
 

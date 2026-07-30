@@ -83,7 +83,39 @@ async function sabitlerHandler(req, res) {
   }
 }
 
+async function topluYukleHandler(req, res) {
+  try {
+    if (!req.file) return basarisiz(res, 'Dosya seçilmedi.');
+    return basarili(res, await service.topluYukle(req.file.path, req.body.kullaniciAdi), 'Toplu yükleme tamamlandı');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function sablonIndirHandler(req, res) {
+  try {
+    const buffer = await service.sablonIndir();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="mera-toplu-yukleme-sablonu.xlsx"');
+    return res.send(buffer);
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function raporIndirHandler(req, res) {
+  try {
+    const buffer = await service.raporIndir(req.query);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="mera-parselleri-raporu.xlsx"');
+    return res.send(buffer);
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 module.exports = {
   listeHandler, getirHandler, olusturHandler, guncelleHandler, silHandler,
   notEkleHandler, notDuzenleHandler, notDosyaEkleHandler, sabitlerHandler,
+  topluYukleHandler, sablonIndirHandler, raporIndirHandler,
 };
