@@ -164,16 +164,30 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   AÇIKÇA tam sayfa genişliğine sıfırlanıyor (uzun test paragrafıyla
   doğrulandı: önce çok kısa satırlara bölünüyordu, şimdi doğal
   şekilde tam genişlikte akıyor). EK-3/A'YA TEKNİK EKİP İMZA BLOĞU
-  EKLENDİ: "Komisyon ve Teknik Ekip Seçimi" ön-adımında seçilen
-  Teknik Ekip'in GERÇEK üyeleri (adSoyad+unvan) kadar sütun, diğer
-  belgelerdeki AYNI imza kurallarıyla (boşluk+"İMZA" gri renkli+
-  boşluk+Ad Soyad kalın+Unvan) - yeni `imzaTipi: 'cokluKisi'` hem
-  Word hem PDF üreticisine eklendi, 3 kişilik örnekle test edilip
-  doğrulandı. Ekip seçilmemişse uyarı metni gösterilir. Tahsis
+  EKLENDİ VE DAHA DA NETLEŞTİRİLDİ: "Komisyon ve Teknik Ekip Seçimi"
+  ön-adımında seçilen Teknik Ekip'in GERÇEK üyeleriyle, `imzaTipi:
+  'cokluKisi'`. MAKSİMUM 4 SÜTUN - N kişi satırlara DENGELİ dağıtılır
+  (kalan 0 ise hepsi 4'lü; kalan 1 ise son satır TEK kişilik ve SOLA
+  YASLI; kalan 2/3 ise o KISA satır EN BAŞA alınır, örn. 7 kişi →
+  [3,4], 4+3 değil) - 1'den 12'ye kadar tüm senaryolar test edilip
+  doğrulandı. Her imzacı kutusunda 4 SATIR: Adı Soyadı / Ünvanı /
+  Kurumu (Teknik Ekip üyesinin imza kurum metninden) / Üyelik Durumu
+  (Ayarlar'da Teknik Ekip Üyeleri formuna YENİ eklenen alan: Merkez
+  Mera Teknik Ekip Başkanı / İlçe Mera Teknik Ekip Başkanı / Üye).
+  HER SATIR TEK SATIRA SIĞACAK ŞEKİLDE OTOMATİK KÜÇÜLTÜLÜR, AYNI
+  TÜRDEKİ (örn. tüm Ad Soyad'lar) TÜM kutularda AYNI boyut kullanılır:
+  PDF'te pdfkit'in GERÇEK `widthOfString` ölçümüyle (en dar - 4'lü
+  satırdaki - sütun baz alınır, sayısal olarak doğrulandı), Word'de
+  karakter-sayısı sezgisiyle (gerçek ölçüm API'si yok, tahminidir).
+  NOT: aşırı uzun isim/unvan gibi uç durumlarda minimum boyutta bile
+  hafif taşma olabilir (okunabilirlik için bir alt sınır var) -
+  gerçekçi isim uzunluklarında sorun yaşanmaz, test edildi. Tahsis
   (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
 - **Personel Yönetimi** (Ayarlar içinde) — Teknik Ekip Üyeleri: yıl/ilçe
   bazlı akordiyon, kurum seçimine göre otomatik imza metni üretimi
-  (Muhtarlık/Mahalli Bilirkişi/Belediye vb.), toplu üye yükleme
+  (Muhtarlık/Mahalli Bilirkişi/Belediye vb.), YENİ "Üyelik Durumu"
+  seçimi (Merkez Mera Teknik Ekip Başkanı/İlçe Mera Teknik Ekip
+  Başkanı/Üye - Ek-3/a imza bloğunun 4. satırında kullanılır), toplu üye yükleme
   (xlsx/xls/csv/json); 3T'nin Muhtar otomatik doldurma özelliği bu
   modülün "muhtarlik" kurumlu üyelerini kullanır. İl Mera Komisyonu
   Üyeleri: yıl/il bazlı akordiyon, 4342 sayılı Kanun m.3'ün 11 kişilik

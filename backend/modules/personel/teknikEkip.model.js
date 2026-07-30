@@ -14,6 +14,8 @@ const uyeSchema = new mongoose.Schema(
     adSoyad: { type: String, required: true },
     unvan: { type: String },
     kurumKod: { type: String, required: true },
+    // Imza bloklarinda (Ek-3/a vb.) "4. satir" olarak gosterilir.
+    uyelikDurumu: { type: String, enum: ['merkezBaskan', 'ilceBaskan', 'uye'], default: 'uye' },
     // 'serbest' tipi kurumlar icin:
     serbestMetin: { type: String },
     // 'koyMahalle' / 'ilVeyaIlce' tipi kurumlar icin:

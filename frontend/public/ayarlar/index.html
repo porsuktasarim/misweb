@@ -799,10 +799,16 @@
 
     function uyeSatiriHtml(ekipId, index, uye) {
       const kurumOptions = kurumlarCache.map((k) => `<option value="${k.kod}" ${uye.kurumKod === k.kod ? 'selected' : ''}>${k.ad}</option>`).join('');
+      const uyelikSecenekleri = [
+        { kod: 'merkezBaskan', ad: 'Merkez Mera Teknik Ekip Başkanı' },
+        { kod: 'ilceBaskan', ad: 'İlçe Mera Teknik Ekip Başkanı' },
+        { kod: 'uye', ad: 'Üye' },
+      ];
+      const uyelikOptions = uyelikSecenekleri.map((u) => `<option value="${u.kod}" ${(uye.uyelikDurumu || 'uye') === u.kod ? 'selected' : ''}>${u.ad}</option>`).join('');
       return `
         <div class="border rounded p-2 mb-2 mis-uye-satiri" data-ekip="${ekipId}" data-index="${index}">
           <div class="row g-2 align-items-start">
-            <div class="col-md-3">
+            <div class="col-md-2">
               <input class="form-control form-control-sm mis-uye-ad" placeholder="Adı Soyadı" value="${uye.adSoyad || ''}" />
             </div>
             <div class="col-md-2">
@@ -811,7 +817,10 @@
             <div class="col-md-3">
               <select class="form-select form-select-sm mis-uye-kurum">${kurumOptions}</select>
             </div>
-            <div class="col-md-3 mis-uye-detay-alani"></div>
+            <div class="col-md-2">
+              <select class="form-select form-select-sm mis-uye-uyelik" title="İmza bloğundaki 4. satır (Üyelik Durumu)">${uyelikOptions}</select>
+            </div>
+            <div class="col-md-2 mis-uye-detay-alani"></div>
             <div class="col-md-1">
               <button type="button" class="btn btn-sm btn-outline-danger mis-uye-satiri-sil">✕</button>
             </div>
@@ -909,6 +918,7 @@
             adSoyad: satirEl.querySelector('.mis-uye-ad').value.trim(),
             unvan: satirEl.querySelector('.mis-uye-unvan').value.trim(),
             kurumKod,
+            uyelikDurumu: satirEl.querySelector('.mis-uye-uyelik').value,
             serbestMetin: serbestInput ? serbestInput.value.trim() : undefined,
             secilenYer,
           };

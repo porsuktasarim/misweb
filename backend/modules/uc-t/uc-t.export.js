@@ -34,6 +34,35 @@ const belgeAyarlariService = require('../belge-ayarlari/belgeAyarlari.service');
 const FONT_NORMAL = path.join(__dirname, '../reporting/sablonlar/fontlar/DejaVuSerif.ttf');
 const FONT_KALIN = path.join(__dirname, '../reporting/sablonlar/fontlar/DejaVuSerif-Bold.ttf');
 
+const UYELIK_DURUMU_METINLERI = { merkezBaskan: 'Merkez Mera Teknik Ekip Başkanı', ilceBaskan: 'İlçe Mera Teknik Ekip Başkanı', uye: 'Üye' };
+
+/**
+ * N kisiyi, MAKSIMUM 4 SUTUNLU satirlara dagitir (kullanicinin acik
+ * kurali): kalan (N%4) 0 ise TUM satirlar 4'lu; kalan 1 ise SON satir
+ * TEK kisilik olur (sola yaslanir - "orphan" gorunumunu onlemek icin
+ * tam genislik yerine sola dayali kucuk bir kutu); kalan 2 VEYA 3 ise
+ * O KISA satir EN BASA alinir, kalanlar 4'lu devam eder (orn. 7 kisi
+ * -> [3,4], 4+3 DEGIL).
+ */
+function imzaSatirUzunluklariniHesapla(kisiSayisi) {
+  const tamSatirSayisi = Math.floor(kisiSayisi / 4);
+  const kalan = kisiSayisi % 4;
+  if (kalan === 0) return Array(tamSatirSayisi).fill(4);
+  if (kalan === 1) return [...Array(tamSatirSayisi).fill(4), 1];
+  return [kalan, ...Array(tamSatirSayisi).fill(4)];
+}
+
+function kisileriSatirlaraDagit(kisiler) {
+  const uzunluklar = imzaSatirUzunluklariniHesapla(kisiler.length);
+  const satirlar = [];
+  let index = 0;
+  for (const uzunluk of uzunluklar) {
+    satirlar.push(kisiler.slice(index, index + uzunluk));
+    index += uzunluk;
+  }
+  return satirlar;
+}
+
 /** Adim 1'de (varsa) belirlenmis GERCEK baskanlik bilgisini (Vali Yardimcisi/Il Muduru/Teknik Personel) dondurur. */
 function baskanlikBilgisiniBul(kayit) {
   const karar1Adim = kayit.surec.flatMap((a) => a.altAdimlar).find((a) => a.tip === 'ilMeraKomisyonuKarari');
@@ -116,7 +145,14 @@ async function ek3aVerileriniOlustur(kayit, veri) {
   let imzaKisileri = [];
   if (kteAdim?.veri?.teknikEkipId) {
     const ekip = await TeknikEkip.findById(kteAdim.veri.teknikEkipId);
-    if (ekip) imzaKisileri = ekip.uyeler.map((u) => ({ adSoyad: u.adSoyad, unvan: u.unvan || '' }));
+    if (ekip) {
+      imzaKisileri = ekip.uyeler.map((u) => ({
+        adSoyad: u.adSoyad,
+        unvan: u.unvan || '',
+        kurum: u.imzaKurumMetni || '',
+        uyelikDurumu: UYELIK_DURUMU_METINLERI[u.uyelikDurumu] || UYELIK_DURUMU_METINLERI.uye,
+      }));
+    }
   }
 
   const yararlanma = [...(veri.yararlanmaSekilleri || []), ...(veri.digerYararlanmaSekli ? [veri.digerYararlanmaSekli] : [])].join(', ') || '……………………………';
@@ -286,20 +322,54 @@ async function adimBelgesiWordOlustur(v) {
     });
     cocuklar.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ children: [imzaSutunHucresi(), imzaSutunHucresi(), imzaSutunHucresi(), imzaSutunHucresi()] })] }));
   } else if (v.imzaTipi === 'cokluKisi' && v.imzaKisileri?.length) {
-    // Ek-3/a gibi belgeler: Teknik Ekip UYELERI kadar SUTUN, digerleriyle
-    // AYNI imza kurallari (bosluk+"İMZA" gri+bosluk+Ad Soyad kalin+Unvan).
-    const genislikYuzde = Math.floor(100 / v.imzaKisileri.length);
-    const kisiHucresi = (kisi) => new TableCell({
+    // Ek-3/a: Teknik Ekip UYELERI - MAKSIMUM 4 SUTUN, satirlar
+    // DENGELENIR (imzaSatirUzunluklariniHesapla), her kutuda 4 satir
+    // (Ad Soyad/Unvan/Kurum/Uyelik Durumu) TEK SATIRA sigacak, AYNI
+    // TURDEKI (orn. tum Ad Soyad'lar) TUM kutularda AYNI boyutta.
+    const EN_DAR_SUTUN_TWIP = 9638 / 4; // 4'lu satirdaki sutun genisligi (A4, 1134 twip kenar bosluklu)
+    const wordBoyutHesapla = (metinler, baslangic = 20, minimum = 12) => {
+      const enUzun = Math.max(...metinler.map((m) => (m || '').length), 1);
+      let yp = baslangic;
+      while (yp > minimum) {
+        if (enUzun * yp * 5 <= EN_DAR_SUTUN_TWIP) return yp;
+        yp -= 2;
+      }
+      return minimum;
+    };
+    const adSoyadBoyutu = wordBoyutHesapla(v.imzaKisileri.map((k) => k.adSoyad), 22, 14);
+    const unvanBoyutu = wordBoyutHesapla(v.imzaKisileri.map((k) => k.unvan), 20, 12);
+    const kurumBoyutu = wordBoyutHesapla(v.imzaKisileri.map((k) => k.kurum), 18, 11);
+    const uyelikBoyutu = wordBoyutHesapla(v.imzaKisileri.map((k) => k.uyelikDurumu), 18, 11);
+
+    const kisiHucresi = (kisi, genislikYuzde) => new TableCell({
       width: { size: genislikYuzde, type: WidthType.PERCENTAGE }, borders: hucreKenarsiz,
       children: [
         pOlustur({ text: '' }),
-        pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'İMZA', size: 18, color: imzaRengiHex, font: yaziTipi })] }),
+        pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'İMZA', size: 16, color: imzaRengiHex, font: yaziTipi })] }),
         pOlustur({ text: '' }),
-        pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: kisi.adSoyad, bold: true, size: 20, font: yaziTipi })] }),
-        pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: kisi.unvan || '', size: 18, font: yaziTipi })] }),
+        pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: kisi.adSoyad, bold: true, size: adSoyadBoyutu, font: yaziTipi })] }),
+        pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: kisi.unvan || '', size: unvanBoyutu, font: yaziTipi })] }),
+        pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: kisi.kurum || '', size: kurumBoyutu, font: yaziTipi })] }),
+        pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: kisi.uyelikDurumu || '', size: uyelikBoyutu, font: yaziTipi })] }),
       ],
     });
-    cocuklar.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ children: v.imzaKisileri.map(kisiHucresi) })] }));
+
+    kisileriSatirlaraDagit(v.imzaKisileri).forEach((satirKisileri) => {
+      if (satirKisileri.length === 1) {
+        // TEK kisi kalan satir SOLA YASLANIR (tam genislige gerilmez).
+        cocuklar.push(new Table({
+          width: { size: 25, type: WidthType.PERCENTAGE },
+          alignment: AlignmentType.LEFT,
+          rows: [new TableRow({ children: [kisiHucresi(satirKisileri[0], 100)] })],
+        }));
+      } else {
+        const genislikYuzde = Math.floor(100 / satirKisileri.length);
+        cocuklar.push(new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [new TableRow({ children: satirKisileri.map((k) => kisiHucresi(k, genislikYuzde)) })],
+        }));
+      }
+    });
   }
 
   if (v.altNot) {
@@ -439,20 +509,46 @@ function adimBelgesiPdfOlustur(v) {
       }
       doc.fillColor('#000000');
     } else if (v.imzaTipi === 'cokluKisi' && v.imzaKisileri?.length) {
-      // Ek-3/a: Teknik Ekip UYELERI kadar SUTUN, digerleriyle AYNI
-      // imza kurallari (bosluk+İMZA gri+bosluk+Ad Soyad kalin+Unvan).
+      // Ek-3/a: Teknik Ekip UYELERI - MAKSIMUM 4 SUTUN, satirlar
+      // DENGELENIR, her kutuda 4 satir (Ad Soyad/Unvan/Kurum/Uyelik
+      // Durumu) GERCEK doc.widthOfString OLCUMUYLE tek satira
+      // sigacak sekilde kucultulur - AYNI TURDEKI TUM kutularda AYNI
+      // boyut kullanilir (en dar - 4'lu satirdaki - sutun baz alinir).
       doc.moveDown(1.5);
-      const kisiSayisi = v.imzaKisileri.length;
-      const sutunGenisligi = sayfaGenisligi / kisiSayisi;
-      const baslangicY = doc.y;
-      v.imzaKisileri.forEach((kisi, i) => {
-        const x = doc.page.margins.left + i * sutunGenisligi;
-        doc.fillColor(imzaRengi).font('normal').fontSize(9).text('İMZA', x, baslangicY, { width: sutunGenisligi, align: 'center' });
-        doc.fillColor('#000000').font('kalin').fontSize(9).text(kisi.adSoyad, x, baslangicY + 26, { width: sutunGenisligi, align: 'center' });
-        doc.font('normal').fontSize(8).text(kisi.unvan || '', x, baslangicY + 38, { width: sutunGenisligi, align: 'center' });
+      const enDarSutunGenisligi = sayfaGenisligi / 4;
+      const pdfBoyutBul = (metinler, baslangic, minimum, fontAdi) => {
+        let boyut = baslangic;
+        const kenarBosluk = 6;
+        while (boyut > minimum) {
+          doc.font(fontAdi).fontSize(boyut);
+          const hepsiSigiyor = metinler.every((m) => doc.widthOfString(m || '') <= enDarSutunGenisligi - kenarBosluk);
+          if (hepsiSigiyor) return boyut;
+          boyut -= 0.5;
+        }
+        return minimum;
+      };
+      const adSoyadBoyutu = pdfBoyutBul(v.imzaKisileri.map((k) => k.adSoyad), 10, 6, 'kalin');
+      const unvanBoyutu = pdfBoyutBul(v.imzaKisileri.map((k) => k.unvan), 9, 5.5, 'normal');
+      const kurumBoyutu = pdfBoyutBul(v.imzaKisileri.map((k) => k.kurum), 8, 5, 'normal');
+      const uyelikBoyutu = pdfBoyutBul(v.imzaKisileri.map((k) => k.uyelikDurumu), 8, 5, 'normal');
+
+      kisileriSatirlaraDagit(v.imzaKisileri).forEach((satirKisileri) => {
+        const tekKisiSolaYasli = satirKisileri.length === 1;
+        const sutunGenisligi = tekKisiSolaYasli ? enDarSutunGenisligi : sayfaGenisligi / satirKisileri.length;
+        const baslangicY = doc.y;
+        satirKisileri.forEach((kisi, i) => {
+          const x = doc.page.margins.left + i * sutunGenisligi;
+          const hizalama = tekKisiSolaYasli ? 'left' : 'center';
+          doc.fillColor(imzaRengi).font('normal').fontSize(8).text('İMZA', x, baslangicY, { width: sutunGenisligi, align: hizalama });
+          doc.fillColor('#000000');
+          doc.font('kalin').fontSize(adSoyadBoyutu).text(kisi.adSoyad, x, baslangicY + 22, { width: sutunGenisligi, align: hizalama });
+          doc.font('normal').fontSize(unvanBoyutu).text(kisi.unvan || '', x, baslangicY + 22 + adSoyadBoyutu + 3, { width: sutunGenisligi, align: hizalama });
+          doc.fontSize(kurumBoyutu).text(kisi.kurum || '', x, baslangicY + 22 + adSoyadBoyutu + 3 + unvanBoyutu + 2, { width: sutunGenisligi, align: hizalama });
+          doc.fontSize(uyelikBoyutu).text(kisi.uyelikDurumu || '', x, baslangicY + 22 + adSoyadBoyutu + 3 + unvanBoyutu + 2 + kurumBoyutu + 2, { width: sutunGenisligi, align: hizalama });
+        });
+        doc.x = doc.page.margins.left;
+        doc.y = baslangicY + 22 + adSoyadBoyutu + unvanBoyutu + kurumBoyutu + uyelikBoyutu + 20;
       });
-      doc.x = doc.page.margins.left;
-      doc.y = baslangicY + 55;
     }
 
     if (v.altNot) {
