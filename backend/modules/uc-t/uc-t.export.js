@@ -24,6 +24,7 @@
 const path = require('path');
 const {
   Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle,
+  Footer, PageNumber,
 } = require('docx');
 const PDFDocument = require('pdfkit');
 const IlMeraKomisyonu = require('../personel/ilMeraKomisyonu.model');
@@ -104,29 +105,54 @@ function tebligBelgesiVerileriniOlustur(kayit, veri) {
 
 /** (Ek-3/a) BİLGİ CETVELİ icin export verisini uretir - IMZASIZ (cetvel/tablo formati). */
 function ek3aVerileriniOlustur(kayit, veri) {
-  const t = veri.kategoriToplamlari;
-  const hayvanMetni = t
-    ? `Kültür: İnek ${t.kulturIrki.inek}, Dana-Düve ${t.kulturIrki.duveDana} · Kültür Melezi: İnek ${t.kulturMelezi.inek}, Dana-Düve ${t.kulturMelezi.duveDana} · Yerli: İnek ${t.yerliIrk.inek}, Dana-Düve ${t.yerliIrk.duveDana} · Küçükbaş: Koyun ${t.kucukbas.koyun}, Keçi ${t.kucukbas.kec} (Toplam BBHB: ${(veri.bbhbToplam || 0).toFixed(2)})`
-    : '……………………………';
+  const t = veri.hayvanVarligiTablosu;
+  const hucre = (h) => (h && h.adet > 0 ? `${h.adet} adet (${h.bbhb.toFixed(2)} BBHB)` : '-');
 
   const yararlanma = [...(veri.yararlanmaSekilleri || []), ...(veri.digerYararlanmaSekli ? [veri.digerYararlanmaSekli] : [])].join(', ') || '……………………………';
 
-  const govdeParagraflari = [
-    `1. İli: ${kayit.il}`,
-    `2. İlçesi: ${kayit.ilce}`,
-    `3. Mahalle: ${kayit.koyMahalle}`,
-    `4. Köyü: ${kayit.koyMahalle}`,
-    `5. Aile Sayısı: ${veri.aileSayisi ?? '……'}`,
-    `6. Çiftçi Aile Sayısı: ${veri.ciftciAileSayisi ?? '……'}`,
-    `7. Arazinin Cinsi, Miktarı, Parça Adedi, Mevki ve Diğer Bilgileri: (Mera Modülünden alınacak)`,
-    `8. Mevcut Hayvan Varlığı: ${hayvanMetni}`,
-    `9. Kullanılan Alanlardan Yararlanma Şekli: ${yararlanma}`,
-    `10. Harita, Kroki, Pafta ve Ellerinde Mevcut Diğer Bilgiler: (Mera Modülünden alınacak)`,
-    `11. 5 inci Maddedeki Şartları Taşıyıp Taşımadığı ile İlgili Belgeler: ${veri.madde11Notu || '……'}`,
-    `12. Kullanılan Alanlardan Yararlanma Miktar ve Şekli: ${veri.madde12Metni || '……'}`,
+  const madde7Tablosu = {
+    basliklar: ['Cinsi', 'Miktarı Dekar', 'Parça Adedi', 'Mevki', 'Diğer Bilgiler (Kime Ait Olduğu, Nizalılık Durumu)'],
+    satirlar: ['Mera', 'Yaylak', 'Kışlak', 'Otlak', 'Çayır'].map((c) => [c, '', '', '', '']),
+  };
+  const madde8Tablosu = {
+    basliklar: ['', 'Kültür', 'Kültür Melezi', 'Yerli'],
+    satirlar: t
+      ? [
+          ['Büyükbaş', hucre(t.buyukbas.kultur), hucre(t.buyukbas.kulturMelezi), hucre(t.buyukbas.yerli)],
+          ['Küçükbaş', hucre(t.kucukbas.kultur), hucre(t.kucukbas.kulturMelezi), hucre(t.kucukbas.yerli)],
+          ['Diğerleri', hucre(t.digerleri.kultur), hucre(t.digerleri.kulturMelezi), hucre(t.digerleri.yerli)],
+        ]
+      : [['Büyükbaş', '', '', ''], ['Küçükbaş', '', '', ''], ['Diğerleri', '', '', '']],
+  };
+
+  // SIRALI icerik: paragraflarla tablolar MADDELERIN ARASINA GIRECEK
+  // sekilde (madde 7'den hemen sonra tablosu, madde 8'den hemen
+  // sonra tablosu) TEK bir dizide tutulur.
+  const icerikParcalari = [
+    { tip: 'paragraf', metin: 'Tespit ve Tahdit Çalışması Yapılacak Alanın :' },
+    { tip: 'paragraf', metin: `1. İli: ${kayit.il}` },
+    { tip: 'paragraf', metin: `2. İlçesi: ${kayit.ilce}` },
+    { tip: 'paragraf', metin: `3. Mahalle: ${kayit.koyMahalle}` },
+    { tip: 'paragraf', metin: `4. Köyü: ${kayit.koyMahalle}` },
+    { tip: 'paragraf', metin: `5. Aile Sayısı: ${veri.aileSayisi ?? '……'}` },
+    { tip: 'paragraf', metin: `6. Çiftçi Aile Sayısı: ${veri.ciftciAileSayisi ?? '……'}` },
+    { tip: 'paragraf', metin: `7. Arazinin: (Mera Modülünden alınacak - aşağıdaki tablo)` },
+    { tip: 'tablo', ...madde7Tablosu },
+    { tip: 'paragraf', metin: `8. Mevcut Hayvan Varlığı: Hayvan sayıları ayrıntılı olarak belirtilecek` },
+    { tip: 'tablo', ...madde8Tablosu },
+    { tip: 'paragraf', metin: `9. Kullanılan Alanlardan Yararlanma Şekli: ${yararlanma}` },
+    { tip: 'paragraf', metin: `10. Harita, Kroki, Pafta ve Ellerinde Mevcut Diğer Bilgiler: (Mera Modülünden alınacak)` },
+    { tip: 'paragraf', metin: `11. 5 inci Maddedeki Şartları Taşıyıp Taşımadığı ile İlgili Belgeler: ${veri.madde11Notu || '……'}` },
+    { tip: 'paragraf', metin: `12. Kullanılan Alanlardan Yararlanma Miktar ve Şekli: ${veri.madde12Metni || '……'}` },
   ];
 
-  return { ekKodu: '(Ek-3/a)', baslik: 'MERA/YAYLAK/KIŞLAK/OTLAK/ÇAYIR BİLGİ CETVELİ', govdeParagraflari };
+  return {
+    ekKodu: '(Ek-3/a)',
+    altBaslik: `Mera Kanunu'nun 8 inci Maddesi Gereği`,
+    baslik: 'MERA, YAYLAK, KIŞLAK, OTLAK, ÇAYIR BİLGİ CETVELİ',
+    icerikParcalari,
+    sayfaAltbilgisi: '(Ek-3/A)',
+  };
 }
 
 /** Adim TIPINE gore dogru veri-uretici fonksiyonu cagirir + Belge Ayarlarini ekler. */
@@ -168,15 +194,50 @@ async function adimBelgesiWordOlustur(v) {
     cocuklar.push(pOlustur({ text: '', spacing: { after: 200 } }));
   }
 
+  if (v.altBaslik) {
+    cocuklar.push(pOlustur({ alignment: AlignmentType.CENTER, spacing: { after: 60 }, children: [new TextRun({ text: v.altBaslik, bold: true, size: 24, font: yaziTipi })] }));
+  }
   cocuklar.push(pOlustur({ alignment: AlignmentType.CENTER, spacing: { after: 300 }, children: [new TextRun({ text: v.baslik, bold: true, size: 28, font: yaziTipi })] }));
 
-  // GOVDE: HER PARAGRAF GERCEKTEN AYRI Paragraph nesnesi (docx.js
-  // metin icindeki \n karakterini paragraf sayilmiyor - bu yuzden
-  // govdeMetni/govdeParagraflari birbirinden AYRISTIRILIYOR).
-  const paragraflar = v.govdeParagraflari || (v.govdeMetni ? [v.govdeMetni] : []);
-  paragraflar.forEach((p) => {
-    cocuklar.push(pOlustur({ alignment: AlignmentType.JUSTIFIED, spacing: { after: 300 }, children: [new TextRun({ text: p, size: 22, font: yaziTipi })] }));
-  });
+  // GOVDE: icerikParcalari VARSA (paragraf+tablo KARISIK SIRALI -
+  // orn. Ek-3/a) onu, YOKSA eski govdeParagraflari/govdeMetni
+  // (SADECE paragraf - Duyuru/Tebliğ/Duyuru Tutanağı) kullanilir.
+  // HER PARAGRAF GERCEKTEN AYRI Paragraph nesnesi (docx.js metin
+  // icindeki \n karakterini paragraf saymiyor).
+  const kenarli = { style: BorderStyle.SINGLE, size: 2, color: '999999' };
+  const kenarlikSeti = { top: kenarli, bottom: kenarli, left: kenarli, right: kenarli };
+  const tabloOlustur = (tablo) => {
+    const genislik = Math.floor(100 / tablo.basliklar.length);
+    return new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({ children: tablo.basliklar.map((b) => new TableCell({
+          width: { size: genislik, type: WidthType.PERCENTAGE }, borders: kenarlikSeti, shading: { fill: 'F2F2F2' },
+          children: [pOlustur({ children: [new TextRun({ text: b, bold: true, size: 16, font: yaziTipi })] })],
+        })) }),
+        ...tablo.satirlar.map((satir) => new TableRow({ children: satir.map((h) => new TableCell({
+          width: { size: genislik, type: WidthType.PERCENTAGE }, borders: kenarlikSeti,
+          children: [pOlustur({ children: [new TextRun({ text: h, size: 16, font: yaziTipi })] })],
+        })) })),
+      ],
+    });
+  };
+
+  if (v.icerikParcalari) {
+    v.icerikParcalari.forEach((parca) => {
+      if (parca.tip === 'paragraf') {
+        cocuklar.push(pOlustur({ alignment: AlignmentType.JUSTIFIED, spacing: { after: 200 }, children: [new TextRun({ text: parca.metin, size: 22, font: yaziTipi })] }));
+      } else if (parca.tip === 'tablo') {
+        cocuklar.push(tabloOlustur(parca));
+        cocuklar.push(pOlustur({ text: '', spacing: { after: 150 } }));
+      }
+    });
+  } else {
+    const paragraflar = v.govdeParagraflari || (v.govdeMetni ? [v.govdeMetni] : []);
+    paragraflar.forEach((p) => {
+      cocuklar.push(pOlustur({ alignment: AlignmentType.JUSTIFIED, spacing: { after: 300 }, children: [new TextRun({ text: p, size: 22, font: yaziTipi })] }));
+    });
+  }
 
   const hucreKenarsiz = { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } };
 
@@ -217,9 +278,21 @@ async function adimBelgesiWordOlustur(v) {
     cocuklar.push(pOlustur({ spacing: { before: 400 }, children: [new TextRun({ text: v.altNot, italics: true, size: 20, font: yaziTipi })] }));
   }
 
+  const footerAyarlari = v.sayfaAltbilgisi ? {
+    default: new Footer({
+      children: [pOlustur({ children: [
+        new TextRun({ text: `${v.sayfaAltbilgisi} | `, size: 16, font: yaziTipi }),
+        new TextRun({ children: [PageNumber.CURRENT], size: 16, font: yaziTipi }),
+        new TextRun({ text: '/', size: 16, font: yaziTipi }),
+        new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, font: yaziTipi }),
+      ] })],
+    }),
+  } : undefined;
+
   const doc = new Document({
     sections: [{
       properties: { page: { margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 } } },
+      footers: footerAyarlari,
       children: cocuklar,
     }],
   });
@@ -230,7 +303,7 @@ async function adimBelgesiWordOlustur(v) {
 
 function adimBelgesiPdfOlustur(v) {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margins: { top: 56, bottom: 56, left: 56, right: 56 } });
+    const doc = new PDFDocument({ size: 'A4', margins: { top: 56, bottom: 56, left: 56, right: 56 }, bufferPages: true });
     const parcalar = [];
     doc.on('data', (c) => parcalar.push(c));
     doc.on('end', () => resolve(Buffer.concat(parcalar)));
@@ -252,17 +325,55 @@ function adimBelgesiPdfOlustur(v) {
       doc.moveDown(1);
     }
 
-    doc.font('kalin').fontSize(13).text(v.baslik, { align: 'center' });
+    doc.font('kalin').fontSize(13);
+    if (v.altBaslik) { doc.text(v.altBaslik, { align: 'center' }); doc.moveDown(0.3); }
+    doc.text(v.baslik, { align: 'center' });
     doc.moveDown(1);
 
-    const paragraflar = v.govdeParagraflari || (v.govdeMetni ? [v.govdeMetni] : []);
-    doc.font('normal').fontSize(10);
-    paragraflar.forEach((p) => {
-      doc.text(p, { align: 'justify', ...SATIR_ARALIGI });
-      doc.moveDown(1);
-    });
-
     const sayfaGenisligi = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+
+    /** Basit kenarlikli tablo cizer (pdfkit'te native tablo yok - manuel dikdortgen+metin). */
+    function pdfTabloCiz(tablo) {
+      const sutunSayisi = tablo.basliklar.length;
+      const sutunGenisligi = sayfaGenisligi / sutunSayisi;
+      const satirYuksekligi = 22;
+      doc.font('kalin').fontSize(8);
+      const baslangicX = doc.page.margins.left;
+      let y = doc.y;
+
+      const satirCiz = (hucreler, kalinMi) => {
+        if (y + satirYuksekligi > doc.page.height - doc.page.margins.bottom) { doc.addPage(); y = doc.page.margins.top; }
+        doc.font(kalinMi ? 'kalin' : 'normal').fontSize(8);
+        hucreler.forEach((h, i) => {
+          const x = baslangicX + i * sutunGenisligi;
+          doc.rect(x, y, sutunGenisligi, satirYuksekligi).stroke('#999999');
+          doc.fillColor('#000000').text(h, x + 3, y + 6, { width: sutunGenisligi - 6, height: satirYuksekligi - 6, ellipsis: true });
+        });
+        y += satirYuksekligi;
+      };
+
+      satirCiz(tablo.basliklar, true);
+      tablo.satirlar.forEach((satir) => satirCiz(satir, false));
+      doc.y = y + 8;
+    }
+
+    if (v.icerikParcalari) {
+      v.icerikParcalari.forEach((parca) => {
+        if (parca.tip === 'paragraf') {
+          doc.font('normal').fontSize(10).text(parca.metin, { align: 'justify', ...SATIR_ARALIGI });
+          doc.moveDown(0.7);
+        } else if (parca.tip === 'tablo') {
+          pdfTabloCiz(parca);
+        }
+      });
+    } else {
+      const paragraflar = v.govdeParagraflari || (v.govdeMetni ? [v.govdeMetni] : []);
+      doc.font('normal').fontSize(10);
+      paragraflar.forEach((p) => {
+        doc.text(p, { align: 'justify', ...SATIR_ARALIGI });
+        doc.moveDown(1);
+      });
+    }
 
     if (v.imzaTipi === 'tek') {
       // SAG (3.) SUTUNDA ORTALI: tarih + 3 satir (2.sinde İMZA) + Ad
@@ -300,6 +411,19 @@ function adimBelgesiPdfOlustur(v) {
     if (v.altNot) {
       doc.moveDown(3);
       doc.font('normal').fontSize(9).text(v.altNot);
+    }
+
+    if (v.sayfaAltbilgisi) {
+      const sayfaAraligi = doc.bufferedPageRange();
+      const eskiAltMarj = doc.page.margins.bottom;
+      for (let i = 0; i < sayfaAraligi.count; i++) {
+        doc.switchToPage(i);
+        doc.page.margins.bottom = 0; // doc.text()'in "sayfada yer yok" diye YENI SAYFA ACMASINI ENGELLER
+        doc.font('normal').fontSize(8).fillColor('#666666')
+          .text(`${v.sayfaAltbilgisi} | ${i + 1}/${sayfaAraligi.count}`, doc.page.margins.left, doc.page.height - eskiAltMarj + 15, { width: sayfaGenisligi, align: 'left', lineBreak: false });
+        doc.fillColor('#000000');
+        doc.page.margins.bottom = eskiAltMarj;
+      }
     }
 
     doc.end();

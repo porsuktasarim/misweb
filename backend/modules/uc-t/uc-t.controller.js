@@ -108,6 +108,15 @@ async function ek4bVeriCekHandler(req, res) {
   }
 }
 
+async function ek3aHayvanVarligiCekHandler(req, res) {
+  try {
+    const { anaAdimIndex, altAdimIndex, bbhbSonucId } = req.body;
+    return basarili(res, await service.ek3aHayvanVarligiCek(req.params.id, anaAdimIndex, altAdimIndex, { bbhbSonucId }), 'Hayvan varlığı verisi çekildi');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 async function birlestirVeDevamEtHandler(req, res) {
   try {
     const { anaAdimIndex, altAdimIndex } = req.body;
@@ -202,6 +211,6 @@ async function adimDisaAktarHandler(req, res) {
 module.exports = {
   listeHandler, getirHandler, olusturHandler, silHandler,
   adimGuncelleHandler, ek4abSecHandler, ek4abAdaylariHandler,
-  bbhbAdaylariHandler, cksAdaylariHandler, ek4aVeriCekHandler, ek4bVeriCekHandler, birlestirVeDevamEtHandler,
+  bbhbAdaylariHandler, cksAdaylariHandler, ek4aVeriCekHandler, ek4bVeriCekHandler, ek3aHayvanVarligiCekHandler, birlestirVeDevamEtHandler,
   komisyonAdaylariHandler, karar1KaydetHandler, adimPdfGetirHandler, adimVeriKaydetHandler, adimDisaAktarHandler, adimDosyaYukleHandler,
 };

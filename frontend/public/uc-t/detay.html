@@ -974,6 +974,12 @@
       const v = alt.veri || {};
 
       govde.innerHTML = `
+        <div class="text-center mb-3">
+          <div class="small text-muted">(Ek-3/a)</div>
+          <div class="fw-bold">Mera Kanunu'nun 8 inci Maddesi Gereği</div>
+          <div class="fw-bold">MERA, YAYLAK, KIŞLAK, OTLAK, ÇAYIR BİLGİ CETVELİ</div>
+        </div>
+        <p class="small">Tespit ve Tahdit Çalışması Yapılacak Alanın :</p>
         <p class="text-muted small">Otomatik gelen alanlar (1-4) değiştirilemez. Diğer alanlarda kaynak seçimi (ÇKS/BBHB) veya elle giriş yapılabilir.</p>
 
         <div class="ek3a-madde"><strong>1. İli:</strong> ${guvenliMetin(kayit.il)}</div>
@@ -992,15 +998,20 @@
           <div id="e3aCksSonuc" class="small text-muted mt-1">${v.ciftciAileSayisi != null ? `Çiftçi Aile Sayısı: ${v.ciftciAileSayisi}` : ''}</div>
         </div>
 
-        <div class="mb-3 p-2 border rounded">
-          <div class="form-check">
-            <input type="checkbox" class="form-check-input" id="e3aAraziModulu" checked disabled>
-            <label class="form-check-label small" for="e3aAraziModulu">7. Arazinin Cinsi/Miktarı/Parça Adedi/Mevki bilgileri - <strong>Mera Modülü</strong>nden gelecek (henüz kurulmadı, şimdilik boş)</label>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold d-block">7. Arazinin <span class="text-muted fw-normal">(Mera Modülünden gelecek, henüz kurulmadı - şimdilik boş)</span></label>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered mb-0">
+              <thead><tr><th>Cinsi</th><th>Miktarı<br>Dekar</th><th>Parça<br>Adedi</th><th>Mevki</th><th>Diğer Bilgiler<br>(Kime Ait Olduğu, Nizalılık Durumu)</th></tr></thead>
+              <tbody>
+                ${['Mera', 'Yaylak', 'Kışlak', 'Otlak', 'Çayır'].map((c) => `<tr><th class="table-light">${c}</th><td></td><td></td><td></td><td></td></tr>`).join('')}
+              </tbody>
+            </table>
           </div>
         </div>
 
         <div class="mb-3">
-          <label class="form-label small fw-semibold">8. Mevcut Hayvan Varlığı - BBHB Kaydından</label>
+          <label class="form-label small fw-semibold d-block">8. Mevcut Hayvan Varlığı <span class="text-muted fw-normal">(Hayvan sayıları ayrıntılı olarak belirtilecek)</span></label>
           <select id="e3aBbhbSelect" class="form-select form-select-sm"><option value="">Yükleniyor...</option></select>
           <div id="e3aBbhbOnizleme" class="mt-2"></div>
         </div>
@@ -1015,11 +1026,8 @@
           <input type="text" class="form-control form-control-sm mt-1" id="e3aDigerYararlanma" placeholder="Diğer (elle)" value="${guvenliMetin(v.digerYararlanmaSekli || '')}">
         </div>
 
-        <div class="mb-3 p-2 border rounded">
-          <div class="form-check">
-            <input type="checkbox" class="form-check-input" id="e3aHaritaModulu" checked disabled>
-            <label class="form-check-label small" for="e3aHaritaModulu">10. Harita, Kroki, Pafta ve diğer bilgiler - <strong>Mera Modülü</strong>nden gelecek (henüz kurulmadı, şimdilik boş)</label>
-          </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold d-block">10. Harita, Kroki, Pafta ve Ellerinde Mevcut Diğer Bilgiler <span class="text-muted fw-normal">(Mera Modülünden gelecek, henüz kurulmadı - şimdilik boş)</span></label>
         </div>
 
         <div class="mb-3">
@@ -1064,22 +1072,26 @@
         ? '<option value="">— Seç —</option>' + bbhbJson.data.map((b) => `<option value="${b._id}" ${v.bbhbSonucId === b._id ? 'selected' : ''}>${tarihFormatla(b.hesaplamaTarihi)} · Toplam BBHB: ${b.bolumToplamBBHB.toFixed(2)}</option>`).join('')
         : '<option value="">Kayıt bulunamadı</option>';
 
-      if (v.kategoriToplamlari) ek3aBbhbOnizlemeGoster(v);
+      if (v.hayvanVarligiTablosu) ek3aBbhbOnizlemeGoster(v);
+    }
+
+    /** "X adet (Y BBHB)" formatinda hucre metni. */
+    function ek3aHucreMetni(h) {
+      return h.adet > 0 ? `${h.adet} adet (${h.bbhb.toFixed(2)} BBHB)` : '-';
     }
 
     function ek3aBbhbOnizlemeGoster(v) {
-      const t = v.kategoriToplamlari;
+      const t = v.hayvanVarligiTablosu;
       document.getElementById('e3aBbhbOnizleme').innerHTML = `
-        <table class="table table-sm">
-          <thead><tr><th></th><th>İnek</th><th>Dana-Düve</th></tr></thead>
+        <table class="table table-sm table-bordered">
+          <thead><tr><th></th><th>Kültür</th><th>Kültür Melezi</th><th>Yerli</th></tr></thead>
           <tbody>
-            <tr><th>Kültür</th><td>${t.kulturIrki.inek}</td><td>${t.kulturIrki.duveDana}</td></tr>
-            <tr><th>Kültür Melezi</th><td>${t.kulturMelezi.inek}</td><td>${t.kulturMelezi.duveDana}</td></tr>
-            <tr><th>Yerli</th><td>${t.yerliIrk.inek}</td><td>${t.yerliIrk.duveDana}</td></tr>
+            <tr><th class="table-light">Büyükbaş</th><td>${ek3aHucreMetni(t.buyukbas.kultur)}</td><td>${ek3aHucreMetni(t.buyukbas.kulturMelezi)}</td><td>${ek3aHucreMetni(t.buyukbas.yerli)}</td></tr>
+            <tr><th class="table-light">Küçükbaş</th><td>${ek3aHucreMetni(t.kucukbas.kultur)}</td><td>${ek3aHucreMetni(t.kucukbas.kulturMelezi)}</td><td>${ek3aHucreMetni(t.kucukbas.yerli)}</td></tr>
+            <tr><th class="table-light">Diğerleri</th><td>${ek3aHucreMetni(t.digerleri.kultur)}</td><td>${ek3aHucreMetni(t.digerleri.kulturMelezi)}</td><td>${ek3aHucreMetni(t.digerleri.yerli)}</td></tr>
           </tbody>
         </table>
-        <div class="small">Küçükbaş: Koyun ${t.kucukbas.koyun} · Keçi ${t.kucukbas.kec}</div>
-        <div class="small text-muted">Toplam BBHB: ${v.bbhbToplam.toFixed(2)}</div>`;
+        <div class="small text-muted">Toplam BBHB: ${v.bbhbToplam.toFixed(2)} · Manda ve Boğa/Öküz "Yerli" sütununa, Küçükbaş ve Diğerleri (tek tırnaklı) tamamı "Yerli" sütununa eklendi (BBHB kuralında bunların ırk ayrımı yok).</div>`;
     }
 
     window.ek3aKaydet = async () => {
@@ -1089,11 +1101,11 @@
 
       sonucAlan.innerHTML = '<span class="text-muted small">Kaydediliyor...</span>';
 
-      // Madde 8 (BBHB kategori kirilimi) - EK-4/B ILE AYNI BACKEND
-      // MANTIGI yeniden kullanilir (kod tekrari yok).
-      let kategoriVerisi = {};
+      // Madde 8 (Buyukbas/Kucukbas/Digerleri x Kultur/Melez/Yerli) -
+      // AYRI backend fonksiyonu (ek4bVeriCek'ten FARKLI format).
+      let hayvanVerisi = {};
       if (bbhbSonucId) {
-        const res = await fetch(`${API}/${id}/ek4b-veri-cek`, {
+        const res = await fetch(`${API}/${id}/ek3a-hayvan-varligi-cek`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, bbhbSonucId }),
         });
@@ -1101,7 +1113,7 @@
         if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json.message}</span>`; return; }
         kayit = json.data;
         const guncelAlt = kayit.surec[seciliAna].altAdimlar[seciliAlt];
-        kategoriVerisi = { bbhbSonucId, bbhbBolumIndex: guncelAlt.veri.bbhbBolumIndex, kategoriToplamlari: guncelAlt.veri.kategoriToplamlari, bbhbToplam: guncelAlt.veri.bbhbToplam };
+        hayvanVerisi = { bbhbSonucId, bbhbBolumIndex: guncelAlt.veri.bbhbBolumIndex, hayvanVarligiTablosu: guncelAlt.veri.hayvanVarligiTablosu, bbhbToplam: guncelAlt.veri.bbhbToplam };
       }
 
       const veri = {
@@ -1109,7 +1121,7 @@
         cksSonucId: document.getElementById('e3aCksSelect').value || null,
         ciftciAileSayisi: _ek3aSeciliCks ? _ek3aSeciliCks.ciftciler.length : null,
         araziModulundenGelecek: true,
-        ...kategoriVerisi,
+        ...hayvanVerisi,
         yararlanmaSekilleri: Array.from(document.querySelectorAll('.e3a-yararlanma-check:checked')).map((c) => c.value),
         digerYararlanmaSekli: document.getElementById('e3aDigerYararlanma').value.trim(),
         haritaModulundenGelecek: true,
@@ -1126,7 +1138,7 @@
       kayit = json2.data;
       renderSurec();
       sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
-      if (kategoriVerisi.kategoriToplamlari) ek3aBbhbOnizlemeGoster(kategoriVerisi);
+      if (hayvanVerisi.hayvanVarligiTablosu) ek3aBbhbOnizlemeGoster(hayvanVerisi);
       document.getElementById('e3aDisaAktarAlani').innerHTML = `
         <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/word"><i class="bi bi-file-earmark-word me-1"></i>Word</a>
         <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>`;

@@ -272,6 +272,58 @@ async function ek4bVeriCek(id, anaAdimIndex, altAdimIndex, { bbhbSonucId }) {
 }
 
 /**
+ * EK-3/A MADDE 8 icin: orijinal cetvel 3x3'luk bir tablo istiyor -
+ * SATIRLAR Büyükbaş/Küçükbaş/Diğerleri, SÜTUNLAR Kültür/Kültür
+ * Melezi/Yerli. BBHB kuralinda SADECE sigir (kulturIrki/kulturMelezi/
+ * yerliIrk) bu 3 irka ayrilir; Manda VE Büyükbaş Erkek (boğa/öküz)
+ * kendi irk ayrimi OLMADIGI icin - "manda büyükbaş sayılacak"
+ * talimati geregi BÜYÜKBAŞ satirina, YERLİ sütununa eklenir (net bir
+ * ayrim verilmediginden en makul varsayim - YANLIŞSA KOLAYCA
+ * DEĞİŞTİRİLEBİLİR). Küçükbaş ve Diğerleri (tek tırnaklı) icin de
+ * irk ayrimi HİÇ YOK, bu yuzden TOPLAMLARI ayni gerekceyle "Yerli"
+ * sütununda gösterilir. Her hucre {adet, bbhb} - EKRANDA "X adet
+ * (Y BBHB)" seklinde gosterilir (BBHB detay satirlarindaki ONCEDEN
+ * HESAPLANMIS 'bbhb' alani DOGRUDAN TOPLANIR, katsayi tekrar
+ * hesaplanmaz).
+ */
+async function ek3aHayvanVarligiCek(id, anaAdimIndex, altAdimIndex, { bbhbSonucId }) {
+  const kayit = await UcT.findById(id);
+  if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
+  if (!bbhbSonucId) throw new Error('BBHB kaydı seçilmelidir.');
+
+  const bbhbSonuc = await BbhbSonuc.findById(bbhbSonucId);
+  if (!bbhbSonuc) throw new Error('Seçilen BBHB kaydı bulunamadı.');
+  const bolumIndex = bbhbSonuc.bolumler.findIndex((b) => esitMi(b.il, kayit.il) && esitMi(b.ilce, kayit.ilce) && esitMi(b.mahalle, kayit.koyMahalle));
+  if (bolumIndex === -1) throw new Error('Seçilen BBHB kaydında bu köy/mahalleye ait bölüm bulunamadı.');
+  const bolum = bbhbSonuc.bolumler[bolumIndex];
+
+  const bosHucre = () => ({ kultur: { adet: 0, bbhb: 0 }, kulturMelezi: { adet: 0, bbhb: 0 }, yerli: { adet: 0, bbhb: 0 } });
+  const tablo = { buyukbas: bosHucre(), kucukbas: bosHucre(), digerleri: bosHucre() };
+
+  const ekle = (satir, sutun, d) => { tablo[satir][sutun].adet += d.adet; tablo[satir][sutun].bbhb += d.bbhb; };
+
+  for (const isletmeci of bolum.isletmeciSonuclari) {
+    for (const d of isletmeci.detaylar) {
+      if (d.grup === 'kulturIrki') ekle('buyukbas', 'kultur', d);
+      else if (d.grup === 'kulturMelezi') ekle('buyukbas', 'kulturMelezi', d);
+      else if (d.grup === 'yerliIrk') ekle('buyukbas', 'yerli', d);
+      else if (d.grup === 'buyukbasErkek' || d.grup === 'manda') ekle('buyukbas', 'yerli', d);
+      else if (d.grup === 'kucukbas') ekle('kucukbas', 'yerli', d);
+      else if (d.grup === 'tekTirnakli') ekle('digerleri', 'yerli', d);
+    }
+  }
+
+  const altAdim = kayit.surec[anaAdimIndex].altAdimlar[altAdimIndex];
+  altAdim.kaynakBbhbSonucId = bbhbSonucId;
+  altAdim.veri = { bbhbBolumIndex: bolumIndex, hayvanVarligiTablosu: tablo, bbhbToplam: bolum.bolumToplamBBHB };
+  altAdim.tamamlandiMi = true;
+  altAdim.tamamlanmaTarihi = new Date();
+
+  await kayit.save();
+  return kayit;
+}
+
+/**
  * BİRLEŞTİRME: Ek-4/b'de secilen BBHB + Ek-4/a'da secilen ÇKS (varsa)
  * ile, MEVCUT Ek-4ab modulunun AYNI mantigini (onizlemeOlustur ->
  * sonucuKaydet) kullanarak GERCEK bir Ek-4ab (Birlesik Cetvel) kaydi
@@ -319,6 +371,6 @@ async function komisyonAdaylari(il) {
 
 module.exports = {
   listele, getir, olustur, sil, adimGuncelle, adimVeriKaydet, adimDosyaYukle, ek4abSec, koyIcinEk4abAdaylari,
-  koyIcinBbhbAdaylari, koyIcinCksAdaylari, ek4aVeriCek, ek4bVeriCek, birlestirVeDevamEt,
+  koyIcinBbhbAdaylari, koyIcinCksAdaylari, ek4aVeriCek, ek4bVeriCek, ek3aHayvanVarligiCek, birlestirVeDevamEt,
   karar1Kaydet, komisyonAdaylari,
 };

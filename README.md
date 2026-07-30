@@ -121,23 +121,41 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   yönetilir, TÜM 3T çıktılarında (ekranda VE Word/PDF'te) tutarlı
   kullanılır - PDF Türkçe karakter desteği için sabit gömülü font
   (DejaVu Serif) kullanır, yazı tipi ayarı sadece Word'ü etkiler.
-  EK-3/A (Bilgi Cetveli) ARTIK NUMARALI GÖRÜNÜM + EXPORT: "1. İli:
-  {değer}" şeklinde 12 madde numaralı gösterilir; OTOMATİK gelen
-  1-4 (İli/İlçesi/Mahalle/Köyü) DEĞİŞTİRİLEMEZ (salt okunur); Aile
+  EK-3/A (Bilgi Cetveli) — KULLANICININ PAYLAŞTIĞI GERÇEK ORİJİNAL
+  GÖRSELE GÖRE TAM UYUMLU HALE GETİRİLDİ: başlık "(Ek-3/a)" + iki
+  satırlı "Mera Kanunu'nun 8 inci Maddesi Gereği" / "MERA, YAYLAK,
+  KIŞLAK, OTLAK, ÇAYIR BİLGİ CETVELİ" + "Tespit ve Tahdit Çalışması
+  Yapılacak Alanın :" alt başlığı eklendi (daha önce eksikti). "1.
+  İli: {değer}" şeklinde 12 madde numaralı gösterilir; OTOMATİK gelen
+  1-4 (İli/İlçesi/Mahalle/Köyü) DEĞİŞTİRİLEMEZ (salt okunur). Aile
   Sayısı elle; Çiftçi Aile Sayısı ÇKS kaydından seçilerek
-  (ciftciler.length); Arazi bölümü (m.7) VE Harita/Kroki (m.10) "Mera
-  Modülü"nden gelecek diye İŞARETLENİP boş bırakıldı (henüz
-  kurulmadı); Mevcut Hayvan Varlığı (m.8) BBHB kaydından - Ek-4/b ile
-  AYNI backend mantığı (kod tekrarı yok) - kategori kırılımı olarak
-  çekilir; Kullanılan Alanlardan Yararlanma Şekli (m.9) GENİŞLETİLDİ
-  ve tutarlı pasif ifadeyle düzeltildi: Otlatılarak / Kuru ot (saman)
-  olarak biçilerek / Yeşil ot (yem) olarak biçilerek / Silaj yapılarak
-  / Dinlendirilerek (nadasa bırakılarak) + serbest "diğer" (elle);
-  m.11 basit not alanı ("olduğu gibi" - özel işlem yok); m.12 serbest
-  metin. ARTIK Word/PDF EXPORT var (imzasız, sade cetvel formatında -
-  test edilip doğrulandı) VE dosya ekleme (PDF, varsayılan ad
-  "3T_{İlçe}_{KöyMahalle}_ek-3a") mevcut. Tahsis (Ek-7 ve sonrası)
-  HENÜZ EKLENMEDİ.
+  (ciftciler.length). ARAZİ BÖLÜMÜ (m.7) ARTIK GERÇEK TABLO YAPISINDA
+  (orijinaldeki gibi): satırlar Mera/Yaylak/Kışlak/Otlak/Çayır,
+  sütunlar Miktarı(Dekar)/Parça Adedi/Mevki/Diğer Bilgiler - hücreler
+  "Mera Modülü" kurulana kadar boş. MEVCUT HAYVAN VARLIĞI (m.8) ARTIK
+  GERÇEK 3x3 TABLO (orijinaldeki gibi - önceki İnek/Dana-Düve
+  kırılımı YANLIŞTI, düzeltildi): satırlar Büyükbaş/Küçükbaş/
+  Diğerleri, sütunlar Kültür/Kültür Melezi/Yerli; her hücre "X adet
+  (Y BBHB)" formatında (BBHB kaydındaki ÖNCEDEN HESAPLANMIŞ 'bbhb'
+  alanı doğrudan toplanır). Manda VE Büyükbaş Erkek (boğa/öküz) BBHB
+  kuralında ırk ayrımı taşımadığı için - "manda büyükbaş sayılır"
+  talimatı gereği - Büyükbaş satırının Yerli sütununa eklenir; aynı
+  gerekçeyle Küçükbaş ve Diğerleri (tek tırnaklı) toplamları da Yerli
+  sütununda gösterilir - bu varsayım ekranda AÇIKÇA belirtilir,
+  yanlışsa kolayca değiştirilebilir. Kullanılan Alanlardan Yararlanma
+  Şekli (m.9) GENİŞLETİLDİ ve tutarlı pasif ifadeyle düzeltildi:
+  Otlatılarak / Kuru ot (saman) olarak biçilerek / Yeşil ot (yem)
+  olarak biçilerek / Silaj yapılarak / Dinlendirilerek (nadasa
+  bırakılarak) + serbest "diğer" (elle) korundu. m.11 basit not
+  alanı; m.12 serbest metin. Word/PDF EXPORT (paragraf+tablo KARIŞIK
+  SIRALI içerik desteğiyle yeniden yazıldı) VE dosya ekleme (PDF,
+  varsayılan ad "3T_{İlçe}_{KöyMahalle}_ek-3a") mevcut. SAYFA
+  ALTBİLGİSİ "(Ek-3/A) | {sayfa}/{toplam}" formatında: PDF'te GERÇEK
+  ÇOK SAYFALI durumda test edilip doğrulandı (1/3, 2/3, 3/3 gibi
+  doğru çıktı); Word'de docx'in standart PageNumber alan kodları
+  kullanıldı (Word açıldığında otomatik hesaplanır) - bu, python-docx
+  ile statik olarak doğrulanamayan tek kısım, gerçek Word'de doğru
+  görünmesi beklenir. Tahsis (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
 - **Personel Yönetimi** (Ayarlar içinde) — Teknik Ekip Üyeleri: yıl/ilçe
   bazlı akordiyon, kurum seçimine göre otomatik imza metni üretimi
   (Muhtarlık/Mahalli Bilirkişi/Belediye vb.), toplu üye yükleme
