@@ -625,6 +625,22 @@
       return `<table style="width:100%; border-collapse:collapse;"><tr>${sutun()}${sutun()}${sutun()}${sutun()}</tr></table>`;
     }
 
+    /** Teknik Ekip UYELERI kadar SUTUN - digerleriyle AYNI imza kurallari, ama GERCEK isim/unvan ile. */
+    async function cokluKisiImzaHtmlOlustur(kisiler) {
+      if (!kisiler || !kisiler.length) return '<p class="text-muted small">Bu 3T kaydı için "Komisyon ve Teknik Ekip Seçimi" adımında Teknik Ekip seçilmemiş.</p>';
+      const ayarlar = await belgeAyarlariniGetir();
+      const genislik = Math.floor(100 / kisiler.length);
+      const sutun = (kisi) => `
+        <td style="width:${genislik}%; text-align:center; vertical-align:top; padding: 8px;">
+          <div style="height:1em;"></div>
+          <div style="color:${ayarlar.imzaRengi}; font-size:11px;">İMZA</div>
+          <div style="height:1em;"></div>
+          <div style="font-weight:600;">${guvenliMetin(kisi.adSoyad)}</div>
+          <div>${guvenliMetin(kisi.unvan || '')}</div>
+        </td>`;
+      return `<table style="width:100%; border-collapse:collapse;"><tr>${kisiler.map(sutun).join('')}</tr></table>`;
+    }
+
     /** Duyuru Tutanağı/Tebliğ Belgesi gibi PDF EKLENEBILEN adimlar icin ORTAK dosya ekleme blogu. */
     function dosyaEklemeHtml(prefix, alt, ekKodu) {
       const varsayilanAd = `3T_${kayit.ilce}_${kayit.koyMahalle}_${ekKodu}`.replace(/\s+/g, '');
@@ -1049,8 +1065,21 @@
             <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>
           ` : ''}
         </div>
+        <div id="e3aImzaAlani" class="mt-3"></div>
         <div id="e3aDosyaAlani">${dosyaEklemeHtml('e3a', alt, 'ek-3a')}</div>
       `;
+
+      // Teknik Ekip imza blogu - "Komisyon ve Teknik Ekip Secimi"
+      // on-adiminda SECILEN ekibin GERCEK uyeleriyle.
+      const kteAdimEk3a = kayit.surec.flatMap((a) => a.altAdimlar).find((a) => a.tip === 'komisyonTeknikEkipSecimi');
+      document.getElementById('e3aImzaAlani').innerHTML = '<div class="small fw-semibold mb-1">İmza (Teknik Ekip Üyeleri)</div>';
+      if (kteAdimEk3a?.veri?.teknikEkipId) {
+        const ekipJson = await fetch(`/api/teknik-ekip/${kteAdimEk3a.veri.teknikEkipId}`).then((r) => r.json());
+        const kisiler = ekipJson.success ? ekipJson.data.uyeler.map((u) => ({ adSoyad: u.adSoyad, unvan: u.unvan })) : [];
+        document.getElementById('e3aImzaAlani').innerHTML += await cokluKisiImzaHtmlOlustur(kisiler);
+      } else {
+        document.getElementById('e3aImzaAlani').innerHTML += '<p class="text-muted small">Bu 3T kaydı için "Komisyon ve Teknik Ekip Seçimi" adımında Teknik Ekip seçilmemiş.</p>';
+      }
 
       const cksJson = await fetch(`${API}/cks-adaylari?il=${encodeURIComponent(kayit.il)}&ilce=${encodeURIComponent(kayit.ilce)}&koyMahalle=${encodeURIComponent(kayit.koyMahalle)}`).then((r) => r.json());
       const cksSelect = document.getElementById('e3aCksSelect');

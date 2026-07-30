@@ -155,7 +155,22 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   doğru çıktı); Word'de docx'in standart PageNumber alan kodları
   kullanıldı (Word açıldığında otomatik hesaplanır) - bu, python-docx
   ile statik olarak doğrulanamayan tek kısım, gerçek Word'de doğru
-  görünmesi beklenir. Tahsis (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
+  görünmesi beklenir. PDF'TEKİ TABLO-SONRASI-PARAGRAF HATASI DÜZELTİLDİ:
+  pdfkit'in tablo hücreleri için kullanılan `.text()` çağrıları
+  `doc.x`'i son sütunun dar konumunda bırakıyordu, bu yüzden madde
+  7/8 tablolarından SONRAKİ paragraflar (8, 9-12) o dar sütuna
+  sıkışmış gibi görünüyordu - artık her tablo çiziminden sonra
+  `doc.x` sayfa kenar boşluğuna, sonraki paragraf çağrıları da
+  AÇIKÇA tam sayfa genişliğine sıfırlanıyor (uzun test paragrafıyla
+  doğrulandı: önce çok kısa satırlara bölünüyordu, şimdi doğal
+  şekilde tam genişlikte akıyor). EK-3/A'YA TEKNİK EKİP İMZA BLOĞU
+  EKLENDİ: "Komisyon ve Teknik Ekip Seçimi" ön-adımında seçilen
+  Teknik Ekip'in GERÇEK üyeleri (adSoyad+unvan) kadar sütun, diğer
+  belgelerdeki AYNI imza kurallarıyla (boşluk+"İMZA" gri renkli+
+  boşluk+Ad Soyad kalın+Unvan) - yeni `imzaTipi: 'cokluKisi'` hem
+  Word hem PDF üreticisine eklendi, 3 kişilik örnekle test edilip
+  doğrulandı. Ekip seçilmemişse uyarı metni gösterilir. Tahsis
+  (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
 - **Personel Yönetimi** (Ayarlar içinde) — Teknik Ekip Üyeleri: yıl/ilçe
   bazlı akordiyon, kurum seçimine göre otomatik imza metni üretimi
   (Muhtarlık/Mahalli Bilirkişi/Belediye vb.), toplu üye yükleme

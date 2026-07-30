@@ -28,6 +28,7 @@ const {
 } = require('docx');
 const PDFDocument = require('pdfkit');
 const IlMeraKomisyonu = require('../personel/ilMeraKomisyonu.model');
+const TeknikEkip = require('../personel/teknikEkip.model');
 const belgeAyarlariService = require('../belge-ayarlari/belgeAyarlari.service');
 
 const FONT_NORMAL = path.join(__dirname, '../reporting/sablonlar/fontlar/DejaVuSerif.ttf');
@@ -104,9 +105,19 @@ function tebligBelgesiVerileriniOlustur(kayit, veri) {
 }
 
 /** (Ek-3/a) BİLGİ CETVELİ icin export verisini uretir - IMZASIZ (cetvel/tablo formati). */
-function ek3aVerileriniOlustur(kayit, veri) {
+async function ek3aVerileriniOlustur(kayit, veri) {
   const t = veri.hayvanVarligiTablosu;
   const hucre = (h) => (h && h.adet > 0 ? `${h.adet} adet (${h.bbhb.toFixed(2)} BBHB)` : '-');
+
+  // Imza: "Komisyon ve Teknik Ekip Secimi" on-adiminda SECILEN Teknik
+  // Ekip'in GERCEK uyeleri - digerlerindeki AYNI imza kurallariyla
+  // (bosluk+"İMZA" gri+bosluk+Ad Soyad kalin+Unvan) N SUTUN halinde.
+  const kteAdim = kayit.surec.flatMap((a) => a.altAdimlar).find((a) => a.tip === 'komisyonTeknikEkipSecimi');
+  let imzaKisileri = [];
+  if (kteAdim?.veri?.teknikEkipId) {
+    const ekip = await TeknikEkip.findById(kteAdim.veri.teknikEkipId);
+    if (ekip) imzaKisileri = ekip.uyeler.map((u) => ({ adSoyad: u.adSoyad, unvan: u.unvan || '' }));
+  }
 
   const yararlanma = [...(veri.yararlanmaSekilleri || []), ...(veri.digerYararlanmaSekli ? [veri.digerYararlanmaSekli] : [])].join(', ') || '……………………………';
 
@@ -151,6 +162,8 @@ function ek3aVerileriniOlustur(kayit, veri) {
     altBaslik: `Mera Kanunu'nun 8 inci Maddesi Gereği`,
     baslik: 'MERA, YAYLAK, KIŞLAK, OTLAK, ÇAYIR BİLGİ CETVELİ',
     icerikParcalari,
+    imzaTipi: imzaKisileri.length ? 'cokluKisi' : undefined,
+    imzaKisileri,
     sayfaAltbilgisi: '(Ek-3/A)',
   };
 }
@@ -161,7 +174,7 @@ async function adimDisaAktarVerisi(kayit, alt) {
   if (alt.tip === 'duyuruTutanagi') v = await duyuruTutanagiVerileriniOlustur(kayit, alt.veri || {});
   else if (alt.tip === 'duyuru') v = duyuruVerileriniOlustur(kayit, alt.veri || {});
   else if (alt.tip === 'tebligBelgesi') v = tebligBelgesiVerileriniOlustur(kayit, alt.veri || {});
-  else if (alt.tip === 'ek3aBilgiCetveli') v = ek3aVerileriniOlustur(kayit, alt.veri || {});
+  else if (alt.tip === 'ek3aBilgiCetveli') v = await ek3aVerileriniOlustur(kayit, alt.veri || {});
   else throw new Error('Bu adım için dışa aktarma henüz desteklenmiyor.');
 
   const ayarlar = await belgeAyarlariService.ayarlariGetir();
@@ -272,6 +285,21 @@ async function adimBelgesiWordOlustur(v) {
       ],
     });
     cocuklar.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ children: [imzaSutunHucresi(), imzaSutunHucresi(), imzaSutunHucresi(), imzaSutunHucresi()] })] }));
+  } else if (v.imzaTipi === 'cokluKisi' && v.imzaKisileri?.length) {
+    // Ek-3/a gibi belgeler: Teknik Ekip UYELERI kadar SUTUN, digerleriyle
+    // AYNI imza kurallari (bosluk+"İMZA" gri+bosluk+Ad Soyad kalin+Unvan).
+    const genislikYuzde = Math.floor(100 / v.imzaKisileri.length);
+    const kisiHucresi = (kisi) => new TableCell({
+      width: { size: genislikYuzde, type: WidthType.PERCENTAGE }, borders: hucreKenarsiz,
+      children: [
+        pOlustur({ text: '' }),
+        pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'İMZA', size: 18, color: imzaRengiHex, font: yaziTipi })] }),
+        pOlustur({ text: '' }),
+        pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: kisi.adSoyad, bold: true, size: 20, font: yaziTipi })] }),
+        pOlustur({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: kisi.unvan || '', size: 18, font: yaziTipi })] }),
+      ],
+    });
+    cocuklar.push(new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [new TableRow({ children: v.imzaKisileri.map(kisiHucresi) })] }));
   }
 
   if (v.altNot) {
@@ -354,13 +382,17 @@ function adimBelgesiPdfOlustur(v) {
 
       satirCiz(tablo.basliklar, true);
       tablo.satirlar.forEach((satir) => satirCiz(satir, false));
+      // ONEMLI: doc.text() son hucrenin DAR genisligini/x konumunu
+      // "hatirlar" - SIFIRLANMAZSA sonraki paragraflar o dar sutuna
+      // SIKISMIS gibi gorunur. Hem x hem y ACIKCA sifirlanir.
+      doc.x = doc.page.margins.left;
       doc.y = y + 8;
     }
 
     if (v.icerikParcalari) {
       v.icerikParcalari.forEach((parca) => {
         if (parca.tip === 'paragraf') {
-          doc.font('normal').fontSize(10).text(parca.metin, { align: 'justify', ...SATIR_ARALIGI });
+          doc.font('normal').fontSize(10).text(parca.metin, doc.page.margins.left, doc.y, { width: sayfaGenisligi, align: 'justify', ...SATIR_ARALIGI });
           doc.moveDown(0.7);
         } else if (parca.tip === 'tablo') {
           pdfTabloCiz(parca);
@@ -406,6 +438,21 @@ function adimBelgesiPdfOlustur(v) {
         doc.text('Ünvanı', x, baslangicY + 42, { width: sutunGenisligi, align: 'center' });
       }
       doc.fillColor('#000000');
+    } else if (v.imzaTipi === 'cokluKisi' && v.imzaKisileri?.length) {
+      // Ek-3/a: Teknik Ekip UYELERI kadar SUTUN, digerleriyle AYNI
+      // imza kurallari (bosluk+İMZA gri+bosluk+Ad Soyad kalin+Unvan).
+      doc.moveDown(1.5);
+      const kisiSayisi = v.imzaKisileri.length;
+      const sutunGenisligi = sayfaGenisligi / kisiSayisi;
+      const baslangicY = doc.y;
+      v.imzaKisileri.forEach((kisi, i) => {
+        const x = doc.page.margins.left + i * sutunGenisligi;
+        doc.fillColor(imzaRengi).font('normal').fontSize(9).text('İMZA', x, baslangicY, { width: sutunGenisligi, align: 'center' });
+        doc.fillColor('#000000').font('kalin').fontSize(9).text(kisi.adSoyad, x, baslangicY + 26, { width: sutunGenisligi, align: 'center' });
+        doc.font('normal').fontSize(8).text(kisi.unvan || '', x, baslangicY + 38, { width: sutunGenisligi, align: 'center' });
+      });
+      doc.x = doc.page.margins.left;
+      doc.y = baslangicY + 55;
     }
 
     if (v.altNot) {
