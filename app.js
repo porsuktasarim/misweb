@@ -18,6 +18,7 @@ const ek4abRoutes = require('./backend/modules/ek4ab/ek4ab.routes');
 const teknikEkipRoutes = require('./backend/modules/personel/teknikEkip.routes');
 const ilMeraKomisyonuRoutes = require('./backend/modules/personel/ilMeraKomisyonu.routes');
 const belgeAyarlariRoutes = require('./backend/modules/belge-ayarlari/belgeAyarlari.routes');
+const meraRoutes = require('./backend/modules/mera/mera.routes');
 const mevzuatRoutes = require('./backend/modules/mevzuat/mevzuat.routes');
 const mevzuatService = require('./backend/modules/mevzuat/mevzuat.service');
 const ucTRoutes = require('./backend/modules/uc-t/uc-t.routes');
@@ -38,6 +39,7 @@ app.use('/api/ek4ab', ek4abRoutes);
 app.use('/api/teknik-ekip', teknikEkipRoutes);
 app.use('/api/il-mera-komisyonu', ilMeraKomisyonuRoutes);
 app.use('/api/belge-ayarlari', belgeAyarlariRoutes);
+app.use('/api/mera', meraRoutes);
 app.use('/api/mevzuat', mevzuatRoutes);
 app.use('/api/uc-t', ucTRoutes);
 

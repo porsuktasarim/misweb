@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mera Modülü - Mera İzleme Sistemi</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
+  <link href="/assets/css/layout.css?v=12" rel="stylesheet" />
+  <style>
+    .mera-durum-rozet { font-size: 11px; }
+  </style>
+</head>
+<body>
+
+  <div class="mis-kabuk" id="mis-kabuk">
+    <div class="mis-marka" id="mis-marka"></div>
+    <div class="mis-ustcubuk" id="mis-ustcubuk"></div>
+    <nav class="mis-anamenu" id="mis-anamenu"></nav>
+
+    <div class="mis-icerik">
+      <div class="mis-icerik-birincil">
+        <div class="mis-panel">
+          <h2>Mera Modülü - Parsel Kayıtları</h2>
+          <p class="text-muted small">Her kayıt bir Ada/Parsel'e karşılık gelir. 3T sürecindeki Ek-3/a (Arazinin Cinsi/Miktarı) ve Ek-4/c-h aşamalarının veri kaynağı buradan beslenecektir.</p>
+
+          <div class="row g-2 mb-3">
+            <div class="col-md-3"><select id="filtreIl" class="form-select form-select-sm"></select></div>
+            <div class="col-md-3"><select id="filtreIlce" class="form-select form-select-sm"></select></div>
+            <div class="col-md-3"><select id="filtreMahalle" class="form-select form-select-sm"></select></div>
+            <div class="col-md-3"><button class="btn btn-primary btn-sm w-100" id="yeniParselBtn">+ Yeni Parsel</button></div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-sm table-hover align-middle">
+              <thead>
+                <tr><th>İl</th><th>İlçe</th><th>Köy/Mahalle</th><th>Ada</th><th>Parsel</th><th>Arazi Niteliği</th><th>Tespit</th><th>Tahdit</th><th>Tahsis</th><th></th></tr>
+              </thead>
+              <tbody id="parselTablosu"><tr><td colspan="10" class="text-muted small">Yükleniyor...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yeni Parsel Modalı -->
+  <div class="modal fade" id="yeniParselModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Yeni Parsel</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <div class="row g-2 mb-2">
+            <div class="col-md-4"><select id="ypIl" class="form-select form-select-sm"></select></div>
+            <div class="col-md-4"><select id="ypIlce" class="form-select form-select-sm"></select></div>
+            <div class="col-md-4"><select id="ypMahalle" class="form-select form-select-sm"></select></div>
+          </div>
+          <div class="row g-2">
+            <div class="col-md-6"><input class="form-control form-control-sm" id="ypAdaNo" placeholder="Ada No"></div>
+            <div class="col-md-6"><input class="form-control form-control-sm" id="ypParselNo" placeholder="Parsel No"></div>
+          </div>
+          <div id="ypSonuc" class="small mt-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Vazgeç</button>
+          <button type="button" class="btn btn-primary btn-sm" id="ypKaydetBtn">Oluştur ve Devam Et</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js"></script>
+  <script src="/assets/js/mis-menu.js?v=13"></script>
+  <script src="/assets/js/shell.js?v=13"></script>
+  <script src="/assets/js/mis-yer-secici.js?v=13"></script>
+  <script>
+    function guvenliMetin(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+    function durumRozeti(yapildiMi) {
+      return yapildiMi
+        ? '<span class="badge bg-success-subtle text-success-emphasis mera-durum-rozet">Yapıldı</span>'
+        : '<span class="badge bg-secondary-subtle text-secondary-emphasis mera-durum-rozet">-</span>';
+    }
+
+    let _filtreIl = '', _filtreIlce = '', _filtreMahalle = '';
+
+    misYerSeciciKur({
+      ilSelectId: 'filtreIl', ilceSelectId: 'filtreIlce', mahalleSelectId: 'filtreMahalle',
+      ilceOpsiyonel: true, mahalleOpsiyonel: true,
+      onDegisti: ({ il, ilce, mahalle }) => { _filtreIl = il || ''; _filtreIlce = ilce || ''; _filtreMahalle = mahalle || ''; parselleriYukle(); },
+    });
+
+    async function parselleriYukle() {
+      const params = new URLSearchParams();
+      if (_filtreIl) params.set('il', _filtreIl);
+      if (_filtreIlce) params.set('ilce', _filtreIlce);
+      if (_filtreMahalle) params.set('koyMahalle', _filtreMahalle);
+      const json = await fetch(`/api/mera?${params}`).then((r) => r.json());
+      const govde = document.getElementById('parselTablosu');
+      if (!json.success || !json.data.length) { govde.innerHTML = '<tr><td colspan="10" class="text-muted small">Kayıt bulunamadı.</td></tr>'; return; }
+      govde.innerHTML = json.data.map((p) => `
+        <tr>
+          <td>${guvenliMetin(p.il)}</td>
+          <td>${guvenliMetin(p.ilce)}</td>
+          <td>${guvenliMetin(p.koyMahalle)}</td>
+          <td>${guvenliMetin(p.adaNo || '-')}</td>
+          <td>${guvenliMetin(p.parselNo || '-')}</td>
+          <td>${guvenliMetin(p.araziNiteligi || '-')}</td>
+          <td>${durumRozeti(p.tespitYapildiMi)}</td>
+          <td>${durumRozeti(p.tahditYapildiMi)}</td>
+          <td>${durumRozeti(p.tahsisYapildiMi)}</td>
+          <td><a class="btn btn-sm btn-outline-primary" href="/mera/detay.html?id=${p._id}">Detay</a></td>
+        </tr>`).join('');
+    }
+
+    document.getElementById('yeniParselBtn').addEventListener('click', () => {
+      new bootstrap.Modal(document.getElementById('yeniParselModal')).show();
+    });
+
+    misYerSeciciKur({ ilSelectId: 'ypIl', ilceSelectId: 'ypIlce', mahalleSelectId: 'ypMahalle' });
+
+    document.getElementById('ypKaydetBtn').addEventListener('click', async () => {
+      const sonucAlan = document.getElementById('ypSonuc');
+      const il = document.getElementById('ypIl').value;
+      const ilce = document.getElementById('ypIlce').value;
+      const koyMahalle = document.getElementById('ypMahalle').value;
+      if (!il || !ilce || !koyMahalle) { sonucAlan.innerHTML = '<span class="text-danger">İl/İlçe/Köy-Mahalle seçilmelidir.</span>'; return; }
+
+      sonucAlan.innerHTML = 'Kaydediliyor...';
+      const res = await fetch('/api/mera', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ il, ilce, koyMahalle, adaNo: document.getElementById('ypAdaNo').value.trim(), parselNo: document.getElementById('ypParselNo').value.trim() }),
+      });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
+      window.location.href = `/mera/detay.html?id=${json.data._id}`;
+    });
+
+    parselleriYukle();
+  </script>
+</body>
+</html>

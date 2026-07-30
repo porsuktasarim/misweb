@@ -226,6 +226,45 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   yönetilir, tüm modüllerde ZORUNLU seçim kaynağı). Türkçe-duyarlı
   bellek-içi arama (MongoDB regex'in Türkçe büyük/küçük harf
   katlamasındaki eksikliğini aşmak için)
+- **Mera Modülü (YENİ)** — `/api/mera`, GitHub'da `backend/modules/mera/`.
+  Her kayıt TEK BİR PARSEL'e karşılık gelir (Ada/Parsel bazında).
+  Alanlar: İl/İlçe/Köy-Mahalle (Yerleşim listesinden), Ada No, Parsel
+  No, Mera Alanı (m²), Tapu Alanı (m²), Arazi Niteliği (Mera/Yaylak/
+  Kışlak/Otlak/Çayır/Eyrek Yeri/Harman Yeri/Panayır Yeri/Sıvat Yeri),
+  Arazi Durum Sınıfı (serbest metin), Arazi Kaynağı (5-a/5-b/5-c/
+  5-d), Tespit/Tahdit/Tahsis (her biri ayrı checkbox+tarih), Islah
+  Durumu, Eğimi, Toprak Sınıfı (standart Arazi Kullanım Kabiliyet
+  Sınıflandırması: I-VIII Sınıf), Tapu Kimlik No. NOTLAR: bir kez
+  eklenen not ASLA SİLİNEMEZ, sadece "Düzenle" ile GÜNCELLENEBİLİR -
+  eski hali versiyon geçmişinde (açılır-kapanır "Önceki hâller")
+  KALICI olarak saklanır; her nota ayrıca belge (herhangi bir dosya
+  türü) eklenebilir. LOG KAYDI: her işlem (oluşturma/güncelleme/not
+  ekleme/not düzenleme/dosya ekleme) ayrı bir sekmede, tarih+işlem+
+  detay+kullanıcı olarak listelenir - sistemde henüz gerçek bir "giriş
+  yapma" (auth) mekanizması olmadığı için kullanıcı adı sayfada
+  tarayıcıda hatırlanan (localStorage) serbest bir metin alanından
+  gelir; gerçek bir kullanıcı sistemi kurulunca buraya bağlanabilir.
+  Liste sayfası (`/mera/`) İl/İlçe/Köy-Mahalle filtreleme + "Yeni
+  Parsel" modalı; detay sayfası (`/mera/detay.html?id=`) üç sekme
+  (Genel Bilgiler/Notlar/Log Kaydı). NOT: 3T sürecindeki Ek-3/a (m.7
+  - Arazinin Cinsi/Miktarı) ve Ek-4/c-h aşamalarının GERÇEK veri
+  kaynağı bu modül OLACAK ama entegrasyon HENÜZ YAPILMADI (ayrı bir
+  aşama) - şu an bağımsız bir modül olarak çalışıyor.
+
+## Menü Yapısı
+
+Sol menü ARTIK İKİ GRUBA ayrıldı (kullanıcı isteğiyle): "Modüller"
+(3T, Mera - uçtan uca bir süreci yöneten, kendi alt-adımları/
+sekmeleri olan büyük yapılar) ve "Araçlar" (BBHB Hesaplama, EKGB,
+ÇKS Cetveli, Mevzuat - tek başına kullanılan hesaplama/referans
+ekranları). Ek-4ab ARTIK AYRI bir menü öğesi DEĞİL (3T'nin
+"Birleştirme" adımı onu otomatik üretiyor, `frontend/public/ek4ab/`
+klasörü hâlâ duruyor ama menüden kaldırıldı - `?id=` ile 3T'den
+yönlendirilmeye devam ediyor). Menü tek kaynaktan (`mis-menu.js`)
+yönetiliyor, `shell.js` grupları otomatik render ediyor - yeni bir
+grup eklemek için `shell.js`'e dokunmaya gerek yok. `package.json`
+versiyonu `0.1.0` → `0.9.0` güncellendi (projenin gerçek olgunluk
+seviyesini yansıtmıyordu).
 
 ## Raporlama
 
