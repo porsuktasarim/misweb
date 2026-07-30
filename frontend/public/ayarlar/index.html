@@ -797,6 +797,23 @@
       return kurum ? kurum.elleGirisTipi : null;
     }
 
+    /**
+     * GOREV kurallari (daha once konusulmustu): İl Tarım ve Orman
+     * Müdürlüğü temsilcisi -> Merkez Mera Teknik Ekip Başkanı; İlçe
+     * Tarım ve Orman Müdürlüğü temsilcisi -> İlçe Mera Teknik Ekip
+     * Başkanı; digerleri -> Uye. Kurum SECILINCE OTOMATIK atanir,
+     * ama kullanici SONRADAN ELLE degistirebilir (bu sadece bir
+     * VARSAYILAN ONERI, kesin kural degil - istisnalar olabilir).
+     */
+    function uyelikDurumunuOtomatikBelirle(satirEl) {
+      const kurumKod = satirEl.querySelector('.mis-uye-kurum').value;
+      const uyelikSelect = satirEl.querySelector('.mis-uye-uyelik');
+      if (!uyelikSelect) return;
+      if (kurumKod === 'ilTarimOrman') uyelikSelect.value = 'merkezBaskan';
+      else if (kurumKod === 'ilceTarimOrman') uyelikSelect.value = 'ilceBaskan';
+      else uyelikSelect.value = 'uye';
+    }
+
     function uyeSatiriHtml(ekipId, index, uye) {
       const kurumOptions = kurumlarCache.map((k) => `<option value="${k.kod}" ${uye.kurumKod === k.kod ? 'selected' : ''}>${k.ad}</option>`).join('');
       const uyelikSecenekleri = [
@@ -804,7 +821,15 @@
         { kod: 'ilceBaskan', ad: 'İlçe Mera Teknik Ekip Başkanı' },
         { kod: 'uye', ad: 'Üye' },
       ];
-      const uyelikOptions = uyelikSecenekleri.map((u) => `<option value="${u.kod}" ${(uye.uyelikDurumu || 'uye') === u.kod ? 'selected' : ''}>${u.ad}</option>`).join('');
+      // Kaydedilmis uyelikDurumu VARSA onu kullan; YOKSA (eski kayit)
+      // kurumKod'a gore AYNI kural ile ONER (ezmez, sadece ILK GORUNUM).
+      let varsayilanUyelik = uye.uyelikDurumu;
+      if (!varsayilanUyelik) {
+        if (uye.kurumKod === 'ilTarimOrman') varsayilanUyelik = 'merkezBaskan';
+        else if (uye.kurumKod === 'ilceTarimOrman') varsayilanUyelik = 'ilceBaskan';
+        else varsayilanUyelik = 'uye';
+      }
+      const uyelikOptions = uyelikSecenekleri.map((u) => `<option value="${u.kod}" ${varsayilanUyelik === u.kod ? 'selected' : ''}>${u.ad}</option>`).join('');
       return `
         <div class="border rounded p-2 mb-2 mis-uye-satiri" data-ekip="${ekipId}" data-index="${index}">
           <div class="row g-2 align-items-start">
@@ -889,7 +914,7 @@
 
       alan.querySelectorAll('.mis-uye-satiri').forEach((satirEl, i) => {
         uyeDetayAlaniniKur(satirEl, uyeler[i]);
-        satirEl.querySelector('.mis-uye-kurum').addEventListener('change', () => uyeDetayAlaniniKur(satirEl, {}));
+        satirEl.querySelector('.mis-uye-kurum').addEventListener('change', () => { uyeDetayAlaniniKur(satirEl, {}); uyelikDurumunuOtomatikBelirle(satirEl); });
         satirEl.querySelector('.mis-uye-satiri-sil').addEventListener('click', () => satirEl.remove());
       });
 
@@ -899,7 +924,7 @@
         alan.insertAdjacentHTML('beforeend', uyeSatiriHtml(ekip._id, yeniIndex, {}));
         const yeniSatir = alan.querySelector(`.mis-uye-satiri[data-index="${yeniIndex}"]`);
         uyeDetayAlaniniKur(yeniSatir, {});
-        yeniSatir.querySelector('.mis-uye-kurum').addEventListener('change', () => uyeDetayAlaniniKur(yeniSatir, {}));
+        yeniSatir.querySelector('.mis-uye-kurum').addEventListener('change', () => { uyeDetayAlaniniKur(yeniSatir, {}); uyelikDurumunuOtomatikBelirle(yeniSatir); });
         yeniSatir.querySelector('.mis-uye-satiri-sil').addEventListener('click', () => yeniSatir.remove());
       };
 

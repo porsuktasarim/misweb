@@ -185,11 +185,18 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   (Ek-7 ve sonrası) HENÜZ EKLENMEDİ.
 - **Personel Yönetimi** (Ayarlar içinde) — Teknik Ekip Üyeleri: yıl/ilçe
   bazlı akordiyon, kurum seçimine göre otomatik imza metni üretimi
-  (Muhtarlık/Mahalli Bilirkişi/Belediye vb.), YENİ "Üyelik Durumu"
-  seçimi (Merkez Mera Teknik Ekip Başkanı/İlçe Mera Teknik Ekip
-  Başkanı/Üye - Ek-3/a imza bloğunun 4. satırında kullanılır), toplu üye yükleme
-  (xlsx/xls/csv/json); 3T'nin Muhtar otomatik doldurma özelliği bu
-  modülün "muhtarlik" kurumlu üyelerini kullanır. İl Mera Komisyonu
+  (Muhtarlık/Mahalli Bilirkişi/Belediye vb.), "Üyelik Durumu" seçimi
+  (Merkez Mera Teknik Ekip Başkanı/İlçe Mera Teknik Ekip Başkanı/Üye
+  - Ek-3/a imza bloğunun 4. satırında kullanılır) ARTIK KURUMA GÖRE
+  OTOMATİK ATANIYOR (daha önce konuşulan GÖREV kuralı): İl Tarım ve
+  Orman Müdürlüğü temsilcisi → Merkez Mera Teknik Ekip Başkanı; İlçe
+  Tarım ve Orman Müdürlüğü temsilcisi → İlçe Mera Teknik Ekip
+  Başkanı; diğerleri → Üye - kurum SEÇİLİNCE otomatik atanır (yeni
+  üye eklerken VE mevcut/eski kayıtların ilk görünümünde), ama SADECE
+  ÖNERİDİR, kullanıcı elle değiştirebilir (istisnalar için). Test
+  edildi. Toplu üye yükleme (xlsx/xls/csv/json); 3T'nin Muhtar
+  otomatik doldurma özelliği bu modülün "muhtarlik" kurumlu
+  üyelerini kullanır. İl Mera Komisyonu
   Üyeleri: yıl/il bazlı akordiyon, 4342 sayılı Kanun m.3'ün 11 kişilik
   komisyon tanımına birebir uygun SABİT kurum listesi (imza sırasına
   göre: Vali (opsiyonel), Vali Yardımcısı, İl Müdürü, Teknik Personel,
