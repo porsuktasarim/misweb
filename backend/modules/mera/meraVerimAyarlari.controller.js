@@ -36,4 +36,49 @@ async function hesaplaHandler(req, res) {
   }
 }
 
-module.exports = { getirHandler, guncelleHandler, hesaplaHandler };
+async function tabloVersiyonEkleHandler(req, res) {
+  try {
+    const { tabloAdi } = req.params;
+    const { satirlar, yaziTarihi, yaziSayisi, kullaniciAdi } = req.body;
+    return basarili(res, await service.tabloVersiyonEkle(tabloAdi, satirlar, yaziTarihi, yaziSayisi, kullaniciAdi, 'elle'), 'Yeni versiyon eklendi');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function tabloAktifVersiyonSecHandler(req, res) {
+  try {
+    const { tabloAdi } = req.params;
+    return basarili(res, await service.tabloAktifVersiyonSec(tabloAdi, Number(req.body.versiyonIndex)), 'Aktif versiyon değiştirildi');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function tabloExcelYukleHandler(req, res) {
+  try {
+    const { tabloAdi } = req.params;
+    const { yaziTarihi, yaziSayisi, kullaniciAdi } = req.body;
+    if (!req.file) return basarisiz(res, 'Dosya seçilmedi.');
+    return basarili(res, await service.tabloExcelYukle(tabloAdi, req.file.path, yaziTarihi, yaziSayisi, kullaniciAdi), 'Excel yüklendi, yeni versiyon eklendi');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function sablonIndirHandler(req, res) {
+  try {
+    const { tabloAdi } = req.params;
+    const buffer = await service.sablonIndir(tabloAdi);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${tabloAdi}-sablon.xlsx"`);
+    return res.send(buffer);
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+module.exports = {
+  getirHandler, guncelleHandler, hesaplaHandler,
+  tabloVersiyonEkleHandler, tabloAktifVersiyonSecHandler, tabloExcelYukleHandler, sablonIndirHandler,
+};

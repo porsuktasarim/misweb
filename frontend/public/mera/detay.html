@@ -278,9 +278,13 @@
     // ONEMLI: backend (meraVerimAyarlari.service.js) GERCEKTE su
     // sekli donduruyor: { hesaplanabilir, yagisKusagi, dekar,
     // donemGunSayisi, tablo1YararlanilabilirYesil, tablo2UretilenYesil,
-    // tablo3UretilenKuru } - HER biri {kgDa, toplamKg, gunlukBbhb,
-    // donemlikBbhb}. ASAGIDAKI KOD BU GERCEK SEKILLE eslesir (eski bir
-    // taslak surumde farkli alan adlari kullanilmisti, DUZELTILDI).
+    // tablo3UretilenKuru, yararlanilabilirKuru, gunlukBbhb, donemlikBbhb }.
+    // TASARIM (kullanicinin acik karari): 5 KUTUCUK, TEK bir kutu icinde -
+    // ilk 4 kutucuk SADECE VERIM (kg/da + toplam kg), KENDI BBHB'leri YOK;
+    // 5. kutucuk TEK, AYRI bir BBHB hesabi - SADECE Tablo-1 (Yararlanilabilir
+    // Yesil Ot) uzerinden. Gerekce: "aynı yerdeki otları aynı miktardaki
+    // hayvan kullanabilir, kuru ya da yeşil olması tüketimdeki tercih
+    // biçimi" - yani KAPASITE TEKTIR, digerleri sadece VERIM KARSILASTIRMASI.
     async function verimBilgisiHesapla() {
       const alan = document.getElementById('verimBilgisiAlani');
       if (!kayit.meraAlaniM2) { alan.innerHTML = `<p class="text-muted small">${LANG.mera.verimAlanGerekli}</p>`; return; }
@@ -293,14 +297,14 @@
 
         if (!v.hesaplanabilir) { alan.innerHTML = `<p class="text-warning small">${v.mesaj}</p>`; return; }
 
-        const satir = (baslik, t) => `
-          <tr>
-            <td>${baslik}</td>
-            <td>${(t.kgDa ?? 0).toLocaleString('tr-TR')} kg/da</td>
-            <td>${(t.toplamKg ?? 0).toLocaleString('tr-TR')} kg</td>
-            <td>${(t.gunlukBbhb ?? 0).toFixed(2)}</td>
-            <td>${(t.donemlikBbhb ?? 0).toFixed(2)}</td>
-          </tr>`;
+        const verimKutusu = (baslik, t) => `
+          <div class="col">
+            <div class="border rounded p-2 h-100">
+              <div class="small fw-semibold mb-1">${baslik}</div>
+              <div class="small">${(t?.kgDa ?? 0).toLocaleString('tr-TR')} ${LANG.mera.kgDa}</div>
+              <div class="small text-muted">${LANG.mera.toplam}: ${(t?.toplamKg ?? 0).toLocaleString('tr-TR')} kg</div>
+            </div>
+          </div>`;
 
         alan.innerHTML = `
           <div class="small mb-2">
@@ -308,17 +312,20 @@
             <strong>${LANG.mera.alan}:</strong> ${v.dekar} da &nbsp;·&nbsp;
             <strong>${LANG.mera.donem}:</strong> ${v.donemGunSayisi} gün
           </div>
-          <div class="table-responsive">
-            <table class="table table-sm">
-              <thead><tr><th>${LANG.mera.tabloBaslik || 'Tablo'}</th><th>${LANG.mera.verim}</th><th>${LANG.ortak.toplam}</th><th>${LANG.mera.gunlukBbhb}</th><th>${LANG.mera.otlatmaKapasitesiDonemlik}</th></tr></thead>
-              <tbody>
-                ${satir(LANG.mera.tablo1Ad, v.tablo1YararlanilabilirYesil || {})}
-                ${satir(LANG.mera.tablo2Ad, v.tablo2UretilenYesil || {})}
-                ${satir(LANG.mera.tablo3Ad, v.tablo3UretilenKuru || {})}
-              </tbody>
-            </table>
+          <div class="row row-cols-1 g-2">
+            ${verimKutusu(LANG.mera.tablo1Ad, v.tablo1YararlanilabilirYesil)}
+            ${verimKutusu(LANG.mera.tablo2Ad, v.tablo2UretilenYesil)}
+            ${verimKutusu(LANG.mera.tablo3Ad, v.tablo3UretilenKuru)}
+            ${verimKutusu(LANG.mera.yararlanilabilirKuruAd, v.yararlanilabilirKuru)}
+            <div class="col">
+              <div class="border rounded p-2 h-100 bg-success-subtle">
+                <div class="small fw-semibold mb-1">${LANG.mera.kapasiteBaslik}</div>
+                <div class="small"><strong>${LANG.mera.gunlukBbhb}:</strong> ${(v.gunlukBbhb ?? 0).toFixed(2)}</div>
+                <div class="small"><strong>${LANG.mera.otlatmaKapasitesiDonemlik}:</strong> ${(v.donemlikBbhb ?? 0).toFixed(2)}</div>
+              </div>
+            </div>
           </div>
-          <p class="text-muted small mb-0">${LANG.mera.otlatmaKapasitesiNotu}</p>`;
+          <p class="text-muted small mb-0 mt-2">${LANG.mera.otlatmaKapasitesiNotu}</p>`;
       } catch (hata) {
         // Beklenmeyen bir hata olursa panel "Yükleniyor..." da SONSUZA
         // KADAR TAKILI KALMAZ - GORUNUR bir hata mesaji gosterilir.

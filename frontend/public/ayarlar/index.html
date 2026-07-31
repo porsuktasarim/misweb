@@ -214,10 +214,10 @@
             </div>
 
             <hr>
-            <h6>Ekran Font Boyutları</h6>
+            <h6>Websitesi Görünüm Ayarları</h6>
             <p class="text-muted small">
               Bu, Word/PDF çıktılarından AYRIDIR - sadece EKRANDA
-              görünen yazı boyutlarını kontrol eder. Her bölüm için
+              görünen yazı boyutlarını kontrol eder. Her bölge için
               Başlık ve Metin boyutu ayrı ayrı ayarlanabilir (piksel).
             </p>
             <div class="table-responsive mb-3" style="max-width:640px;">
@@ -232,7 +232,7 @@
           </div>
 
           <div class="tab-pane fade" id="mera-verim-tab">
-            <p class="text-muted small" id="mvAciklama"></p>
+            <p class="text-muted small mb-2" id="mvAciklama"></p>
 
             <h6 id="mvTuketimBaslik"></h6>
             <div class="row g-2 mb-3" style="max-width:600px;">
@@ -241,66 +241,44 @@
                 <input type="number" step="0.1" class="form-control form-control-sm" id="mvGunlukYesil">
               </div>
               <div class="col-md-4">
-                <label class="form-label small" id="mvLblGunlukKuru"></label>
-                <input type="number" step="0.1" class="form-control form-control-sm" id="mvGunlukKuru">
-              </div>
-              <div class="col-md-4">
                 <label class="form-label small" id="mvLblDonemGun"></label>
                 <input type="number" class="form-control form-control-sm" id="mvDonemGun">
               </div>
+              <div class="col-md-4">
+                <label class="form-label small" id="mvLblStandartYilGun"></label>
+                <input type="number" class="form-control form-control-sm" id="mvStandartYilGun">
+              </div>
             </div>
+            <button class="btn btn-sm btn-primary mb-3" id="mvTuketimKaydetBtn"></button>
+            <span id="mvTuketimSonuc" class="small ms-2"></span>
 
-            <h6 id="mvTabloBaslik"></h6>
+            <h6 id="mvTabloBaslik" class="mt-3"></h6>
             <div class="accordion mb-3" id="mvTabloAccordion">
-              <div class="accordion-item">
-                <h2 class="accordion-header">
-                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mvTablo1Collapse" id="mvTablo1Ad"></button>
-                </h2>
-                <div id="mvTablo1Collapse" class="accordion-collapse collapse" data-bs-parent="#mvTabloAccordion">
-                  <div class="accordion-body p-2">
-                    <table class="table table-sm mb-0" id="mvTablo1"><thead><tr id="mvTablo1Thead"></tr></thead><tbody></tbody></table>
-                  </div>
+              <div class="accordion-item" data-tablo="tablo1YararlanilabilirYesil" data-tip="yagisKusagi">
+                <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mvColl-tablo1YararlanilabilirYesil" id="mvAd-tablo1YararlanilabilirYesil"></button></h2>
+                <div id="mvColl-tablo1YararlanilabilirYesil" class="accordion-collapse collapse" data-bs-parent="#mvTabloAccordion">
+                  <div class="accordion-body p-2" id="mvGovde-tablo1YararlanilabilirYesil"></div>
                 </div>
               </div>
-              <div class="accordion-item">
-                <h2 class="accordion-header">
-                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mvTablo2Collapse" id="mvTablo2Ad"></button>
-                </h2>
-                <div id="mvTablo2Collapse" class="accordion-collapse collapse" data-bs-parent="#mvTabloAccordion">
-                  <div class="accordion-body p-2">
-                    <table class="table table-sm mb-0" id="mvTablo2"><thead><tr id="mvTablo2Thead"></tr></thead><tbody></tbody></table>
-                  </div>
+              <div class="accordion-item" data-tablo="tablo2UretilenYesil" data-tip="yagisKusagi">
+                <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mvColl-tablo2UretilenYesil" id="mvAd-tablo2UretilenYesil"></button></h2>
+                <div id="mvColl-tablo2UretilenYesil" class="accordion-collapse collapse" data-bs-parent="#mvTabloAccordion">
+                  <div class="accordion-body p-2" id="mvGovde-tablo2UretilenYesil"></div>
                 </div>
               </div>
-              <div class="accordion-item">
-                <h2 class="accordion-header">
-                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mvTablo3Collapse" id="mvTablo3Ad"></button>
-                </h2>
-                <div id="mvTablo3Collapse" class="accordion-collapse collapse" data-bs-parent="#mvTabloAccordion">
-                  <div class="accordion-body p-2">
-                    <table class="table table-sm mb-0" id="mvTablo3"><thead><tr id="mvTablo3Thead"></tr></thead><tbody></tbody></table>
-                  </div>
+              <div class="accordion-item" data-tablo="tablo3UretilenKuru" data-tip="yagisKusagi">
+                <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mvColl-tablo3UretilenKuru" id="mvAd-tablo3UretilenKuru"></button></h2>
+                <div id="mvColl-tablo3UretilenKuru" class="accordion-collapse collapse" data-bs-parent="#mvTabloAccordion">
+                  <div class="accordion-body p-2" id="mvGovde-tablo3UretilenKuru"></div>
                 </div>
               </div>
-              <div class="accordion-item">
-                <h2 class="accordion-header">
-                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mvIllerCollapse" id="mvIllerBaslik"></button>
-                </h2>
-                <div id="mvIllerCollapse" class="accordion-collapse collapse" data-bs-parent="#mvTabloAccordion">
-                  <div class="accordion-body p-2">
-                    <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
-                      <table class="table table-sm mb-0">
-                        <thead><tr id="mvIllerThead"></tr></thead>
-                        <tbody id="mvIllerTablosu"></tbody>
-                      </table>
-                    </div>
-                  </div>
+              <div class="accordion-item" data-tablo="illerYagisKusaklari" data-tip="il">
+                <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mvColl-illerYagisKusaklari" id="mvAd-illerYagisKusaklari"></button></h2>
+                <div id="mvColl-illerYagisKusaklari" class="accordion-collapse collapse" data-bs-parent="#mvTabloAccordion">
+                  <div class="accordion-body p-2" id="mvGovde-illerYagisKusaklari"></div>
                 </div>
               </div>
             </div>
-
-            <button class="btn btn-sm btn-primary" id="mvKaydetBtn"></button>
-            <span id="mvSonuc" class="small ms-2"></span>
           </div>
         </div>
       </div>
@@ -341,6 +319,8 @@
   <script src="/assets/js/shell.js?v=12"></script>
   <script src="/assets/js/mis-lang.js?v=1"></script>
   <script>
+    function guvenliMetin(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+
     misKabuguBaslat('ayarlar', 'Ayarlar<span class="ayrac">/</span>İl-İlçe-Köy-Mahalle Listesi');
 
     let seciliIl = null;
@@ -1316,106 +1296,266 @@
     // ================= MERA VERİM AYARLARI =================
     const MV_YAGIS_BANTLARI = ['200-350', '350-500', '500-650', '650-800', '800-950', '950-1100', '1100-1250'];
     let _mvAyarlar = null;
+    let _mvLang = null;
 
-    function mvTabloSatiriHtml(bant, satirVerisi) {
+    function mvTarihSaatFormatla(t) { return t ? new Date(t).toLocaleString('tr-TR') : '-'; }
+    function mvTarihFormatla(t) { return t ? new Date(t).toLocaleDateString('tr-TR') : '-'; }
+
+    /** Elle-giris DUZENLENEBILIR tablo satiri (tip'e gore iki farkli sema). */
+    function mvDuzenlenebilirSatirHtml(tip, satirVerisi) {
       const s = satirVerisi || {};
+      if (tip === 'il') {
+        return `
+          <tr>
+            <td><input type="text" class="form-control form-control-sm mv-il-adi" value="${s.il ?? ''}" placeholder="İl adı"></td>
+            <td>
+              <select class="form-select form-select-sm mv-il-bant">
+                ${MV_YAGIS_BANTLARI.map((b) => `<option value="${b}" ${s.bant === b ? 'selected' : ''}>${b}</option>`).join('')}
+              </select>
+            </td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger mv-satir-sil">✕</button></td>
+          </tr>`;
+      }
       return `
-        <tr data-bant="${bant}">
-          <td>${bant}</td>
+        <tr>
+          <td>
+            <select class="form-select form-select-sm mv-bant">
+              ${MV_YAGIS_BANTLARI.map((b) => `<option value="${b}" ${s.bant === b ? 'selected' : ''}>${b}</option>`).join('')}
+            </select>
+          </td>
           <td><input type="number" step="0.1" class="form-control form-control-sm mv-cokIyi" value="${s.cokIyi ?? ''}"></td>
           <td><input type="number" step="0.1" class="form-control form-control-sm mv-iyi" value="${s.iyi ?? ''}"></td>
           <td><input type="number" step="0.1" class="form-control form-control-sm mv-orta" value="${s.orta ?? ''}"></td>
           <td><input type="number" step="0.1" class="form-control form-control-sm mv-zayif" value="${s.zayif ?? ''}"></td>
+          <td><button type="button" class="btn btn-sm btn-outline-danger mv-satir-sil">✕</button></td>
         </tr>`;
     }
 
-    function mvTabloyuDoldur(tabloId, veri) {
-      const tbody = document.querySelector(`#${tabloId} tbody`);
-      tbody.innerHTML = MV_YAGIS_BANTLARI.map((bant) => {
-        const satirVerisi = (veri || []).find((s) => s.bant === bant);
-        return mvTabloSatiriHtml(bant, satirVerisi);
-      }).join('');
+    function mvDuzenlenebilirTheadHtml(tip) {
+      if (tip === 'il') return `<th>${_mvLang.ortak.il}</th><th>${_mvLang.mera.yagisKusagi}</th><th></th>`;
+      return `<th>${_mvLang.meraVerimAyarlari.yagisMm}</th><th>${_mvLang.meraVerimAyarlari.cokIyiKisa}</th><th>${_mvLang.meraVerimAyarlari.iyiKisa}</th><th>${_mvLang.meraVerimAyarlari.ortaKisa}</th><th>${_mvLang.meraVerimAyarlari.zayifKisa}</th><th></th>`;
     }
 
-    function mvTablodanOku(tabloId) {
-      return Array.from(document.querySelectorAll(`#${tabloId} tbody tr`)).map((tr) => ({
-        bant: tr.dataset.bant,
-        cokIyi: Number(tr.querySelector('.mv-cokIyi').value) || 0,
-        iyi: Number(tr.querySelector('.mv-iyi').value) || 0,
-        orta: Number(tr.querySelector('.mv-orta').value) || 0,
-        zayif: Number(tr.querySelector('.mv-zayif').value) || 0,
-      }));
+    /** Tek bir tablonun (Tablo-1/2/3 veya Iller) TAM govdesini (aktif veri + versiyon gecmisi + yeni veri ekleme formu) olusturur. */
+    function mvTabloGovdesiHtml(tabloAdi, tabloVerisi, tip) {
+      const versiyonlar = tabloVerisi.versiyonlar || [];
+      const aktif = versiyonlar[tabloVerisi.aktifIndex];
+      const satirlar = aktif ? (aktif.satirlar || []) : [];
+
+      const aktifBaslikHucreleri = tip === 'il'
+        ? `<th>${_mvLang.ortak.il}</th><th>${_mvLang.mera.yagisKusagi}</th>`
+        : `<th>${_mvLang.meraVerimAyarlari.yagisMm}</th><th>${_mvLang.meraVerimAyarlari.cokIyiKisa}</th><th>${_mvLang.meraVerimAyarlari.iyiKisa}</th><th>${_mvLang.meraVerimAyarlari.ortaKisa}</th><th>${_mvLang.meraVerimAyarlari.zayifKisa}</th>`;
+      const aktifSatirHtml = (s) => (tip === 'il'
+        ? `<tr><td>${guvenliMetin(s.il)}</td><td>${guvenliMetin(s.bant)}</td></tr>`
+        : `<tr><td>${guvenliMetin(s.bant)}</td><td>${s.cokIyi ?? ''}</td><td>${s.iyi ?? ''}</td><td>${s.orta ?? ''}</td><td>${s.zayif ?? ''}</td></tr>`);
+
+      return `
+        <div class="mb-2">
+          <div class="small fw-semibold mb-1">${_mvLang.meraVerimAyarlari.aktifVeri}</div>
+          <div class="table-responsive" style="max-height:260px; overflow-y:auto;">
+            <table class="table table-sm mb-1"><thead><tr>${aktifBaslikHucreleri}</tr></thead><tbody>${satirlar.map(aktifSatirHtml).join('')}</tbody></table>
+          </div>
+          ${aktif ? `<div class="small text-muted">${mvTarihFormatla(aktif.yaziTarihi)} tarihli <strong>${guvenliMetin(aktif.yaziSayisi)}</strong> sayılı yazı · ${satirlar.length} ${_mvLang.meraVerimAyarlari.satirSayisi.toLowerCase()}</div>` : ''}
+        </div>
+
+        <details class="mb-2">
+          <summary class="small text-muted" style="cursor:pointer;">${_mvLang.meraVerimAyarlari.versiyonGecmisi} (${versiyonlar.length})</summary>
+          <div class="table-responsive mt-2">
+            <table class="table table-sm">
+              <thead><tr><th>${_mvLang.meraVerimAyarlari.yaziTarihi}</th><th>${_mvLang.meraVerimAyarlari.yaziSayisi}</th><th>${_mvLang.meraVerimAyarlari.yuklemeTarihi}</th><th>${_mvLang.meraVerimAyarlari.kaynak}</th><th>${_mvLang.meraVerimAyarlari.satirSayisi}</th><th></th></tr></thead>
+              <tbody>
+                ${versiyonlar.map((v, i) => `
+                  <tr>
+                    <td>${mvTarihFormatla(v.yaziTarihi)}</td>
+                    <td>${guvenliMetin(v.yaziSayisi)}</td>
+                    <td>${mvTarihSaatFormatla(v.yuklemeTarihi)}</td>
+                    <td>${v.kaynakTipi === 'excel' ? 'Excel' : 'Elle'}</td>
+                    <td>${(v.satirlar || []).length}</td>
+                    <td>${i === tabloVerisi.aktifIndex
+                      ? `<span class="badge bg-success">${_mvLang.meraVerimAyarlari.aktif}</span>`
+                      : `<button type="button" class="btn btn-sm btn-outline-secondary mv-aktif-yap-btn" data-versiyon-index="${i}">${_mvLang.meraVerimAyarlari.aktifYap}</button>`}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </details>
+
+        <div class="border rounded p-2">
+          <div class="small fw-semibold mb-2">${_mvLang.meraVerimAyarlari.yeniVeriEkle}</div>
+          <div class="row g-2 mb-2">
+            <div class="col-md-4">
+              <label class="form-label small">${_mvLang.meraVerimAyarlari.yaziTarihi} *</label>
+              <input type="date" class="form-control form-control-sm mv-yeni-yazi-tarihi">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label small">${_mvLang.meraVerimAyarlari.yaziSayisi} *</label>
+              <input type="text" class="form-control form-control-sm mv-yeni-yazi-sayisi" placeholder="${_mvLang.meraVerimAyarlari.yaziSayisiOrnek}">
+            </div>
+          </div>
+
+          <ul class="nav nav-pills mb-2 mv-yontem-sekme">
+            <li class="nav-item"><button type="button" class="btn btn-sm btn-primary me-1 mv-yontem-btn" data-yontem="elle">${_mvLang.meraVerimAyarlari.elleGir}</button></li>
+            <li class="nav-item"><button type="button" class="btn btn-sm btn-outline-secondary mv-yontem-btn" data-yontem="excel">${_mvLang.meraVerimAyarlari.excelYukle}</button></li>
+          </ul>
+
+          <div class="mv-elle-alani">
+            <div class="table-responsive mb-2" style="max-height:300px; overflow-y:auto;">
+              <table class="table table-sm mb-0 mv-yeni-tablo">
+                <thead><tr>${mvDuzenlenebilirTheadHtml(tip)}</tr></thead>
+                <tbody>${satirlar.map((s) => mvDuzenlenebilirSatirHtml(tip, s)).join('')}</tbody>
+              </table>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary mv-satir-ekle-btn">+ Satır Ekle</button>
+            <button type="button" class="btn btn-sm btn-primary mv-elle-kaydet-btn">${_mvLang.meraVerimAyarlari.yeniVersiyonKaydet}</button>
+          </div>
+
+          <div class="mv-excel-alani" style="display:none;">
+            <a class="btn btn-sm btn-outline-secondary mb-2" href="/api/mera-verim-ayarlari/${tabloAdi}/sablon-indir">${_mvLang.meraVerimAyarlari.sablonIndir}</a>
+            <input type="file" class="form-control form-control-sm mv-excel-input" accept=".xlsx,.xls,.csv">
+            <button type="button" class="btn btn-sm btn-primary mt-2 mv-excel-yukle-btn">${_mvLang.meraVerimAyarlari.excelYukleBtn}</button>
+          </div>
+
+          <div class="mv-sonuc small mt-2"></div>
+        </div>`;
+    }
+
+    function mvTabloOlaylariniBagla(itemEl, tabloAdi, tip) {
+      const govde = itemEl.querySelector(`#mvGovde-${tabloAdi}`);
+
+      // Versiyon gecmisinde "Aktif Yap"
+      govde.querySelectorAll('.mv-aktif-yap-btn').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const versiyonIndex = Number(btn.dataset.versiyonIndex);
+          const res = await fetch(`/api/mera-verim-ayarlari/${tabloAdi}/aktif-versiyon`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ versiyonIndex }),
+          });
+          const json = await res.json();
+          if (!json.success) { alert(json.message); return; }
+          _mvAyarlar = json.data;
+          mvTumTablolariYenidenCiz();
+        });
+      });
+
+      // Elle Gir / Excel Yukle sekme gecisi
+      const elleAlani = govde.querySelector('.mv-elle-alani');
+      const excelAlani = govde.querySelector('.mv-excel-alani');
+      govde.querySelectorAll('.mv-yontem-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          govde.querySelectorAll('.mv-yontem-btn').forEach((b) => { b.classList.remove('btn-primary'); b.classList.add('btn-outline-secondary'); });
+          btn.classList.remove('btn-outline-secondary'); btn.classList.add('btn-primary');
+          const elleMi = btn.dataset.yontem === 'elle';
+          elleAlani.style.display = elleMi ? 'block' : 'none';
+          excelAlani.style.display = elleMi ? 'none' : 'block';
+        });
+      });
+
+      // Satir ekle/sil (elle giris tablosu)
+      const yeniTablo = govde.querySelector('.mv-yeni-tablo tbody');
+      govde.querySelector('.mv-satir-ekle-btn')?.addEventListener('click', () => {
+        yeniTablo.insertAdjacentHTML('beforeend', mvDuzenlenebilirSatirHtml(tip, {}));
+        yeniTablo.lastElementChild.querySelector('.mv-satir-sil').addEventListener('click', (e) => e.target.closest('tr').remove());
+      });
+      yeniTablo.querySelectorAll('.mv-satir-sil').forEach((btn) => btn.addEventListener('click', (e) => e.target.closest('tr').remove()));
+
+      // Elle kaydet
+      govde.querySelector('.mv-elle-kaydet-btn').addEventListener('click', async () => {
+        const sonucAlan = govde.querySelector('.mv-sonuc');
+        const yaziTarihi = govde.querySelector('.mv-yeni-yazi-tarihi').value;
+        const yaziSayisi = govde.querySelector('.mv-yeni-yazi-sayisi').value.trim();
+        if (!yaziTarihi || !yaziSayisi) { sonucAlan.innerHTML = '<span class="text-danger">Yazı tarihi ve sayısı zorunludur.</span>'; return; }
+
+        const satirlar = tip === 'il'
+          ? Array.from(yeniTablo.querySelectorAll('tr')).map((tr) => ({ il: tr.querySelector('.mv-il-adi').value.trim(), bant: tr.querySelector('.mv-il-bant').value })).filter((s) => s.il)
+          : Array.from(yeniTablo.querySelectorAll('tr')).map((tr) => ({
+            bant: tr.querySelector('.mv-bant').value,
+            cokIyi: Number(tr.querySelector('.mv-cokIyi').value) || 0,
+            iyi: Number(tr.querySelector('.mv-iyi').value) || 0,
+            orta: Number(tr.querySelector('.mv-orta').value) || 0,
+            zayif: Number(tr.querySelector('.mv-zayif').value) || 0,
+          }));
+
+        sonucAlan.textContent = _mvLang ? undefined : '';
+        sonucAlan.innerHTML = '<span class="text-muted">Kaydediliyor...</span>';
+        const res = await fetch(`/api/mera-verim-ayarlari/${tabloAdi}/versiyon`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ satirlar, yaziTarihi, yaziSayisi, kullaniciAdi: localStorage.getItem('meraKullaniciAdi') || '' }),
+        });
+        const json = await res.json();
+        if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
+        _mvAyarlar = json.data;
+        mvTumTablolariYenidenCiz();
+      });
+
+      // Excel yukle
+      govde.querySelector('.mv-excel-yukle-btn').addEventListener('click', async () => {
+        const sonucAlan = govde.querySelector('.mv-sonuc');
+        const yaziTarihi = govde.querySelector('.mv-yeni-yazi-tarihi').value;
+        const yaziSayisi = govde.querySelector('.mv-yeni-yazi-sayisi').value.trim();
+        const dosya = govde.querySelector('.mv-excel-input').files[0];
+        if (!yaziTarihi || !yaziSayisi) { sonucAlan.innerHTML = '<span class="text-danger">Yazı tarihi ve sayısı zorunludur.</span>'; return; }
+        if (!dosya) { sonucAlan.innerHTML = '<span class="text-danger">Dosya seçilmedi.</span>'; return; }
+
+        const formData = new FormData();
+        formData.append('dosya', dosya);
+        formData.append('yaziTarihi', yaziTarihi);
+        formData.append('yaziSayisi', yaziSayisi);
+        formData.append('kullaniciAdi', localStorage.getItem('meraKullaniciAdi') || '');
+
+        sonucAlan.innerHTML = '<span class="text-muted">Yükleniyor...</span>';
+        const res = await fetch(`/api/mera-verim-ayarlari/${tabloAdi}/excel-yukle`, { method: 'POST', body: formData });
+        const json = await res.json();
+        if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
+        _mvAyarlar = json.data;
+        mvTumTablolariYenidenCiz();
+      });
+    }
+
+    function mvTumTablolariYenidenCiz() {
+      document.querySelectorAll('#mvTabloAccordion .accordion-item').forEach((item) => {
+        const tabloAdi = item.dataset.tablo;
+        const tip = item.dataset.tip;
+        document.getElementById(`mvAd-${tabloAdi}`).textContent = _mvLang.meraVerimAyarlari[tabloAdi === 'illerYagisKusaklari' ? 'illerBaslik' : { tablo1YararlanilabilirYesil: 'tablo1Ad', tablo2UretilenYesil: 'tablo2Ad', tablo3UretilenKuru: 'tablo3Ad' }[tabloAdi]];
+        document.getElementById(`mvGovde-${tabloAdi}`).innerHTML = mvTabloGovdesiHtml(tabloAdi, _mvAyarlar[tabloAdi], tip);
+        mvTabloOlaylariniBagla(item, tabloAdi, tip);
+      });
     }
 
     async function meraVerimAyarlariniYukle() {
-      const LANG = await misLangYukle();
-      document.getElementById('txtMeraVerimSekmeBaslik').textContent = LANG.meraVerimAyarlari.baslik;
-      document.getElementById('mvAciklama').textContent = LANG.meraVerimAyarlari.aciklama;
-      document.getElementById('mvTuketimBaslik').textContent = LANG.meraVerimAyarlari.tuketimDonemBaslik;
-      document.getElementById('mvLblGunlukYesil').textContent = LANG.meraVerimAyarlari.gunlukYesilOtTuketimi;
-      document.getElementById('mvLblGunlukKuru').textContent = LANG.meraVerimAyarlari.gunlukKuruOtTuketimi;
-      document.getElementById('mvLblDonemGun').textContent = LANG.meraVerimAyarlari.donemGun;
-      document.getElementById('mvTabloBaslik').textContent = LANG.meraVerimAyarlari.tabloBaslik;
-      document.getElementById('mvTablo1Ad').textContent = LANG.meraVerimAyarlari.tablo1Ad;
-      document.getElementById('mvTablo2Ad').textContent = LANG.meraVerimAyarlari.tablo2Ad;
-      document.getElementById('mvTablo3Ad').textContent = LANG.meraVerimAyarlari.tablo3Ad;
-      const theadHtml = `<th>${LANG.meraVerimAyarlari.yagisMm}</th><th>${LANG.meraVerimAyarlari.cokIyiKisa}</th><th>${LANG.meraVerimAyarlari.iyiKisa}</th><th>${LANG.meraVerimAyarlari.ortaKisa}</th><th>${LANG.meraVerimAyarlari.zayifKisa}</th>`;
-      document.getElementById('mvTablo1Thead').innerHTML = theadHtml;
-      document.getElementById('mvTablo2Thead').innerHTML = theadHtml;
-      document.getElementById('mvTablo3Thead').innerHTML = theadHtml;
-      document.getElementById('mvIllerBaslik').textContent = LANG.meraVerimAyarlari.illerBaslik;
-      document.getElementById('mvIllerThead').innerHTML = `<th>${LANG.ortak.il}</th><th>${LANG.mera.yagisKusagi}</th>`;
-      document.getElementById('mvKaydetBtn').textContent = LANG.ortak.kaydet;
+      _mvLang = await misLangYukle();
+      document.getElementById('txtMeraVerimSekmeBaslik').textContent = _mvLang.meraVerimAyarlari.baslik;
+      document.getElementById('mvAciklama').textContent = _mvLang.meraVerimAyarlari.aciklama;
+      document.getElementById('mvTuketimBaslik').textContent = _mvLang.meraVerimAyarlari.tuketimDonemBaslik;
+      document.getElementById('mvLblGunlukYesil').textContent = _mvLang.meraVerimAyarlari.gunlukYesilOtTuketimi;
+      document.getElementById('mvLblDonemGun').textContent = _mvLang.meraVerimAyarlari.donemGun;
+      document.getElementById('mvLblStandartYilGun').textContent = _mvLang.meraVerimAyarlari.standartYilGunu;
+      document.getElementById('mvTuketimKaydetBtn').textContent = _mvLang.ortak.kaydet;
+      document.getElementById('mvTabloBaslik').textContent = _mvLang.meraVerimAyarlari.tabloBaslik;
 
       const json = await fetch('/api/mera-verim-ayarlari').then((r) => r.json());
       if (!json.success) return;
       _mvAyarlar = json.data;
 
       document.getElementById('mvGunlukYesil').value = _mvAyarlar.gunlukYesilOtTuketimiKg;
-      document.getElementById('mvGunlukKuru').value = _mvAyarlar.gunlukKuruOtTuketimiKg;
       document.getElementById('mvDonemGun').value = _mvAyarlar.donemGunSayisi;
+      document.getElementById('mvStandartYilGun').value = _mvAyarlar.standartYilGunSayisi;
 
-      mvTabloyuDoldur('mvTablo1', _mvAyarlar.tablo1YararlanilabilirYesil);
-      mvTabloyuDoldur('mvTablo2', _mvAyarlar.tablo2UretilenYesil);
-      mvTabloyuDoldur('mvTablo3', _mvAyarlar.tablo3UretilenKuru);
-
-      const illerGovde = document.getElementById('mvIllerTablosu');
-      illerGovde.innerHTML = _mvAyarlar.illerYagisKusaklari.map((ilKaydi, i) => `
-        <tr data-index="${i}">
-          <td>${ilKaydi.il}</td>
-          <td>
-            <select class="form-select form-select-sm mv-il-bant">
-              ${MV_YAGIS_BANTLARI.map((b) => `<option value="${b}" ${ilKaydi.bant === b ? 'selected' : ''}>${b}</option>`).join('')}
-            </select>
-          </td>
-        </tr>`).join('');
+      mvTumTablolariYenidenCiz();
     }
 
-    document.getElementById('mvKaydetBtn').addEventListener('click', async () => {
-      const sonucAlan = document.getElementById('mvSonuc');
-      const illerYagisKusaklari = Array.from(document.querySelectorAll('#mvIllerTablosu tr')).map((tr) => ({
-        il: _mvAyarlar.illerYagisKusaklari[Number(tr.dataset.index)].il,
-        bant: tr.querySelector('.mv-il-bant').value,
-      }));
-
+    document.getElementById('mvTuketimKaydetBtn').addEventListener('click', async () => {
+      const sonucAlan = document.getElementById('mvTuketimSonuc');
       const veri = {
         gunlukYesilOtTuketimiKg: Number(document.getElementById('mvGunlukYesil').value),
-        gunlukKuruOtTuketimiKg: Number(document.getElementById('mvGunlukKuru').value),
         donemGunSayisi: Number(document.getElementById('mvDonemGun').value),
-        tablo1YararlanilabilirYesil: mvTablodanOku('mvTablo1'),
-        tablo2UretilenYesil: mvTablodanOku('mvTablo2'),
-        tablo3UretilenKuru: mvTablodanOku('mvTablo3'),
-        illerYagisKusaklari,
+        standartYilGunSayisi: Number(document.getElementById('mvStandartYilGun').value),
       };
-
-      sonucAlan.innerHTML = 'Kaydediliyor...';
+      sonucAlan.textContent = 'Kaydediliyor...';
       const res = await fetch('/api/mera-verim-ayarlari', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri),
       });
       const json = await res.json();
-      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
-      _mvAyarlar = json.data;
-      sonucAlan.innerHTML = '<span class="text-success">Kaydedildi.</span>';
+      sonucAlan.innerHTML = json.success ? '<span class="text-success">Kaydedildi.</span>' : `<span class="text-danger">${json.message}</span>`;
+      if (json.success) _mvAyarlar = json.data;
     });
 
     document.querySelector('[data-bs-target="#mera-verim-tab"]').addEventListener('shown.bs.tab', () => {

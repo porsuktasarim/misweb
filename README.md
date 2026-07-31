@@ -395,13 +395,62 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
-## Mera Verim Ayarları - Ek Düzeltmeler
+## Mera Verim Ayarları - Versiyonlu Veri + Yeniden Tasarlanan Hesaplama
 
-Ayarlar sayfasındaki Mera Verim Ayarları sekmesinde: "Ç.İyi" kısaltması
-"Çok İyi" olarak tam yazıldı (tüm 3 tablonun başlıklarında). Tablo-1,
-Tablo-2, Tablo-3 ve İllerin Yağış Kuşakları artık Bootstrap accordion
-(açılır-kapanır) yapısında - sayfa daha az yer kaplıyor, başlıklar
-TAM metin olarak gösteriliyor (kısaltma yok).
+**BÜYÜK YENİDEN YAPILANDIRMA (kullanıcı geri bildirimiyle).**
+
+**1. VERSİYONLU TABLO VERİSİ:** `MeraVerimAyarlari` modelindeki 4 tablo
+(Tablo-1/2/3, İller) artık DÜZ DİZİ DEĞİL, VERSİYONLU: her biri
+`{aktifIndex, versiyonlar: [{satirlar, yaziTarihi, yaziSayisi,
+yuklemeTarihi, yukleyenKullanici, kaynakTipi}]}`. Yeni veri
+EKLENDİĞİNDE eski veri SİLİNMEZ - yeni bir versiyon olarak eklenir
+ve otomatik AKTİF olur (hesaplamada kullanılan), önceki versiyonlar
+"Versiyon Geçmişi" altında KALICI olarak görüntülenebilir/denetlenebilir,
+istenirse tekrar "Aktif Yap" ile geri dönülebilir. HER versiyon,
+hangi RESMİ YAZIYLA geldiğini gösteren Yazı Tarihi + Yazı Sayısı
+alanlarını ZORUNLU olarak taşır (örnek: "31.07.2025 tarihli
+E-37234586-115.02-20335113 sayılı yazı"). İlk kurulum (sistem
+varsayılanı) da bir versiyon olarak kaydedilir, kaynağı "İlk kurulum
+(kullanıcı tarafından paylaşılan resmi Ek-1/Ek-2 görselleri)" notuyla
+işaretlenir - böylece versiyon geçmişi baştan tutarlı.
+
+**2. VERİ EKLEME İKİ YÖNTEMLİ:** Her tablonun altında "Yeni Veri
+Ekle" bölümü - "Elle Gir" (aktif versiyonun kopyasıyla başlayan,
+satır ekle/sil destekli düzenlenebilir tablo) VEYA "Excel Yükle"
+(şablon indirilebilir - `yeni meraVerimAyarlari.export.js` - .xlsx/
+.xls/.csv yüklenebilir - `yeni meraVerimAyarlari.import.js`, Türkçe
+başlık eşleştirmeli). İkisinde de Yazı Tarihi/Sayısı ZORUNLU,
+boşsa kaydedilemiyor.
+
+**3. HESAPLAMA MANTIĞI TAMAMEN YENİDEN TASARLANDI (5 KUTUCUK, TEK
+KUTU İÇİNDE):** Kullanıcının netleştirmesiyle: VERİM hesabı (kg/da,
+toplam kg) HER TABLO için AYRI AYRI yapılır - 1) Tablo-1
+(Yararlanılabilir Yeşil), 2) Tablo-2 (Üretilen Yeşil), 3) Tablo-3
+(Üretilen Kuru), 4) "Yararlanılabilir Kuru Ot" (KAYNAKTA AYRI TABLO
+OLARAK YOK, HER ZAMAN Tablo-3 × 0,5 olarak TÜRETİLİR) - bu 4 kutunun
+HİÇBİRİNDE kendi BBHB değeri YOK. 5. kutucuk ise TEK, AYRI bir BBHB
+hesabı: Günlük BBHB + Otlatma Kapasitesi (Dönemlik BBHB) - SADECE
+Tablo-1 (Yararlanılabilir Yeşil Ot) ve Günlük Yeşil Ot Tüketimi
+(50 kg) üzerinden. Gerekçe (kullanıcının kendi ifadesi): "aynı
+yerdeki otları aynı miktardaki hayvan kullanabilir, kuru ya da yeşil
+olması tüketimdeki tercih biçimi" - yani kapasite TEKTİR, diğer 4
+kutu sadece VERİM KARŞILAŞTIRMASI amaçlıdır. İstanbul/İyi/50 da
+örneğiyle yeniden test edildi: T1={405 kg/da, 20.250 kg},
+T2={810, 40.500}, T3={202,5, 10.125}, Yararlanılabilir Kuru={101,25,
+5.062,5}, Günlük BBHB=405, Dönemlik=2,25 - hepsi doğru. "Günlük Kuru
+Ot Tüketimi" ayarı KALDIRILDI (artık hiçbir hesaplamada kullanılmıyor).
+
+**4. YENİ AYAR: "Standart Yıl Günü"** (varsayılan 365) - Ayarlar'da
+Günlük Yeşil Ot Tüketimi ve Dönem (gün) ile birlikte gösteriliyor,
+kullanıcının belirttiği üzere ileride "Islah ve Amenajman" modülünde
+kullanılması öngörülüyor (henüz o modül yok, sadece alan hazırlandı).
+
+**5. "Ç.İyi" → "Çok İyi"** tam yazıldı; Tablo-1/2/3 ve İllerin Yağış
+Kuşakları accordion (açılır-kapanır) yapısında.
+
+**6. "Ekran Font Boyutları" → "Websitesi Görünüm Ayarları"** olarak
+yeniden adlandırıldı (Görünüm Ayarları sekmesi içinde, bölge-bazlı
+font sistemi - ayrı bölüm, bkz. yukarıdaki "Görünüm Ayarları" başlığı).
 
 ## Dil Dosyası (`config/lang/tr.js`)
 
