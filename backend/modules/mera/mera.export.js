@@ -52,7 +52,7 @@ async function sablonOlustur() {
 
   const ornekSatir = sheet.addRow({
     il: 'İstanbul', ilce: 'Silivri', koyMahalle: 'Bekirli', adaNo: '123', parselNo: '45',
-    meraAlaniM2: 15000, tapuAlaniM2: 15200, araziNiteligi: 'Mera', araziDurumSinifi: 'Kesinleşmiş',
+    meraAlaniM2: 15000, tapuAlaniM2: 15200, araziNiteligi: 'Mera', araziDurumSinifi: 'İyi',
     araziKaynagi: '5-a', tespitYapildiMi: 'Evet', tespitTarihi: '01.03.2026',
     tahditYapildiMi: 'Hayır', tahditTarihi: '', tahsisYapildiMi: 'Hayır', tahsisTarihi: '',
     islahDurumu: 'Islah çalışması planlanıyor', egimi: '%5', topraksinifi: 'IV. Sınıf', tapuKimlikNo: '1234567890',

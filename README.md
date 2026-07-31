@@ -231,7 +231,9 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   Alanlar: İl/İlçe/Köy-Mahalle (Yerleşim listesinden), Ada No, Parsel
   No, Mera Alanı (m²), Tapu Alanı (m²), Arazi Niteliği (Mera/Yaylak/
   Kışlak/Otlak/Çayır/Eyrek Yeri/Harman Yeri/Panayır Yeri/Sıvat Yeri),
-  Arazi Durum Sınıfı (serbest metin), Arazi Kaynağı (5-a/5-b/5-c/
+  Arazi Durum Sınıfı (Çok İyi/İyi/Orta/Zayıf/Belirlenmemiş - ARTIK
+  ENUM, otlatma kapasitesi hesabında hangi sütunun kullanılacağını
+  belirler; "Belirlenmemiş" varsayılan), Arazi Kaynağı (5-a/5-b/5-c/
   5-d), Tespit/Tahdit/Tahsis (her biri ayrı checkbox+tarih), Islah
   Durumu, Eğimi, Toprak Sınıfı (standart Arazi Kullanım Kabiliyet
   Sınıflandırması: I-VIII Sınıf), Tapu Kimlik No. NOTLAR: bir kez
@@ -260,10 +262,45 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   sanılıp YANLIŞ parse ediliyordu - fark edilip düzeltildi, round-trip
   testle (şablon üret → geri oku) doğrulandı. RAPOR İNDİR: tüm
   kayıtların TÜM alanlarını içeren tek tıkla Excel raporu (aynı sütun
-  şeması, filtre destekli), geri okunup doğrulandı. Sırada (kullanıcı
-  bir sonraki adımda detaylandıracak): parsel detayında sağ tarafta
-  Verim Bilgileri/Otlatma Kapasitesi/Toplam Ot Verimi alanları - HENÜZ
-  EKLENMEDİ, hesaplama mantığı bekleniyor.
+  şeması, filtre destekli), geri okunup doğrulandı.
+
+  **VERİM BİLGİLERİ / OTLATMA KAPASİTESİ (ARTIK EKLENDİ):** Kullanıcının
+  paylaştığı resmi Ek-1 (Yağış Kuşaklarına Göre Yeşil/Kuru Ot Verim
+  Tabloları) ve Ek-2 (İllerin Yıllık Ortalama Yağış Miktarları, 81 il)
+  cetvellerinden gelir. YENİ `MeraVerimAyarlari` (singleton, Ayarlar >
+  "Mera Verim Ayarları" sekmesinden DÜZENLENEBİLİR): 3 tablo (7 yağış
+  kuşağı × Çok İyi/İyi/Orta/Zayıf) + 81 il→yağış kuşağı eşleşmesi +
+  tüketim/dönem ayarları (varsayılan: yeşil 50 kg/gün, kuru 12,5
+  kg/gün, dönem 180 gün). ÖNEMLİ DOĞRULAMA: kaynaktaki tablolar
+  arasında TAM bir ilişki var - Tablo-2 (Üretilen Yeşil) = Tablo-1
+  (Yararlanılabilir Yeşil) × 2; Tablo-3 (Üretilen Kuru) = Tablo-1 ×
+  0,5 - HER hücrede doğrulandı, bu sayede kaynaktaki bir tarama hatası
+  ("2540" gibi) güvenle düzeltildi (seed verisi bu ilişkiyle
+  hesaplanarak üretildi, ama Ayarlar'da HER İKİ tablo da birbirinden
+  BAĞIMSIZ, ayrı ayrı düzenlenebilir). Mera Modülü'nde parsel
+  detayına girildiğinde SAĞ PANELDE otomatik hesaplanıp gösterilir:
+  Tablo-1/2/3'ün HER BİRİ için AYRI AYRI satır - kg/da, toplam kg,
+  günlük tüketebilecek BBHB, ve dönemlik (180 gün) Otlatma Kapasitesi
+  BBHB. Formül: dekar (m²/1000) × kg/da = toplam kg; toplam kg ÷
+  günlük tüketim = günlük BBHB; toplam kg ÷ (günlük tüketim × dönem
+  günü) = dönemlik otlatma kapasitesi (BBHB). Panelde, sürdürülebilir
+  kullanım için genellikle Tablo-1'in (Yararlanılabilir) esas
+  alınması gerektiğine dair bir not var, ama TÜM 3 sonuç birlikte
+  gösterilir (kullanıcı kendi karşılaştırmasını yapabilsin diye - tek
+  bir "nihai" değere indirgenmez). Örnek (İstanbul, İyi, 50 da, elle
+  hesaplanıp KOD İLE BİREBİR doğrulandı): Tablo-1 → 20.250 kg, günlük
+  405 BBHB, dönemlik 2,25 BBHB; Tablo-2 → 40.500 kg, günlük 810 BBHB,
+  dönemlik 4,5 BBHB; Tablo-3 → 10.125 kg, günlük 810 BBHB, dönemlik
+  4,5 BBHB. Arazi Durum Sınıfı "Belirlenmemiş" ise hesaplama
+  yapılamaz, kullanıcıya uyarı gösterilir.
+
+  **ÖNEMLİ DÜZELTME:** Mera Modülü sayfalarında (liste + detay) sol
+  menü/üst çubuk/footer HİÇ GÖRÜNMÜYORDU - kök neden: `misKabuguBaslat()`
+  çağrısı (kabuğu dolduran fonksiyon) her iki sayfaya da EKLENMEMİŞTİ,
+  ayrıca `<footer id="mis-footer">` elementi de HİÇ YOKTU (bu da
+  shell.js'in `mis-footer` elementini bulamayıp hata fırlatmasına yol
+  açabiliyordu). İkisi de eklendi, diğer modül sayfalarıyla (CKS vb.)
+  aynı kabuk yapısına kavuşturuldu.
 
 ## Menü Yapısı
 

@@ -73,6 +73,9 @@
             <li class="nav-item">
               <button class="nav-link" data-bs-toggle="tab" data-bs-target="#belge-ayarlari-tab">Belge Görünüm Ayarları</button>
             </li>
+            <li class="nav-item">
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#mera-verim-tab">Mera Verim Ayarları</button>
+            </li>
           </ul>
 
           <div class="tab-content">
@@ -211,6 +214,58 @@
             </div>
             <button class="btn btn-sm btn-primary" id="baKaydetBtn">Kaydet</button>
             <span id="baSonuc" class="small ms-2"></span>
+          </div>
+
+          <div class="tab-pane fade" id="mera-verim-tab">
+            <p class="text-muted small">
+              4342 sayılı Kanuna tabi alanlarda yararlanılan/üretilen
+              yeşil/kuru ot verim tabloları (Ek-1) ve illerin yıllık
+              ortalama yağış kuşakları (Ek-2) - Mera Modülü'ndeki
+              Otlatma Kapasitesi hesaplamasında BURADAN veri çekilir.
+            </p>
+
+            <h6>Tüketim / Dönem Ayarları</h6>
+            <div class="row g-2 mb-3" style="max-width:600px;">
+              <div class="col-md-4">
+                <label class="form-label small">Günlük Yeşil Ot Tüketimi (kg/BBHB)</label>
+                <input type="number" step="0.1" class="form-control form-control-sm" id="mvGunlukYesil">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small">Günlük Kuru Ot Tüketimi (kg/BBHB)</label>
+                <input type="number" step="0.1" class="form-control form-control-sm" id="mvGunlukKuru">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small">Dönem (gün)</label>
+                <input type="number" class="form-control form-control-sm" id="mvDonemGun">
+              </div>
+            </div>
+
+            <h6>Yağış Kuşağına Göre Verim Tabloları (Kg/da)</h6>
+            <div class="row g-3 mb-3">
+              <div class="col-lg-4">
+                <div class="small fw-semibold mb-1">Tablo-1: Yararlanılabilir Yeşil Ot</div>
+                <table class="table table-sm" id="mvTablo1"><thead><tr><th>Yağış (mm)</th><th>Ç.İyi</th><th>İyi</th><th>Orta</th><th>Zayıf</th></tr></thead><tbody></tbody></table>
+              </div>
+              <div class="col-lg-4">
+                <div class="small fw-semibold mb-1">Tablo-2: Üretilen Yeşil Ot</div>
+                <table class="table table-sm" id="mvTablo2"><thead><tr><th>Yağış (mm)</th><th>Ç.İyi</th><th>İyi</th><th>Orta</th><th>Zayıf</th></tr></thead><tbody></tbody></table>
+              </div>
+              <div class="col-lg-4">
+                <div class="small fw-semibold mb-1">Tablo-3: Üretilen Kuru Ot</div>
+                <table class="table table-sm" id="mvTablo3"><thead><tr><th>Yağış (mm)</th><th>Ç.İyi</th><th>İyi</th><th>Orta</th><th>Zayıf</th></tr></thead><tbody></tbody></table>
+              </div>
+            </div>
+
+            <h6>İllerin Yağış Kuşakları</h6>
+            <div class="table-responsive mb-3" style="max-height:400px; overflow-y:auto;">
+              <table class="table table-sm">
+                <thead><tr><th>İl</th><th>Yağış Kuşağı</th></tr></thead>
+                <tbody id="mvIllerTablosu"></tbody>
+              </table>
+            </div>
+
+            <button class="btn btn-sm btn-primary" id="mvKaydetBtn">Kaydet</button>
+            <span id="mvSonuc" class="small ms-2"></span>
           </div>
         </div>
       </div>
@@ -1203,6 +1258,96 @@
 
     document.querySelector('[data-bs-target="#belge-ayarlari-tab"]').addEventListener('shown.bs.tab', () => {
       belgeAyarlariniYukle();
+    }, { once: true });
+
+    // ================= MERA VERİM AYARLARI =================
+    const MV_YAGIS_BANTLARI = ['200-350', '350-500', '500-650', '650-800', '800-950', '950-1100', '1100-1250'];
+    let _mvAyarlar = null;
+
+    function mvTabloSatiriHtml(bant, satirVerisi) {
+      const s = satirVerisi || {};
+      return `
+        <tr data-bant="${bant}">
+          <td>${bant}</td>
+          <td><input type="number" step="0.1" class="form-control form-control-sm mv-cokIyi" value="${s.cokIyi ?? ''}"></td>
+          <td><input type="number" step="0.1" class="form-control form-control-sm mv-iyi" value="${s.iyi ?? ''}"></td>
+          <td><input type="number" step="0.1" class="form-control form-control-sm mv-orta" value="${s.orta ?? ''}"></td>
+          <td><input type="number" step="0.1" class="form-control form-control-sm mv-zayif" value="${s.zayif ?? ''}"></td>
+        </tr>`;
+    }
+
+    function mvTabloyuDoldur(tabloId, veri) {
+      const tbody = document.querySelector(`#${tabloId} tbody`);
+      tbody.innerHTML = MV_YAGIS_BANTLARI.map((bant) => {
+        const satirVerisi = (veri || []).find((s) => s.bant === bant);
+        return mvTabloSatiriHtml(bant, satirVerisi);
+      }).join('');
+    }
+
+    function mvTablodanOku(tabloId) {
+      return Array.from(document.querySelectorAll(`#${tabloId} tbody tr`)).map((tr) => ({
+        bant: tr.dataset.bant,
+        cokIyi: Number(tr.querySelector('.mv-cokIyi').value) || 0,
+        iyi: Number(tr.querySelector('.mv-iyi').value) || 0,
+        orta: Number(tr.querySelector('.mv-orta').value) || 0,
+        zayif: Number(tr.querySelector('.mv-zayif').value) || 0,
+      }));
+    }
+
+    async function meraVerimAyarlariniYukle() {
+      const json = await fetch('/api/mera-verim-ayarlari').then((r) => r.json());
+      if (!json.success) return;
+      _mvAyarlar = json.data;
+
+      document.getElementById('mvGunlukYesil').value = _mvAyarlar.gunlukYesilOtTuketimiKg;
+      document.getElementById('mvGunlukKuru').value = _mvAyarlar.gunlukKuruOtTuketimiKg;
+      document.getElementById('mvDonemGun').value = _mvAyarlar.donemGunSayisi;
+
+      mvTabloyuDoldur('mvTablo1', _mvAyarlar.tablo1YararlanilabilirYesil);
+      mvTabloyuDoldur('mvTablo2', _mvAyarlar.tablo2UretilenYesil);
+      mvTabloyuDoldur('mvTablo3', _mvAyarlar.tablo3UretilenKuru);
+
+      const illerGovde = document.getElementById('mvIllerTablosu');
+      illerGovde.innerHTML = _mvAyarlar.illerYagisKusaklari.map((ilKaydi, i) => `
+        <tr data-index="${i}">
+          <td>${ilKaydi.il}</td>
+          <td>
+            <select class="form-select form-select-sm mv-il-bant">
+              ${MV_YAGIS_BANTLARI.map((b) => `<option value="${b}" ${ilKaydi.bant === b ? 'selected' : ''}>${b}</option>`).join('')}
+            </select>
+          </td>
+        </tr>`).join('');
+    }
+
+    document.getElementById('mvKaydetBtn').addEventListener('click', async () => {
+      const sonucAlan = document.getElementById('mvSonuc');
+      const illerYagisKusaklari = Array.from(document.querySelectorAll('#mvIllerTablosu tr')).map((tr) => ({
+        il: _mvAyarlar.illerYagisKusaklari[Number(tr.dataset.index)].il,
+        bant: tr.querySelector('.mv-il-bant').value,
+      }));
+
+      const veri = {
+        gunlukYesilOtTuketimiKg: Number(document.getElementById('mvGunlukYesil').value),
+        gunlukKuruOtTuketimiKg: Number(document.getElementById('mvGunlukKuru').value),
+        donemGunSayisi: Number(document.getElementById('mvDonemGun').value),
+        tablo1YararlanilabilirYesil: mvTablodanOku('mvTablo1'),
+        tablo2UretilenYesil: mvTablodanOku('mvTablo2'),
+        tablo3UretilenKuru: mvTablodanOku('mvTablo3'),
+        illerYagisKusaklari,
+      };
+
+      sonucAlan.innerHTML = 'Kaydediliyor...';
+      const res = await fetch('/api/mera-verim-ayarlari', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri),
+      });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
+      _mvAyarlar = json.data;
+      sonucAlan.innerHTML = '<span class="text-success">Kaydedildi.</span>';
+    });
+
+    document.querySelector('[data-bs-target="#mera-verim-tab"]').addEventListener('shown.bs.tab', () => {
+      meraVerimAyarlariniYukle();
     }, { once: true });
   </script>
 </body>

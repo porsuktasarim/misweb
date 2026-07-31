@@ -19,6 +19,11 @@ const mongoose = require('mongoose');
 
 const ARAZI_NITELIKLERI = ['Mera', 'Yaylak', 'Kışlak', 'Otlak', 'Çayır', 'Eyrek Yeri', 'Harman Yeri', 'Panayır Yeri', 'Sıvat Yeri'];
 const ARAZI_KAYNAKLARI = ['5-a', '5-b', '5-c', '5-d'];
+// Ek-1 verim tablolarindaki (kullanicinin resmi kaynagi) 4 durum
+// sinifi + "Belirlenmemis" (henuz degerlendirilmemis parseller icin
+// VARSAYILAN) - bu sinif, verim/otlatma kapasitesi hesabinda hangi
+// SUTUN kullanilacagini BELIRLER.
+const ARAZI_DURUM_SINIFLARI = ['Çok İyi', 'İyi', 'Orta', 'Zayıf', 'Belirlenmemiş'];
 // Standart Arazi Kullanim Kabiliyet Siniflandirmasi (Tarim Arazilerinin
 // Korunmasi mevzuatinda kullanilan I-VIII sinif sistemi).
 const TOPRAK_SINIFLARI = ['I. Sınıf', 'II. Sınıf', 'III. Sınıf', 'IV. Sınıf', 'V. Sınıf', 'VI. Sınıf', 'VII. Sınıf', 'VIII. Sınıf'];
@@ -67,7 +72,7 @@ const meraParseliSchema = new mongoose.Schema(
     meraAlaniM2: { type: Number },
     tapuAlaniM2: { type: Number },
     araziNiteligi: { type: String, enum: ARAZI_NITELIKLERI },
-    araziDurumSinifi: { type: String, default: '' },
+    araziDurumSinifi: { type: String, enum: ARAZI_DURUM_SINIFLARI, default: 'Belirlenmemiş' },
     araziKaynagi: { type: String, enum: ARAZI_KAYNAKLARI },
     tespitYapildiMi: { type: Boolean, default: false },
     tespitTarihi: { type: Date },
@@ -90,4 +95,5 @@ meraParseliSchema.index({ il: 1, ilce: 1, koyMahalle: 1 });
 module.exports = mongoose.model('MeraParseli', meraParseliSchema);
 module.exports.ARAZI_NITELIKLERI = ARAZI_NITELIKLERI;
 module.exports.ARAZI_KAYNAKLARI = ARAZI_KAYNAKLARI;
+module.exports.ARAZI_DURUM_SINIFLARI = ARAZI_DURUM_SINIFLARI;
 module.exports.TOPRAK_SINIFLARI = TOPRAK_SINIFLARI;

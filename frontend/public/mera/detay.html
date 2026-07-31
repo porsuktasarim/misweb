@@ -61,7 +61,10 @@
                   <label class="form-label small fw-semibold">Arazi Niteliği</label>
                   <select class="form-select form-select-sm" id="gAraziNiteligi"><option value="">— Seç —</option></select>
                 </div>
-                <div class="col-md-3"><label class="form-label small fw-semibold">Arazi Durum Sınıfı</label><input class="form-control form-control-sm" id="gAraziDurumSinifi"></div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-semibold">Arazi Durum Sınıfı</label>
+                  <select class="form-select form-select-sm" id="gAraziDurumSinifi"></select>
+                </div>
                 <div class="col-md-3">
                   <label class="form-label small fw-semibold">Arazi Kaynağı</label>
                   <select class="form-select form-select-sm" id="gAraziKaynagi"><option value="">— Seç —</option></select>
@@ -118,7 +121,17 @@
           </div>
         </div>
       </div>
+
+      <div class="mis-icerik-ikincil">
+        <div class="mis-panel">
+          <h5>Verim Bilgileri / Otlatma Kapasitesi</h5>
+          <p class="text-muted small">İlin yağış kuşağı ve Genel Bilgiler'deki Arazi Durum Sınıfı'na göre, Ayarlar'daki Mera Verim Ayarları tablolarından otomatik hesaplanır.</p>
+          <div id="verimBilgisiAlani"><p class="text-muted small">Yükleniyor...</p></div>
+        </div>
+      </div>
     </div>
+
+    <footer class="mis-footer" id="mis-footer"></footer>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -154,6 +167,7 @@
       ekle('gAraziNiteligi', json.data.araziNitelikleri);
       ekle('gAraziKaynagi', json.data.araziKaynaklari);
       ekle('gTopraksinifi', json.data.topraksiniflari);
+      ekle('gAraziDurumSinifi', json.data.araziDurumSiniflari);
     }
 
     async function kaydiYukle() {
@@ -191,6 +205,7 @@
 
       notlariGoster();
       logGoster();
+      verimBilgisiHesapla();
     }
 
     document.getElementById('genelKaydetBtn').addEventListener('click', async () => {
@@ -225,6 +240,7 @@
       kayit = json.data;
       sonucAlan.innerHTML = '<span class="text-success">Kaydedildi.</span>';
       logGoster();
+      verimBilgisiHesapla();
     });
 
     // ---- NOTLAR ----
@@ -316,6 +332,53 @@
         <tr><td>${tarihSaatFormatla(l.tarih)}</td><td>${guvenliMetin(l.islem)}</td><td>${guvenliMetin(l.detay)}</td><td>${guvenliMetin(l.kullaniciAdi || '-')}</td></tr>`).join('');
     }
 
+    // ---- VERİM BİLGİLERİ / OTLATMA KAPASİTESİ ----
+    async function verimBilgisiHesapla() {
+      const alan = document.getElementById('verimBilgisiAlani');
+      if (!kayit.meraAlaniM2) { alan.innerHTML = '<p class="text-muted small">Hesaplama için "Mera Alanı (m²)" girilmelidir.</p>'; return; }
+
+      const params = new URLSearchParams({ il: kayit.il, araziDurumSinifi: kayit.araziDurumSinifi || '', alanM2: kayit.meraAlaniM2 });
+      const json = await fetch(`/api/mera-verim-ayarlari/hesapla?${params}`).then((r) => r.json());
+      if (!json.success) { alan.innerHTML = `<p class="text-danger small">${json.message}</p>`; return; }
+      const v = json.data;
+
+      if (!v.hesaplanabilir) { alan.innerHTML = `<p class="text-warning small">${v.mesaj}</p>`; return; }
+
+      const satir = (baslik, t) => `
+        <tr>
+          <td>${baslik}</td>
+          <td>${t.kgDa.toLocaleString('tr-TR')} kg/da</td>
+          <td>${t.toplamKg.toLocaleString('tr-TR')} kg</td>
+          <td>${t.gunlukBbhb.toFixed(2)}</td>
+          <td>${t.donemlikBbhb.toFixed(2)}</td>
+        </tr>`;
+
+      alan.innerHTML = `
+        <div class="small mb-2">
+          <strong>Yağış Kuşağı:</strong> ${guvenliMetin(v.yagisKusagi)} mm &nbsp;·&nbsp;
+          <strong>Alan:</strong> ${v.dekar} da &nbsp;·&nbsp;
+          <strong>Dönem:</strong> ${v.donemGunSayisi} gün
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>Tablo</th><th>Verim</th><th>Toplam</th><th>Günlük BBHB</th><th>Dönemlik BBHB</th></tr></thead>
+            <tbody>
+              ${satir('Üretilen Yeşil Ot', v.uretilenYesilOt)}
+              ${satir('Yararlanılabilir Yeşil Ot', v.yararlanilabilirYesilOt)}
+              ${satir('Üretilen Kuru Ot', v.uretilenKuruOt)}
+              ${satir('Yararlanılabilir Kuru Ot *', v.yararlanilabilirKuruOt)}
+            </tbody>
+          </table>
+        </div>
+        <p class="text-muted small">* Kaynak cetvelde bu tablo yok - Üretilen Kuru Ot'un yarısı olarak türetilir (Yararlanılabilir Yeşil Ot ile aynı dönemlik BBHB'yi vermesiyle doğrulanmıştır).</p>
+        <div class="alert alert-success py-2">
+          <div class="small text-muted mb-1">Otlatma Kapasitesi (Yararlanılabilir Yeşil Ot esas alınarak)</div>
+          <div><strong>Toplam Kapasite:</strong> ${v.toplamKapasiteBbhb.toFixed(2)} BBHB <span class="text-muted">(tek seferde bu kadar hayvan otu bitirir)</span></div>
+          <div><strong>Dönemlik Otlatma Kapasitesi:</strong> ${v.donemlikOtlatmaKapasitesiBbhb.toFixed(2)} BBHB <span class="text-muted">(${v.donemGunSayisi} günlük dönem boyunca sürdürülebilir hayvan sayısı)</span></div>
+        </div>`;
+    }
+
+    misKabuguBaslat('mera', 'Mera<span class="ayrac">/</span>Parsel Detayı');
     sabitleriDoldur();
     kaydiYukle();
   </script>

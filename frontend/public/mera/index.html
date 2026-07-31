@@ -56,6 +56,8 @@
         </div>
       </div>
     </div>
+
+    <footer class="mis-footer" id="mis-footer"></footer>
   </div>
 
   <!-- Yeni Parsel Modalı -->
@@ -167,6 +169,7 @@
       window.location.href = `/mera/detay.html?id=${json.data._id}`;
     });
 
+    misKabuguBaslat('mera', 'Mera<span class="ayrac">/</span>Modülü');
     parselleriYukle();
   </script>
 </body>

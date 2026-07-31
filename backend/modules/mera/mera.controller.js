@@ -77,7 +77,7 @@ async function notDosyaEkleHandler(req, res) {
 
 async function sabitlerHandler(req, res) {
   try {
-    return basarili(res, { araziNitelikleri: service.ARAZI_NITELIKLERI, araziKaynaklari: service.ARAZI_KAYNAKLARI, topraksiniflari: service.TOPRAK_SINIFLARI });
+    return basarili(res, { araziNitelikleri: service.ARAZI_NITELIKLERI, araziKaynaklari: service.ARAZI_KAYNAKLARI, araziDurumSiniflari: service.ARAZI_DURUM_SINIFLARI, topraksiniflari: service.TOPRAK_SINIFLARI });
   } catch (err) {
     return basarisiz(res, err.message);
   }

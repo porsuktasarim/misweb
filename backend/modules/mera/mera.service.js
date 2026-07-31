@@ -126,5 +126,6 @@ async function raporIndir(filtre) {
 module.exports = {
   listele, getir, olustur, guncelle, sil, notEkle, notDuzenle, notDosyaEkle,
   topluYukle, sablonIndir, raporIndir,
-  ARAZI_NITELIKLERI: MeraParseli.ARAZI_NITELIKLERI, ARAZI_KAYNAKLARI: MeraParseli.ARAZI_KAYNAKLARI, TOPRAK_SINIFLARI: MeraParseli.TOPRAK_SINIFLARI,
+  ARAZI_NITELIKLERI: MeraParseli.ARAZI_NITELIKLERI, ARAZI_KAYNAKLARI: MeraParseli.ARAZI_KAYNAKLARI,
+  ARAZI_DURUM_SINIFLARI: MeraParseli.ARAZI_DURUM_SINIFLARI, TOPRAK_SINIFLARI: MeraParseli.TOPRAK_SINIFLARI,
 };
