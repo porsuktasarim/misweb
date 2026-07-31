@@ -11,6 +11,14 @@
   <link href="https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
   <link href="/assets/css/layout.css?v=12" rel="stylesheet" />
   <style>
+    /* "Görünüm Ayarları"ndan (Ayarlar sekmesi) GELEN, ekrandaki font
+       boyutlarini KONTROL EDEN CSS degiskenleri - JS tarafinda
+       ayarlarSayfasiFontUygula() ile doldurulur, varsayilan degerler
+       burada (henuz yuklenmeden once/API basarisiz olursa). */
+    .mis-icerik-birincil .mis-panel { font-size: var(--gorunum-ayarlar-metin, 13px); }
+    .mis-icerik-birincil .mis-panel h2 { font-size: var(--gorunum-ayarlar-baslik, 22px); }
+    .mis-icerik-birincil .mis-panel h5, .mis-icerik-birincil .mis-panel h6 { font-size: var(--gorunum-ayarlar-baslik, 16px); }
+
     .mis-yerlesim-sutun {
       background: var(--renk-yuzey);
       border: 1px solid var(--renk-kenarlik);
@@ -71,7 +79,7 @@
               <button class="nav-link" data-bs-toggle="tab" data-bs-target="#personel-tab" id="personelTabBtn">Personel Yönetimi</button>
             </li>
             <li class="nav-item">
-              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#belge-ayarlari-tab">Belge Görünüm Ayarları</button>
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#belge-ayarlari-tab">Görünüm Ayarları</button>
             </li>
             <li class="nav-item">
               <button class="nav-link" data-bs-toggle="tab" data-bs-target="#mera-verim-tab" id="txtMeraVerimSekmeBaslik">Mera Verim Ayarları</button>
@@ -212,6 +220,21 @@
               </select>
               <div class="form-text small">PDF çıktısı Türkçe karakter desteği için sabit bir gömülü font (DejaVu Serif) kullanır, bu ayar sadece Word çıktısını etkiler.</div>
             </div>
+
+            <hr>
+            <h6>Ekran Font Boyutları</h6>
+            <p class="text-muted small">
+              Bu, Word/PDF çıktılarından AYRIDIR - sadece EKRANDA
+              görünen yazı boyutlarını kontrol eder. Her bölüm için
+              Başlık ve Metin boyutu ayrı ayrı ayarlanabilir (piksel).
+            </p>
+            <div class="table-responsive mb-3" style="max-width:640px;">
+              <table class="table table-sm align-middle">
+                <thead><tr><th>Bölüm</th><th style="width:140px;">Başlık Boyutu (px)</th><th style="width:140px;">Metin Boyutu (px)</th></tr></thead>
+                <tbody id="baTemaBolumleriTablosu"></tbody>
+              </table>
+            </div>
+
             <button class="btn btn-sm btn-primary" id="baKaydetBtn">Kaydet</button>
             <span id="baSonuc" class="small ms-2"></span>
           </div>
@@ -1230,6 +1253,24 @@
       document.getElementById('baImzaRengi').value = json.data.imzaRengi;
       document.getElementById('baImzaRengiHex').value = json.data.imzaRengi;
       document.getElementById('baYaziTipi').value = json.data.wordYaziTipi;
+
+      const govde = document.getElementById('baTemaBolumleriTablosu');
+      govde.innerHTML = (json.data.temaBolumleri || []).map((b, i) => `
+        <tr data-anahtar="${b.anahtar}" data-ad="${b.ad}">
+          <td>${b.ad}</td>
+          <td><input type="number" class="form-control form-control-sm ba-baslik-boyutu" value="${b.baslikBoyutuPx}"></td>
+          <td><input type="number" class="form-control form-control-sm ba-metin-boyutu" value="${b.metinBoyutuPx}"></td>
+        </tr>`).join('');
+    }
+
+    /** "Ayarlar Sayfası" tema parcasinin boyutlarini SAYFA ACILIR ACILMAZ (sekmeye tiklanmadan) CSS degiskenlerine uygular. */
+    async function ayarlarSayfasiFontUygula() {
+      const json = await apiGet('/api/belge-ayarlari');
+      if (!json.success) return;
+      const bolum = (json.data.temaBolumleri || []).find((b) => b.anahtar === 'ayarlarSayfasi');
+      if (!bolum) return;
+      document.documentElement.style.setProperty('--gorunum-ayarlar-baslik', `${bolum.baslikBoyutuPx}px`);
+      document.documentElement.style.setProperty('--gorunum-ayarlar-metin', `${bolum.metinBoyutuPx}px`);
     }
 
     document.getElementById('baImzaRengi').addEventListener('input', (e) => {
@@ -1243,18 +1284,27 @@
       const sonucAlan = document.getElementById('baSonuc');
       const imzaRengi = document.getElementById('baImzaRengiHex').value;
       const wordYaziTipi = document.getElementById('baYaziTipi').value;
+      const temaBolumleri = Array.from(document.querySelectorAll('#baTemaBolumleriTablosu tr')).map((tr) => ({
+        anahtar: tr.dataset.anahtar,
+        ad: tr.dataset.ad,
+        baslikBoyutuPx: Number(tr.querySelector('.ba-baslik-boyutu').value) || 13,
+        metinBoyutuPx: Number(tr.querySelector('.ba-metin-boyutu').value) || 12,
+      }));
       sonucAlan.textContent = 'Kaydediliyor...';
       const res = await fetch('/api/belge-ayarlari', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imzaRengi, wordYaziTipi }),
+        body: JSON.stringify({ imzaRengi, wordYaziTipi, temaBolumleri }),
       });
       const json = await res.json();
       sonucAlan.innerHTML = json.success ? '<span class="text-success">Kaydedildi.</span>' : `<span class="text-danger">${json.message}</span>`;
+      if (json.success) ayarlarSayfasiFontUygula();
     });
 
     document.querySelector('[data-bs-target="#belge-ayarlari-tab"]').addEventListener('shown.bs.tab', () => {
       belgeAyarlariniYukle();
     }, { once: true });
+
+    ayarlarSayfasiFontUygula();
 
     // ================= MERA VERİM AYARLARI =================
     const MV_YAGIS_BANTLARI = ['200-350', '350-500', '500-650', '650-800', '800-950', '950-1100', '1100-1250'];

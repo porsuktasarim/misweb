@@ -116,11 +116,12 @@ kullanılabilir, hesaplama mantığı HTTP/controller katmanından ayrıdır.
   EKLENEBİLİYOR (PDF, opsiyonel) - dosya adı elle girilebilir (evrak
   no), VARSAYILAN olarak "3T_{İlçe}_{KöyMahalle}_ek-X" deseni önerilir
   (test edildi), eklenen dosya indirmeden açılır-kapanır görüntülenir.
-  YENİ "Belge Görünüm Ayarları" (Ayarlar sayfasında): İMZA rengi
-  (renk seçici + hex) ve Word yazı tipi (Times New Roman vb.) BURADAN
-  yönetilir, TÜM 3T çıktılarında (ekranda VE Word/PDF'te) tutarlı
-  kullanılır - PDF Türkçe karakter desteği için sabit gömülü font
-  (DejaVu Serif) kullanır, yazı tipi ayarı sadece Word'ü etkiler.
+  "Belge Görünüm Ayarları" → "**Görünüm Ayarları**" OLARAK YENİDEN
+  ADLANDIRILDI (kapsam genişledi): İMZA rengi (renk seçici + hex) ve
+  Word yazı tipi (Times New Roman vb.) HÂLÂ BURADAN yönetilir, TÜM 3T
+  çıktılarında (ekranda VE Word/PDF'te) tutarlı kullanılır - PDF
+  Türkçe karakter desteği için sabit gömülü font (DejaVu Serif)
+  kullanır, yazı tipi ayarı sadece Word'ü etkiler.
   EK-3/A (Bilgi Cetveli) — KULLANICININ PAYLAŞTIĞI GERÇEK ORİJİNAL
   GÖRSELE GÖRE TAM UYUMLU HALE GETİRİLDİ: başlık "(Ek-3/a)" + iki
   satırlı "Mera Kanunu'nun 8 inci Maddesi Gereği" / "MERA, YAYLAK,
@@ -340,6 +341,27 @@ güncelleme uyarıları.
 `Dockerfile` + `docker-compose.yml`, Coolify üzerinde. Port: 4342.
 `node-cron` ile haftalık mevzuat kontrolü uygulama içinde zamanlanır
 (ayrı bir worker/cron servisi gerekmez).
+
+## Görünüm Ayarları / Ekran Font Boyutları
+
+"Belge Görünüm Ayarları" → "Görünüm Ayarları" olarak yeniden
+adlandırıldı ve genişletildi: artık sadece Word/PDF çıktılarının
+(İMZA rengi/yazı tipi) DEĞİL, EKRANDAKİ farklı "tema parçalarının"
+font boyutlarını da yönetiyor. `BelgeAyarlari` modeline `temaBolumleri`
+adında GENİŞLETİLEBİLİR bir dizi eklendi - her eleman `{anahtar, ad,
+baslikBoyutuPx, metinBoyutuPx}` şeklinde: yeni bir "tema parçası"
+gerektiğinde SADECE varsayılan veriye (`VARSAYILAN_TEMA_BOLUMLERI`)
+yeni bir satır eklenir, kod değişmez. Şu an 2 parça var (ikisi de
+küçültülmüş varsayılan boyutlarla): "Ayarlar Sayfası" (başlık 15px/
+metin 12px) ve "Verim Bilgileri / Otlatma Kapasitesi Tablosu"
+(başlık 13px/metin 11px). Ayarlar sayfasının kendisi VE Mera parsel
+detay sayfasındaki Verim Bilgileri paneli, sayfa AÇILIR AÇILMAZ
+(sekmeye tıklanmadan) `/api/belge-ayarlari`'ı çekip CSS custom
+property'lerine (`--gorunum-ayarlar-baslik/metin`,
+`--verim-tablosu-baslik/metin`) yazıyor - ilgili CSS seçicileri bu
+değişkenleri kullanıyor. Ayarlar sekmesindeki tablo üzerinden HER
+parça için başlık/metin boyutu AYRI AYRI px cinsinden düzenlenip
+kaydedilebiliyor.
 
 ## Dil Dosyası (`config/lang/tr.js`)
 

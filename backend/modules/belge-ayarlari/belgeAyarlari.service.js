@@ -11,11 +11,12 @@ async function ayarlariGetir() {
   return kayit;
 }
 
-async function ayarlariGuncelle({ imzaRengi, wordYaziTipi }) {
+async function ayarlariGuncelle({ imzaRengi, wordYaziTipi, temaBolumleri }) {
   let kayit = await BelgeAyarlari.findOne();
   if (!kayit) kayit = new BelgeAyarlari({});
   if (imzaRengi) kayit.imzaRengi = imzaRengi;
   if (wordYaziTipi) kayit.wordYaziTipi = wordYaziTipi;
+  if (temaBolumleri) kayit.temaBolumleri = temaBolumleri;
   await kayit.save();
   return kayit;
 }
