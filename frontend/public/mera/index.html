@@ -25,16 +25,16 @@
     <div class="mis-icerik">
       <div class="mis-icerik-birincil">
         <div class="mis-panel">
-          <h2>Mera Modülü - Parsel Kayıtları</h2>
-          <p class="text-muted small">Her kayıt bir Ada/Parsel'e karşılık gelir. 3T sürecindeki Ek-3/a (Arazinin Cinsi/Miktarı) ve Ek-4/c-h aşamalarının veri kaynağı buradan beslenecektir.</p>
+          <h2 id="txtBaslikListe"></h2>
+          <p class="text-muted small" id="txtAciklamaListe"></p>
 
           <div class="d-flex gap-2 mb-3 flex-wrap">
-            <a class="btn btn-outline-secondary btn-sm" href="/api/mera/sablon-indir"><i class="bi bi-download me-1"></i>Toplu Yükleme Şablonu</a>
+            <a class="btn btn-outline-secondary btn-sm" href="/api/mera/sablon-indir"><i class="bi bi-download me-1"></i><span id="txtSablonIndirBtn"></span></a>
             <label class="btn btn-outline-secondary btn-sm mb-0">
-              <i class="bi bi-upload me-1"></i>Toplu Yükle (Excel/CSV)
+              <i class="bi bi-upload me-1"></i><span id="txtTopluYukleBtn"></span>
               <input type="file" class="d-none" id="topluYukleInput" accept=".xlsx,.xls,.csv">
             </label>
-            <a class="btn btn-outline-secondary btn-sm" href="/api/mera/rapor-indir"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Rapor İndir (Tüm Veriler)</a>
+            <a class="btn btn-outline-secondary btn-sm" href="/api/mera/rapor-indir"><i class="bi bi-file-earmark-spreadsheet me-1"></i><span id="txtRaporIndirBtn"></span></a>
             <span id="topluYukleSonuc" class="small align-self-center"></span>
           </div>
 
@@ -42,15 +42,15 @@
             <div class="col-md-3"><select id="filtreIl" class="form-select form-select-sm"></select></div>
             <div class="col-md-3"><select id="filtreIlce" class="form-select form-select-sm"></select></div>
             <div class="col-md-3"><select id="filtreMahalle" class="form-select form-select-sm"></select></div>
-            <div class="col-md-3"><button class="btn btn-primary btn-sm w-100" id="yeniParselBtn">+ Yeni Parsel</button></div>
+            <div class="col-md-3"><button class="btn btn-primary btn-sm w-100" id="yeniParselBtn"></button></div>
           </div>
 
           <div class="table-responsive">
             <table class="table table-sm table-hover align-middle">
               <thead>
-                <tr><th>İl</th><th>İlçe</th><th>Köy/Mahalle</th><th>Ada</th><th>Parsel</th><th>Arazi Niteliği</th><th>Tespit</th><th>Tahdit</th><th>Tahsis</th><th></th></tr>
+                <tr id="theadSatiri"></tr>
               </thead>
-              <tbody id="parselTablosu"><tr><td colspan="10" class="text-muted small">Yükleniyor...</td></tr></tbody>
+              <tbody id="parselTablosu"></tbody>
             </table>
           </div>
         </div>
@@ -64,7 +64,7 @@
   <div class="modal fade" id="yeniParselModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title">Yeni Parsel</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-header"><h5 class="modal-title" id="txtYeniParselBaslik"></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
           <div class="row g-2 mb-2">
             <div class="col-md-4"><select id="ypIl" class="form-select form-select-sm"></select></div>
@@ -72,14 +72,14 @@
             <div class="col-md-4"><select id="ypMahalle" class="form-select form-select-sm"></select></div>
           </div>
           <div class="row g-2">
-            <div class="col-md-6"><input class="form-control form-control-sm" id="ypAdaNo" placeholder="Ada No"></div>
-            <div class="col-md-6"><input class="form-control form-control-sm" id="ypParselNo" placeholder="Parsel No"></div>
+            <div class="col-md-6"><input class="form-control form-control-sm" id="ypAdaNo"></div>
+            <div class="col-md-6"><input class="form-control form-control-sm" id="ypParselNo"></div>
           </div>
           <div id="ypSonuc" class="small mt-2"></div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Vazgeç</button>
-          <button type="button" class="btn btn-primary btn-sm" id="ypKaydetBtn">Oluştur ve Devam Et</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" id="txtVazgecBtn"></button>
+          <button type="button" class="btn btn-primary btn-sm" id="ypKaydetBtn"></button>
         </div>
       </div>
     </div>
@@ -90,21 +90,18 @@
   <script src="/assets/js/mis-menu.js?v=13"></script>
   <script src="/assets/js/shell.js?v=13"></script>
   <script src="/assets/js/mis-yer-secici.js?v=13"></script>
+  <script src="/assets/js/mis-lang.js?v=1"></script>
   <script>
     function guvenliMetin(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
-    function durumRozeti(yapildiMi) {
-      return yapildiMi
-        ? '<span class="badge bg-success-subtle text-success-emphasis mera-durum-rozet">Yapıldı</span>'
-        : '<span class="badge bg-secondary-subtle text-secondary-emphasis mera-durum-rozet">-</span>';
-    }
 
+    let LANG = null;
     let _filtreIl = '', _filtreIlce = '', _filtreMahalle = '';
 
-    misYerSeciciKur({
-      ilSelectId: 'filtreIl', ilceSelectId: 'filtreIlce', mahalleSelectId: 'filtreMahalle',
-      ilceOpsiyonel: true, mahalleOpsiyonel: true,
-      onDegisti: ({ il, ilce, mahalle }) => { _filtreIl = il || ''; _filtreIlce = ilce || ''; _filtreMahalle = mahalle || ''; parselleriYukle(); },
-    });
+    function durumRozeti(yapildiMi) {
+      return yapildiMi
+        ? `<span class="badge bg-success-subtle text-success-emphasis mera-durum-rozet">${LANG.mera.yapildi}</span>`
+        : '<span class="badge bg-secondary-subtle text-secondary-emphasis mera-durum-rozet">-</span>';
+    }
 
     async function parselleriYukle() {
       const params = new URLSearchParams();
@@ -113,7 +110,7 @@
       if (_filtreMahalle) params.set('koyMahalle', _filtreMahalle);
       const json = await fetch(`/api/mera?${params}`).then((r) => r.json());
       const govde = document.getElementById('parselTablosu');
-      if (!json.success || !json.data.length) { govde.innerHTML = '<tr><td colspan="10" class="text-muted small">Kayıt bulunamadı.</td></tr>'; return; }
+      if (!json.success || !json.data.length) { govde.innerHTML = `<tr><td colspan="10" class="text-muted small">${LANG.ortak.kayitBulunamadi}</td></tr>`; return; }
       govde.innerHTML = json.data.map((p) => `
         <tr>
           <td>${guvenliMetin(p.il)}</td>
@@ -125,52 +122,81 @@
           <td>${durumRozeti(p.tespitYapildiMi)}</td>
           <td>${durumRozeti(p.tahditYapildiMi)}</td>
           <td>${durumRozeti(p.tahsisYapildiMi)}</td>
-          <td><a class="btn btn-sm btn-outline-primary" href="/mera/detay.html?id=${p._id}">Detay</a></td>
+          <td><a class="btn btn-sm btn-outline-primary" href="/mera/detay.html?id=${p._id}">${LANG.ortak.detay}</a></td>
         </tr>`).join('');
     }
 
-    document.getElementById('yeniParselBtn').addEventListener('click', () => {
-      new bootstrap.Modal(document.getElementById('yeniParselModal')).show();
-    });
+    async function baslat() {
+      LANG = await misLangYukle();
 
-    document.getElementById('topluYukleInput').addEventListener('change', async (e) => {
-      const dosya = e.target.files[0];
-      if (!dosya) return;
-      const sonucAlan = document.getElementById('topluYukleSonuc');
-      const formData = new FormData();
-      formData.append('dosya', dosya);
-      formData.append('kullaniciAdi', localStorage.getItem('meraKullaniciAdi') || '');
+      document.getElementById('txtBaslikListe').textContent = LANG.mera.baslikListe;
+      document.getElementById('txtAciklamaListe').textContent = LANG.mera.aciklamaListe;
+      document.getElementById('txtSablonIndirBtn').textContent = LANG.mera.sablonIndirBtn;
+      document.getElementById('txtTopluYukleBtn').textContent = LANG.mera.topluYukleBtn;
+      document.getElementById('txtRaporIndirBtn').textContent = LANG.mera.raporIndirBtn;
+      document.getElementById('yeniParselBtn').textContent = LANG.mera.yeniParselBtn;
+      document.getElementById('txtYeniParselBaslik').textContent = LANG.mera.yeniParselBaslik;
+      document.getElementById('ypAdaNo').placeholder = LANG.mera.adaNo;
+      document.getElementById('ypParselNo').placeholder = LANG.mera.parselNo;
+      document.getElementById('txtVazgecBtn').textContent = LANG.ortak.vazgec;
+      document.getElementById('ypKaydetBtn').textContent = LANG.mera.olusturVeDevamEt;
+      document.getElementById('theadSatiri').innerHTML = `
+        <th>${LANG.ortak.il}</th><th>${LANG.ortak.ilce}</th><th>${LANG.ortak.mahalle}</th>
+        <th>${LANG.mera.adaNo}</th><th>${LANG.mera.parselNo}</th><th>${LANG.mera.araziNiteligi}</th>
+        <th>${LANG.mera.tespit}</th><th>${LANG.mera.tahdit}</th><th>${LANG.mera.tahsis}</th><th></th>`;
+      document.getElementById('parselTablosu').innerHTML = `<tr><td colspan="10" class="text-muted small">${LANG.ortak.yukleniyor}</td></tr>`;
 
-      sonucAlan.innerHTML = 'Yükleniyor...';
-      const res = await fetch('/api/mera/toplu-yukle', { method: 'POST', body: formData });
-      const json = await res.json();
-      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
-      sonucAlan.innerHTML = `<span class="text-success">${json.data.eklenen} eklendi, ${json.data.guncellenen} güncellendi (toplam ${json.data.toplam}).</span>`;
-      parselleriYukle();
-      e.target.value = '';
-    });
-
-    misYerSeciciKur({ ilSelectId: 'ypIl', ilceSelectId: 'ypIlce', mahalleSelectId: 'ypMahalle' });
-
-    document.getElementById('ypKaydetBtn').addEventListener('click', async () => {
-      const sonucAlan = document.getElementById('ypSonuc');
-      const il = document.getElementById('ypIl').value;
-      const ilce = document.getElementById('ypIlce').value;
-      const koyMahalle = document.getElementById('ypMahalle').value;
-      if (!il || !ilce || !koyMahalle) { sonucAlan.innerHTML = '<span class="text-danger">İl/İlçe/Köy-Mahalle seçilmelidir.</span>'; return; }
-
-      sonucAlan.innerHTML = 'Kaydediliyor...';
-      const res = await fetch('/api/mera', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ il, ilce, koyMahalle, adaNo: document.getElementById('ypAdaNo').value.trim(), parselNo: document.getElementById('ypParselNo').value.trim() }),
+      misYerSeciciKur({
+        ilSelectId: 'filtreIl', ilceSelectId: 'filtreIlce', mahalleSelectId: 'filtreMahalle',
+        ilceOpsiyonel: true, mahalleOpsiyonel: true,
+        onDegisti: ({ il, ilce, mahalle }) => { _filtreIl = il || ''; _filtreIlce = ilce || ''; _filtreMahalle = mahalle || ''; parselleriYukle(); },
       });
-      const json = await res.json();
-      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
-      window.location.href = `/mera/detay.html?id=${json.data._id}`;
-    });
 
-    misKabuguBaslat('mera', 'Mera<span class="ayrac">/</span>Modülü');
-    parselleriYukle();
+      document.getElementById('yeniParselBtn').addEventListener('click', () => {
+        new bootstrap.Modal(document.getElementById('yeniParselModal')).show();
+      });
+
+      document.getElementById('topluYukleInput').addEventListener('change', async (e) => {
+        const dosya = e.target.files[0];
+        if (!dosya) return;
+        const sonucAlan = document.getElementById('topluYukleSonuc');
+        const formData = new FormData();
+        formData.append('dosya', dosya);
+        formData.append('kullaniciAdi', localStorage.getItem('meraKullaniciAdi') || '');
+
+        sonucAlan.innerHTML = LANG.ortak.yukleniyor;
+        const res = await fetch('/api/mera/toplu-yukle', { method: 'POST', body: formData });
+        const json = await res.json();
+        if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
+        sonucAlan.innerHTML = `<span class="text-success">${json.data.eklenen} eklendi, ${json.data.guncellenen} güncellendi (toplam ${json.data.toplam}).</span>`;
+        parselleriYukle();
+        e.target.value = '';
+      });
+
+      misYerSeciciKur({ ilSelectId: 'ypIl', ilceSelectId: 'ypIlce', mahalleSelectId: 'ypMahalle' });
+
+      document.getElementById('ypKaydetBtn').addEventListener('click', async () => {
+        const sonucAlan = document.getElementById('ypSonuc');
+        const il = document.getElementById('ypIl').value;
+        const ilce = document.getElementById('ypIlce').value;
+        const koyMahalle = document.getElementById('ypMahalle').value;
+        if (!il || !ilce || !koyMahalle) { sonucAlan.innerHTML = `<span class="text-danger">${LANG.mera.ilIlceMahalleSeciminZorunlu}</span>`; return; }
+
+        sonucAlan.innerHTML = LANG.ortak.kaydediliyor;
+        const res = await fetch('/api/mera', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ il, ilce, koyMahalle, adaNo: document.getElementById('ypAdaNo').value.trim(), parselNo: document.getElementById('ypParselNo').value.trim() }),
+        });
+        const json = await res.json();
+        if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
+        window.location.href = `/mera/detay.html?id=${json.data._id}`;
+      });
+
+      misKabuguBaslat('mera', `${LANG.mera.kisaAd}<span class="ayrac">/</span>${LANG.mera.modulAdi.replace('Mera ', '')}`);
+      parselleriYukle();
+    }
+
+    baslat();
   </script>
 </body>
 </html>

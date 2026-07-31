@@ -28,82 +28,82 @@
         <div class="mis-panel">
           <div class="d-flex justify-content-between align-items-start mb-2">
             <div>
-              <h2 id="baslikAlani">Parsel Detayı</h2>
-              <a href="/mera/" class="small">← Listeye dön</a>
+              <h2 id="baslikAlani"></h2>
+              <a href="/mera/" class="small" id="txtListeyeDon"></a>
             </div>
             <div style="max-width:220px;">
-              <label class="form-label small fw-semibold mb-1">Kullanıcı Adınız</label>
-              <input type="text" class="form-control form-control-sm" id="kullaniciAdiInput" placeholder="Adınız (log kaydı için)">
+              <label class="form-label small fw-semibold mb-1" id="txtKullaniciAdiniz"></label>
+              <input type="text" class="form-control form-control-sm" id="kullaniciAdiInput">
             </div>
           </div>
 
           <ul class="nav nav-tabs mb-3">
-            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#genel-tab">Genel Bilgiler</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#notlar-tab">Notlar</button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#log-tab">Log Kaydı</button></li>
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#genel-tab" id="txtSekmeGenel"></button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#notlar-tab" id="txtSekmeNotlar"></button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#log-tab" id="txtSekmeLog"></button></li>
           </ul>
 
           <div class="tab-content">
             <div class="tab-pane fade show active" id="genel-tab">
               <div class="row g-2 mb-2">
-                <div class="col-md-4"><label class="form-label small fw-semibold">İl</label><select id="gIl" class="form-select form-select-sm"></select></div>
-                <div class="col-md-4"><label class="form-label small fw-semibold">İlçe</label><select id="gIlce" class="form-select form-select-sm"></select></div>
-                <div class="col-md-4"><label class="form-label small fw-semibold">Köy/Mahalle</label><select id="gMahalle" class="form-select form-select-sm"></select></div>
+                <div class="col-md-4"><label class="form-label small fw-semibold" id="lblIl"></label><select id="gIl" class="form-select form-select-sm"></select></div>
+                <div class="col-md-4"><label class="form-label small fw-semibold" id="lblIlce"></label><select id="gIlce" class="form-select form-select-sm"></select></div>
+                <div class="col-md-4"><label class="form-label small fw-semibold" id="lblMahalle"></label><select id="gMahalle" class="form-select form-select-sm"></select></div>
               </div>
               <div class="row g-2 mb-2">
-                <div class="col-md-3"><label class="form-label small fw-semibold">Ada No</label><input class="form-control form-control-sm" id="gAdaNo"></div>
-                <div class="col-md-3"><label class="form-label small fw-semibold">Parsel No</label><input class="form-control form-control-sm" id="gParselNo"></div>
-                <div class="col-md-3"><label class="form-label small fw-semibold">Mera Alanı (m²)</label><input type="number" class="form-control form-control-sm" id="gMeraAlani"></div>
-                <div class="col-md-3"><label class="form-label small fw-semibold">Tapu Alanı (m²)</label><input type="number" class="form-control form-control-sm" id="gTapuAlani"></div>
+                <div class="col-md-3"><label class="form-label small fw-semibold" id="lblAdaNo"></label><input class="form-control form-control-sm" id="gAdaNo"></div>
+                <div class="col-md-3"><label class="form-label small fw-semibold" id="lblParselNo"></label><input class="form-control form-control-sm" id="gParselNo"></div>
+                <div class="col-md-3"><label class="form-label small fw-semibold" id="lblMeraAlani"></label><input type="number" class="form-control form-control-sm" id="gMeraAlani"></div>
+                <div class="col-md-3"><label class="form-label small fw-semibold" id="lblTapuAlani"></label><input type="number" class="form-control form-control-sm" id="gTapuAlani"></div>
               </div>
               <div class="row g-2 mb-2">
                 <div class="col-md-3">
-                  <label class="form-label small fw-semibold">Arazi Niteliği</label>
-                  <select class="form-select form-select-sm" id="gAraziNiteligi"><option value="">— Seç —</option></select>
+                  <label class="form-label small fw-semibold" id="lblAraziNiteligi"></label>
+                  <select class="form-select form-select-sm" id="gAraziNiteligi"></select>
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label small fw-semibold">Arazi Durum Sınıfı</label>
+                  <label class="form-label small fw-semibold" id="lblAraziDurumSinifi"></label>
                   <select class="form-select form-select-sm" id="gAraziDurumSinifi"></select>
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label small fw-semibold">Arazi Kaynağı</label>
-                  <select class="form-select form-select-sm" id="gAraziKaynagi"><option value="">— Seç —</option></select>
+                  <label class="form-label small fw-semibold" id="lblAraziKaynagi"></label>
+                  <select class="form-select form-select-sm" id="gAraziKaynagi"></select>
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label small fw-semibold">Toprak Sınıfı</label>
-                  <select class="form-select form-select-sm" id="gTopraksinifi"><option value="">— Seç —</option></select>
+                  <label class="form-label small fw-semibold" id="lblTopraksinifi"></label>
+                  <select class="form-select form-select-sm" id="gTopraksinifi"></select>
                 </div>
               </div>
               <div class="row g-2 mb-2">
-                <div class="col-md-3"><label class="form-label small fw-semibold">Islah Durumu</label><input class="form-control form-control-sm" id="gIslahDurumu"></div>
-                <div class="col-md-3"><label class="form-label small fw-semibold">Eğimi</label><input class="form-control form-control-sm" id="gEgimi" placeholder="Örn. %5, Düz, Dik"></div>
-                <div class="col-md-6"><label class="form-label small fw-semibold">Tapu Kimlik No</label><input class="form-control form-control-sm" id="gTapuKimlikNo"></div>
+                <div class="col-md-3"><label class="form-label small fw-semibold" id="lblIslahDurumu"></label><input class="form-control form-control-sm" id="gIslahDurumu"></div>
+                <div class="col-md-3"><label class="form-label small fw-semibold" id="lblEgimi"></label><input class="form-control form-control-sm" id="gEgimi"></div>
+                <div class="col-md-6"><label class="form-label small fw-semibold" id="lblTapuKimlikNo"></label><input class="form-control form-control-sm" id="gTapuKimlikNo"></div>
               </div>
 
               <div class="row g-2 mb-3">
                 <div class="col-md-4 p-2 border rounded me-2">
-                  <div class="form-check"><input type="checkbox" class="form-check-input" id="gTespitYapildi"><label class="form-check-label small fw-semibold" for="gTespitYapildi">Tespit Yapıldı</label></div>
+                  <div class="form-check"><input type="checkbox" class="form-check-input" id="gTespitYapildi"><label class="form-check-label small fw-semibold" for="gTespitYapildi" id="lblTespitYapildi"></label></div>
                   <input type="date" class="form-control form-control-sm mt-1" id="gTespitTarihi">
                 </div>
                 <div class="col-md-4 p-2 border rounded me-2">
-                  <div class="form-check"><input type="checkbox" class="form-check-input" id="gTahditYapildi"><label class="form-check-label small fw-semibold" for="gTahditYapildi">Tahdit Yapıldı</label></div>
+                  <div class="form-check"><input type="checkbox" class="form-check-input" id="gTahditYapildi"><label class="form-check-label small fw-semibold" for="gTahditYapildi" id="lblTahditYapildi"></label></div>
                   <input type="date" class="form-control form-control-sm mt-1" id="gTahditTarihi">
                 </div>
                 <div class="col-md-3 p-2 border rounded">
-                  <div class="form-check"><input type="checkbox" class="form-check-input" id="gTahsisYapildi"><label class="form-check-label small fw-semibold" for="gTahsisYapildi">Tahsis Yapıldı</label></div>
+                  <div class="form-check"><input type="checkbox" class="form-check-input" id="gTahsisYapildi"><label class="form-check-label small fw-semibold" for="gTahsisYapildi" id="lblTahsisYapildi"></label></div>
                   <input type="date" class="form-control form-control-sm mt-1" id="gTahsisTarihi">
                 </div>
               </div>
 
-              <button class="btn btn-primary btn-sm" id="genelKaydetBtn">Kaydet</button>
+              <button class="btn btn-primary btn-sm" id="genelKaydetBtn"></button>
               <span id="genelSonuc" class="small ms-2"></span>
             </div>
 
             <div class="tab-pane fade" id="notlar-tab">
               <div class="mb-3">
-                <label class="form-label small fw-semibold">Yeni Not</label>
+                <label class="form-label small fw-semibold" id="lblYeniNot"></label>
                 <textarea class="form-control form-control-sm" id="yeniNotMetni" rows="2"></textarea>
-                <button class="btn btn-primary btn-sm mt-2" id="notEkleBtn">Not Ekle</button>
+                <button class="btn btn-primary btn-sm mt-2" id="notEkleBtn"></button>
                 <span id="notEkleSonuc" class="small ms-2"></span>
               </div>
               <hr>
@@ -113,7 +113,7 @@
             <div class="tab-pane fade" id="log-tab">
               <div class="table-responsive">
                 <table class="table table-sm">
-                  <thead><tr><th>Tarih</th><th>İşlem</th><th>Detay</th><th>Kullanıcı</th></tr></thead>
+                  <thead><tr id="logTheadSatiri"></tr></thead>
                   <tbody id="logTablosu"></tbody>
                 </table>
               </div>
@@ -124,9 +124,9 @@
 
       <div class="mis-icerik-ikincil">
         <div class="mis-panel">
-          <h5>Verim Bilgileri / Otlatma Kapasitesi</h5>
-          <p class="text-muted small">İlin yağış kuşağı ve Genel Bilgiler'deki Arazi Durum Sınıfı'na göre, Ayarlar'daki Mera Verim Ayarları tablolarından otomatik hesaplanır.</p>
-          <div id="verimBilgisiAlani"><p class="text-muted small">Yükleniyor...</p></div>
+          <h5 id="txtVerimPanelBaslik"></h5>
+          <p class="text-muted small" id="txtVerimPanelAciklama"></p>
+          <div id="verimBilgisiAlani"></div>
         </div>
       </div>
     </div>
@@ -139,46 +139,41 @@
   <script src="/assets/js/mis-menu.js?v=13"></script>
   <script src="/assets/js/shell.js?v=13"></script>
   <script src="/assets/js/mis-yer-secici.js?v=13"></script>
+  <script src="/assets/js/mis-lang.js?v=1"></script>
   <script>
     function guvenliMetin(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
     function tarihSaatFormatla(t) { return t ? new Date(t).toLocaleString('tr-TR') : '-'; }
-    function tarihFormatla(t) { return t ? new Date(t).toLocaleDateString('tr-TR') : ''; }
 
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     const API = '/api/mera';
     let kayit = null;
+    let LANG = null;
 
-    // Kullanici adi - GERCEK bir auth sistemi olmadigi icin (Personel
-    // Yonetimi'nde Kullanicilar bolumu hala iskelet) TARAYICIDA
-    // HATIRLANIR (localStorage) - her seferinde yeniden yazmaya gerek
-    // kalmaz, ama istenirse degistirilebilir.
     const kullaniciInput = document.getElementById('kullaniciAdiInput');
-    kullaniciInput.value = localStorage.getItem('meraKullaniciAdi') || '';
-    kullaniciInput.addEventListener('change', () => localStorage.setItem('meraKullaniciAdi', kullaniciInput.value.trim()));
 
     async function sabitleriDoldur() {
       const json = await fetch(`${API}/sabitler`).then((r) => r.json());
       if (!json.success) return;
-      const ekle = (selectId, degerler) => {
+      const ekle = (selectId, degerler, ilkSecenekEkle) => {
         const sel = document.getElementById(selectId);
+        if (ilkSecenekEkle) { const bos = document.createElement('option'); bos.value = ''; bos.textContent = '— Seç —'; sel.appendChild(bos); }
         degerler.forEach((d) => { const o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o); });
       };
-      ekle('gAraziNiteligi', json.data.araziNitelikleri);
-      ekle('gAraziKaynagi', json.data.araziKaynaklari);
-      ekle('gTopraksinifi', json.data.topraksiniflari);
-      ekle('gAraziDurumSinifi', json.data.araziDurumSiniflari);
+      ekle('gAraziNiteligi', json.data.araziNitelikleri, true);
+      ekle('gAraziKaynagi', json.data.araziKaynaklari, true);
+      ekle('gTopraksinifi', json.data.topraksiniflari, true);
+      ekle('gAraziDurumSinifi', json.data.araziDurumSiniflari, false);
     }
 
     async function kaydiYukle() {
-      if (!id) { document.getElementById('baslikAlani').textContent = 'Geçersiz parsel.'; return; }
+      if (!id) { document.getElementById('baslikAlani').textContent = LANG.mera.gecersizParsel; return; }
       const json = await fetch(`${API}/${id}`).then((r) => r.json());
       if (!json.success) { document.getElementById('baslikAlani').textContent = json.message; return; }
       kayit = json.data;
-      document.getElementById('baslikAlani').textContent = `${kayit.il} / ${kayit.ilce} / ${kayit.koyMahalle} - Ada:${kayit.adaNo || '-'} Parsel:${kayit.parselNo || '-'}`;
+      document.getElementById('baslikAlani').textContent = `${kayit.il} / ${kayit.ilce} / ${kayit.koyMahalle} - ${LANG.mera.adaNo}:${kayit.adaNo || '-'} ${LANG.mera.parselNo}:${kayit.parselNo || '-'}`;
 
       const yerTs = await misYerSeciciKur({ ilSelectId: 'gIl', ilceSelectId: 'gIlce', mahalleSelectId: 'gMahalle' });
-      // Kayitli il/ilce/mahalle'yi ADIM ADIM sec (kademeli yukleme icin change tetiklenir).
       yerTs.ilTs.setValue(kayit.il);
       await new Promise((r) => setTimeout(r, 300));
       yerTs.ilceTs.setValue(kayit.ilce);
@@ -190,7 +185,7 @@
       document.getElementById('gMeraAlani').value = kayit.meraAlaniM2 ?? '';
       document.getElementById('gTapuAlani').value = kayit.tapuAlaniM2 ?? '';
       document.getElementById('gAraziNiteligi').value = kayit.araziNiteligi || '';
-      document.getElementById('gAraziDurumSinifi').value = kayit.araziDurumSinifi || '';
+      document.getElementById('gAraziDurumSinifi').value = kayit.araziDurumSinifi || 'Belirlenmemiş';
       document.getElementById('gAraziKaynagi').value = kayit.araziKaynagi || '';
       document.getElementById('gTopraksinifi').value = kayit.topraksinifi || '';
       document.getElementById('gIslahDurumu').value = kayit.islahDurumu || '';
@@ -208,64 +203,29 @@
       verimBilgisiHesapla();
     }
 
-    document.getElementById('genelKaydetBtn').addEventListener('click', async () => {
-      const sonucAlan = document.getElementById('genelSonuc');
-      const veri = {
-        il: document.getElementById('gIl').value,
-        ilce: document.getElementById('gIlce').value,
-        koyMahalle: document.getElementById('gMahalle').value,
-        adaNo: document.getElementById('gAdaNo').value.trim(),
-        parselNo: document.getElementById('gParselNo').value.trim(),
-        meraAlaniM2: document.getElementById('gMeraAlani').value ? Number(document.getElementById('gMeraAlani').value) : null,
-        tapuAlaniM2: document.getElementById('gTapuAlani').value ? Number(document.getElementById('gTapuAlani').value) : null,
-        araziNiteligi: document.getElementById('gAraziNiteligi').value || null,
-        araziDurumSinifi: document.getElementById('gAraziDurumSinifi').value.trim(),
-        araziKaynagi: document.getElementById('gAraziKaynagi').value || null,
-        topraksinifi: document.getElementById('gTopraksinifi').value || null,
-        islahDurumu: document.getElementById('gIslahDurumu').value.trim(),
-        egimi: document.getElementById('gEgimi').value.trim(),
-        tapuKimlikNo: document.getElementById('gTapuKimlikNo').value.trim(),
-        tespitYapildiMi: document.getElementById('gTespitYapildi').checked,
-        tespitTarihi: document.getElementById('gTespitTarihi').value || null,
-        tahditYapildiMi: document.getElementById('gTahditYapildi').checked,
-        tahditTarihi: document.getElementById('gTahditTarihi').value || null,
-        tahsisYapildiMi: document.getElementById('gTahsisYapildi').checked,
-        tahsisTarihi: document.getElementById('gTahsisTarihi').value || null,
-        kullaniciAdi: kullaniciInput.value.trim(),
-      };
-      sonucAlan.innerHTML = 'Kaydediliyor...';
-      const res = await fetch(`${API}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) });
-      const json = await res.json();
-      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
-      kayit = json.data;
-      sonucAlan.innerHTML = '<span class="text-success">Kaydedildi.</span>';
-      logGoster();
-      verimBilgisiHesapla();
-    });
-
     // ---- NOTLAR ----
     function notlariGoster() {
       const alan = document.getElementById('notlarListesi');
-      if (!kayit.notlar.length) { alan.innerHTML = '<p class="text-muted small">Henüz not eklenmemiş.</p>'; return; }
+      if (!kayit.notlar.length) { alan.innerHTML = `<p class="text-muted small">${LANG.mera.henuzNotYok}</p>`; return; }
       alan.innerHTML = kayit.notlar.map((not_, i) => `
         <div class="not-karti">
           <div class="small text-muted">${tarihSaatFormatla(not_.olusturmaTarihi)}${not_.olusturanKullanici ? ' · ' + guvenliMetin(not_.olusturanKullanici) : ''}</div>
           <div id="notMetin-${i}">${guvenliMetin(not_.metin)}</div>
           <div id="notDuzenleAlani-${i}" class="mt-2" style="display:none;">
             <textarea class="form-control form-control-sm" id="notDuzenleTextarea-${i}" rows="2">${guvenliMetin(not_.metin)}</textarea>
-            <button class="btn btn-sm btn-primary mt-1" onclick="notKaydet(${i})">Kaydet</button>
-            <button class="btn btn-sm btn-link mt-1" onclick="notDuzenleGizle(${i})">Vazgeç</button>
+            <button class="btn btn-sm btn-primary mt-1" onclick="notKaydet(${i})">${LANG.ortak.kaydet}</button>
+            <button class="btn btn-sm btn-link mt-1" onclick="notDuzenleGizle(${i})">${LANG.ortak.vazgec}</button>
           </div>
           <div class="mt-1">
-            <button class="btn btn-sm btn-outline-secondary" onclick="notDuzenleGoster(${i})">Düzenle</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="notDuzenleGoster(${i})">${LANG.ortak.duzenle}</button>
             <label class="btn btn-sm btn-outline-secondary mb-0">
-              Belge Ekle <input type="file" class="d-none" onchange="notDosyaYukle(${i}, this.files[0])">
+              ${LANG.mera.belgeEkleBtn} <input type="file" class="d-none" onchange="notDosyaYukle(${i}, this.files[0])">
             </label>
           </div>
-          ${not_.dosyaEkleri.length ? `<div class="mt-2 small">Ekli belgeler: ${not_.dosyaEkleri.map((d) => `<a href="/${d.dosyaYolu}" target="_blank">${guvenliMetin(d.orijinalAd)}</a>`).join(', ')}</div>` : ''}
+          ${not_.dosyaEkleri.length ? `<div class="mt-2 small">${LANG.mera.ekliBelgeler}: ${not_.dosyaEkleri.map((d) => `<a href="/${d.dosyaYolu}" target="_blank">${guvenliMetin(d.orijinalAd)}</a>`).join(', ')}</div>` : ''}
           ${not_.versiyonlar.length ? `
             <details class="mt-2">
-              <summary class="small text-muted" style="cursor:pointer;">Önceki hâller (${not_.versiyonlar.length})</summary>
+              <summary class="small text-muted" style="cursor:pointer;">${LANG.mera.oncekiHaller} (${not_.versiyonlar.length})</summary>
               ${not_.versiyonlar.map((v) => `<div class="not-versiyon">${tarihSaatFormatla(v.degistirmeTarihi)}${v.degistirenKullanici ? ' · ' + guvenliMetin(v.degistirenKullanici) : ''}<br>${guvenliMetin(v.metin)}</div>`).join('')}
             </details>` : ''}
         </div>`).join('');
@@ -306,36 +266,24 @@
       logGoster();
     };
 
-    document.getElementById('notEkleBtn').addEventListener('click', async () => {
-      const sonucAlan = document.getElementById('notEkleSonuc');
-      const metin = document.getElementById('yeniNotMetni').value;
-      if (!metin.trim()) { sonucAlan.innerHTML = '<span class="text-danger">Not metni boş olamaz.</span>'; return; }
-      sonucAlan.innerHTML = 'Ekleniyor...';
-      const res = await fetch(`${API}/${id}/notlar`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ metin, kullaniciAdi: kullaniciInput.value.trim() }),
-      });
-      const json = await res.json();
-      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
-      kayit = json.data;
-      document.getElementById('yeniNotMetni').value = '';
-      sonucAlan.innerHTML = '<span class="text-success">Eklendi.</span>';
-      notlariGoster();
-      logGoster();
-    });
-
     // ---- LOG KAYDI ----
     function logGoster() {
       const govde = document.getElementById('logTablosu');
-      if (!kayit.loglar.length) { govde.innerHTML = '<tr><td colspan="4" class="text-muted small">Henüz log kaydı yok.</td></tr>'; return; }
+      if (!kayit.loglar.length) { govde.innerHTML = `<tr><td colspan="4" class="text-muted small">${LANG.mera.henuzLogYok}</td></tr>`; return; }
       govde.innerHTML = [...kayit.loglar].reverse().map((l) => `
         <tr><td>${tarihSaatFormatla(l.tarih)}</td><td>${guvenliMetin(l.islem)}</td><td>${guvenliMetin(l.detay)}</td><td>${guvenliMetin(l.kullaniciAdi || '-')}</td></tr>`).join('');
     }
 
     // ---- VERİM BİLGİLERİ / OTLATMA KAPASİTESİ ----
+    // ONEMLI: backend (meraVerimAyarlari.service.js) GERCEKTE su
+    // sekli donduruyor: { hesaplanabilir, yagisKusagi, dekar,
+    // donemGunSayisi, tablo1YararlanilabilirYesil, tablo2UretilenYesil,
+    // tablo3UretilenKuru } - HER biri {kgDa, toplamKg, gunlukBbhb,
+    // donemlikBbhb}. ASAGIDAKI KOD BU GERCEK SEKILLE eslesir (eski bir
+    // taslak surumde farkli alan adlari kullanilmisti, DUZELTILDI).
     async function verimBilgisiHesapla() {
       const alan = document.getElementById('verimBilgisiAlani');
-      if (!kayit.meraAlaniM2) { alan.innerHTML = '<p class="text-muted small">Hesaplama için "Mera Alanı (m²)" girilmelidir.</p>'; return; }
+      if (!kayit.meraAlaniM2) { alan.innerHTML = `<p class="text-muted small">${LANG.mera.verimAlanGerekli}</p>`; return; }
 
       const params = new URLSearchParams({ il: kayit.il, araziDurumSinifi: kayit.araziDurumSinifi || '', alanM2: kayit.meraAlaniM2 });
       const json = await fetch(`/api/mera-verim-ayarlari/hesapla?${params}`).then((r) => r.json());
@@ -355,32 +303,124 @@
 
       alan.innerHTML = `
         <div class="small mb-2">
-          <strong>Yağış Kuşağı:</strong> ${guvenliMetin(v.yagisKusagi)} mm &nbsp;·&nbsp;
-          <strong>Alan:</strong> ${v.dekar} da &nbsp;·&nbsp;
-          <strong>Dönem:</strong> ${v.donemGunSayisi} gün
+          <strong>${LANG.mera.yagisKusagi}:</strong> ${guvenliMetin(v.yagisKusagi)} mm &nbsp;·&nbsp;
+          <strong>${LANG.mera.alan}:</strong> ${v.dekar} da &nbsp;·&nbsp;
+          <strong>${LANG.mera.donem}:</strong> ${v.donemGunSayisi} gün
         </div>
         <div class="table-responsive">
           <table class="table table-sm">
-            <thead><tr><th>Tablo</th><th>Verim</th><th>Toplam</th><th>Günlük BBHB</th><th>Dönemlik BBHB</th></tr></thead>
+            <thead><tr><th>${LANG.mera.tabloBaslik || 'Tablo'}</th><th>${LANG.mera.verim}</th><th>${LANG.ortak.toplam}</th><th>${LANG.mera.gunlukBbhb}</th><th>${LANG.mera.otlatmaKapasitesiDonemlik}</th></tr></thead>
             <tbody>
-              ${satir('Üretilen Yeşil Ot', v.uretilenYesilOt)}
-              ${satir('Yararlanılabilir Yeşil Ot', v.yararlanilabilirYesilOt)}
-              ${satir('Üretilen Kuru Ot', v.uretilenKuruOt)}
-              ${satir('Yararlanılabilir Kuru Ot *', v.yararlanilabilirKuruOt)}
+              ${satir(LANG.mera.tablo1Ad, v.tablo1YararlanilabilirYesil)}
+              ${satir(LANG.mera.tablo2Ad, v.tablo2UretilenYesil)}
+              ${satir(LANG.mera.tablo3Ad, v.tablo3UretilenKuru)}
             </tbody>
           </table>
         </div>
-        <p class="text-muted small">* Kaynak cetvelde bu tablo yok - Üretilen Kuru Ot'un yarısı olarak türetilir (Yararlanılabilir Yeşil Ot ile aynı dönemlik BBHB'yi vermesiyle doğrulanmıştır).</p>
-        <div class="alert alert-success py-2">
-          <div class="small text-muted mb-1">Otlatma Kapasitesi (Yararlanılabilir Yeşil Ot esas alınarak)</div>
-          <div><strong>Toplam Kapasite:</strong> ${v.toplamKapasiteBbhb.toFixed(2)} BBHB <span class="text-muted">(tek seferde bu kadar hayvan otu bitirir)</span></div>
-          <div><strong>Dönemlik Otlatma Kapasitesi:</strong> ${v.donemlikOtlatmaKapasitesiBbhb.toFixed(2)} BBHB <span class="text-muted">(${v.donemGunSayisi} günlük dönem boyunca sürdürülebilir hayvan sayısı)</span></div>
-        </div>`;
+        <p class="text-muted small mb-0">${LANG.mera.otlatmaKapasitesiNotu}</p>`;
     }
 
-    misKabuguBaslat('mera', 'Mera<span class="ayrac">/</span>Parsel Detayı');
-    sabitleriDoldur();
-    kaydiYukle();
+    async function baslat() {
+      LANG = await misLangYukle();
+
+      document.getElementById('txtListeyeDon').textContent = LANG.mera.listeyeDon;
+      document.getElementById('txtKullaniciAdiniz').textContent = LANG.mera.kullaniciAdiniz;
+      kullaniciInput.placeholder = LANG.mera.kullaniciAdiPlaceholder;
+      kullaniciInput.value = localStorage.getItem('meraKullaniciAdi') || '';
+      kullaniciInput.addEventListener('change', () => localStorage.setItem('meraKullaniciAdi', kullaniciInput.value.trim()));
+
+      document.getElementById('txtSekmeGenel').textContent = LANG.mera.sekmeGenel;
+      document.getElementById('txtSekmeNotlar').textContent = LANG.mera.sekmeNotlar;
+      document.getElementById('txtSekmeLog').textContent = LANG.mera.sekmeLog;
+
+      document.getElementById('lblIl').textContent = LANG.ortak.il;
+      document.getElementById('lblIlce').textContent = LANG.ortak.ilce;
+      document.getElementById('lblMahalle').textContent = LANG.ortak.mahalle;
+      document.getElementById('lblAdaNo').textContent = LANG.mera.adaNo;
+      document.getElementById('lblParselNo').textContent = LANG.mera.parselNo;
+      document.getElementById('lblMeraAlani').textContent = LANG.mera.meraAlani;
+      document.getElementById('lblTapuAlani').textContent = LANG.mera.tapuAlani;
+      document.getElementById('lblAraziNiteligi').textContent = LANG.mera.araziNiteligi;
+      document.getElementById('lblAraziDurumSinifi').textContent = LANG.mera.araziDurumSinifi;
+      document.getElementById('lblAraziKaynagi').textContent = LANG.mera.araziKaynagi;
+      document.getElementById('lblTopraksinifi').textContent = LANG.mera.topraksinifi;
+      document.getElementById('lblIslahDurumu').textContent = LANG.mera.islahDurumu;
+      document.getElementById('lblEgimi').textContent = LANG.mera.egimi;
+      document.getElementById('gEgimi').placeholder = LANG.mera.egimiPlaceholder;
+      document.getElementById('lblTapuKimlikNo').textContent = LANG.mera.tapuKimlikNo;
+      document.getElementById('lblTespitYapildi').textContent = LANG.mera.tespitYapildi;
+      document.getElementById('lblTahditYapildi').textContent = LANG.mera.tahditYapildi;
+      document.getElementById('lblTahsisYapildi').textContent = LANG.mera.tahsisYapildi;
+      document.getElementById('genelKaydetBtn').textContent = LANG.ortak.kaydet;
+
+      document.getElementById('lblYeniNot').textContent = LANG.mera.yeniNot;
+      document.getElementById('notEkleBtn').textContent = LANG.mera.notEkleBtn;
+
+      document.getElementById('logTheadSatiri').innerHTML = `<th>${LANG.ortak.tarih}</th><th>${LANG.ortak.islem}</th><th>${LANG.ortak.detay ? 'Detay' : ''}</th><th>${LANG.ortak.kullanici}</th>`;
+
+      document.getElementById('txtVerimPanelBaslik').textContent = LANG.mera.verimPanelBaslik;
+      document.getElementById('txtVerimPanelAciklama').textContent = LANG.mera.verimPanelAciklama;
+      document.getElementById('verimBilgisiAlani').innerHTML = `<p class="text-muted small">${LANG.ortak.yukleniyor}</p>`;
+
+      document.getElementById('genelKaydetBtn').addEventListener('click', async () => {
+        const sonucAlan = document.getElementById('genelSonuc');
+        const veri = {
+          il: document.getElementById('gIl').value,
+          ilce: document.getElementById('gIlce').value,
+          koyMahalle: document.getElementById('gMahalle').value,
+          adaNo: document.getElementById('gAdaNo').value.trim(),
+          parselNo: document.getElementById('gParselNo').value.trim(),
+          meraAlaniM2: document.getElementById('gMeraAlani').value ? Number(document.getElementById('gMeraAlani').value) : null,
+          tapuAlaniM2: document.getElementById('gTapuAlani').value ? Number(document.getElementById('gTapuAlani').value) : null,
+          araziNiteligi: document.getElementById('gAraziNiteligi').value || null,
+          araziDurumSinifi: document.getElementById('gAraziDurumSinifi').value,
+          araziKaynagi: document.getElementById('gAraziKaynagi').value || null,
+          topraksinifi: document.getElementById('gTopraksinifi').value || null,
+          islahDurumu: document.getElementById('gIslahDurumu').value.trim(),
+          egimi: document.getElementById('gEgimi').value.trim(),
+          tapuKimlikNo: document.getElementById('gTapuKimlikNo').value.trim(),
+          tespitYapildiMi: document.getElementById('gTespitYapildi').checked,
+          tespitTarihi: document.getElementById('gTespitTarihi').value || null,
+          tahditYapildiMi: document.getElementById('gTahditYapildi').checked,
+          tahditTarihi: document.getElementById('gTahditTarihi').value || null,
+          tahsisYapildiMi: document.getElementById('gTahsisYapildi').checked,
+          tahsisTarihi: document.getElementById('gTahsisTarihi').value || null,
+          kullaniciAdi: kullaniciInput.value.trim(),
+        };
+        sonucAlan.innerHTML = LANG.ortak.kaydediliyor;
+        const res = await fetch(`${API}/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) });
+        const json = await res.json();
+        if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
+        kayit = json.data;
+        sonucAlan.innerHTML = `<span class="text-success">${LANG.ortak.kaydedildi}</span>`;
+        logGoster();
+        verimBilgisiHesapla();
+      });
+
+      document.getElementById('notEkleBtn').addEventListener('click', async () => {
+        const sonucAlan = document.getElementById('notEkleSonuc');
+        const metin = document.getElementById('yeniNotMetni').value;
+        if (!metin.trim()) { sonucAlan.innerHTML = `<span class="text-danger">${LANG.mera.notMetniBosOlamaz}</span>`; return; }
+        sonucAlan.innerHTML = LANG.ortak.kaydediliyor;
+        const res = await fetch(`${API}/${id}/notlar`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ metin, kullaniciAdi: kullaniciInput.value.trim() }),
+        });
+        const json = await res.json();
+        if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
+        kayit = json.data;
+        document.getElementById('yeniNotMetni').value = '';
+        sonucAlan.innerHTML = `<span class="text-success">${LANG.ortak.eklendi}</span>`;
+        notlariGoster();
+        logGoster();
+      });
+
+      misKabuguBaslat('mera', `${LANG.mera.kisaAd}<span class="ayrac">/</span>${LANG.mera.parselDetayi}`);
+      await sabitleriDoldur();
+      await kaydiYukle();
+    }
+
+    baslat();
   </script>
 </body>
 </html>

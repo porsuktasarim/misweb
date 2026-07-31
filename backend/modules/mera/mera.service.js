@@ -3,6 +3,7 @@
  */
 
 const MeraParseli = require('./mera.model');
+const lang = require('../../../config/lang/tr');
 const meraImport = require('./mera.import');
 const meraExport = require('./mera.export');
 
@@ -20,7 +21,7 @@ async function listele({ il, ilce, koyMahalle } = {}) {
 
 async function getir(id) {
   const kayit = await MeraParseli.findById(id);
-  if (!kayit) throw new Error(`Mera parseli bulunamadı: ${id}`);
+  if (!kayit) throw new Error(`${lang.mera.parselBulunamadi}: ${id}`);
   return kayit;
 }
 
@@ -47,14 +48,14 @@ async function guncelle(id, veri, kullaniciAdi) {
 
 async function sil(id) {
   const kayit = await MeraParseli.findByIdAndDelete(id);
-  if (!kayit) throw new Error(`Mera parseli bulunamadı: ${id}`);
+  if (!kayit) throw new Error(`${lang.mera.parselBulunamadi}: ${id}`);
   return kayit;
 }
 
 /** Not EKLER - notlar ASLA SILINEMEZ, sadece notDuzenle ile GUNCELLENEBILIR (versiyon gecmisiyle). */
 async function notEkle(id, metin, kullaniciAdi) {
   const kayit = await getir(id);
-  if (!metin || !metin.trim()) throw new Error('Not metni boş olamaz.');
+  if (!metin || !metin.trim()) throw new Error(lang.mera.notMetniBosOlamaz);
   kayit.notlar.push({ metin: metin.trim(), olusturanKullanici: kullaniciAdi || '', olusturmaTarihi: new Date() });
   logEkle(kayit, 'notEklendi', metin.trim().slice(0, 80), kullaniciAdi);
   await kayit.save();
@@ -65,8 +66,8 @@ async function notEkle(id, metin, kullaniciAdi) {
 async function notDuzenle(id, notIndex, yeniMetin, kullaniciAdi) {
   const kayit = await getir(id);
   const not_ = kayit.notlar[notIndex];
-  if (!not_) throw new Error('Not bulunamadı.');
-  if (!yeniMetin || !yeniMetin.trim()) throw new Error('Not metni boş olamaz.');
+  if (!not_) throw new Error(lang.mera.notBulunamadi);
+  if (!yeniMetin || !yeniMetin.trim()) throw new Error(lang.mera.notMetniBosOlamaz);
   not_.versiyonlar.push({ metin: not_.metin, degistirmeTarihi: new Date(), degistirenKullanici: kullaniciAdi || '' });
   not_.metin = yeniMetin.trim();
   logEkle(kayit, 'notDuzenlendi', `Not #${notIndex + 1} düzenlendi`, kullaniciAdi);
@@ -78,8 +79,8 @@ async function notDuzenle(id, notIndex, yeniMetin, kullaniciAdi) {
 async function notDosyaEkle(id, notIndex, dosya, kullaniciAdi) {
   const kayit = await getir(id);
   const not_ = kayit.notlar[notIndex];
-  if (!not_) throw new Error('Not bulunamadı.');
-  if (!dosya) throw new Error('Dosya seçilmedi.');
+  if (!not_) throw new Error(lang.mera.notBulunamadi);
+  if (!dosya) throw new Error(lang.mera.dosyaSecilmedi);
   not_.dosyaEkleri.push({ dosyaYolu: dosya.path, orijinalAd: dosya.originalname, yuklemeTarihi: new Date() });
   logEkle(kayit, 'dosyaEklendi', `Not #${notIndex + 1} - ${dosya.originalname}`, kullaniciAdi);
   await kayit.save();

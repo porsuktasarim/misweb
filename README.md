@@ -341,6 +341,42 @@ güncelleme uyarıları.
 `node-cron` ile haftalık mevzuat kontrolü uygulama içinde zamanlanır
 (ayrı bir worker/cron servisi gerekmez).
 
+## Dil Dosyası (`config/lang/tr.js`)
+
+Kuralın hatırlatılması üzerine düzeltildi: sistemin BAŞTAN BERİ var
+olan kuralı ("Sistemdeki TÜM görünür metinler buradan okunur, kod
+içinde literal Türkçe string yazılmaz") gerçekte SADECE KISMEN
+uygulanıyordu - backend'de 5 modül (BBHB/ÇKS/Ek4ab/EKGB/reporting)
+sadece hata mesajı fallback'i için kullanıyordu, FRONTEND'İN HİÇBİR
+YERİNDE (Yerleşim listesi dahil) lang HİÇ KULLANILMIYORDU - `lang.
+yerlesim` bölümü tamamen atıl duruyordu. Mera Modülü bu kuralı GERÇEK
+ANLAMDA UYGULAYAN İLK MODÜL: `lang.ortak`'a GENEL eylem/arayüz
+terimleri eklendi (duzenle/sil/ekle/vazgec/detay/kayitYok/seciniz/
+yukleniyor/kaydediliyor/kaydedildi vb.) - "İl" gibi ortak terimler
+TEK KAYIT olarak kalır, hiçbir modül tekrar tanımlamaz (kullanıcının
+açık kuralı - ama tam cümle içindeki kelimeler, örn. "Bu ilde başka
+mera yok" gibi, atomize EDİLMEZ). YENİ `lang.mera` ve `lang.
+meraVerimAyarlari` bölümleri eklendi (60+ anahtar). YENİ `frontend/
+public/assets/js/mis-lang.js`: `/api/sistem/dil`'i çekip önbelleğe
+alan `misLangYukle()` - bu, frontend'in bu deseni GERÇEKTEN kullanan
+İLK örneği. `mera/index.html` ve `mera/detay.html` BAŞTAN yazıldı:
+sayfa artık `async function baslat() { const LANG = await
+misLangYukle(); ...tüm metinler LANG'den... }` şeklinde çalışıyor.
+Ayarlar sayfasının SADECE Mera Verim Ayarları sekmesi bu deseni
+kullanır (sayfanın geri kalanı - BBHB/Personel/Mevzuat vb. - HENÜZ
+taşınmadı, kapsam dışı bırakıldı). Backend'de `mera.service.js`'in
+tekrarlanan hata mesajları da (`Not bulunamadı.`, `Not metni boş
+olamaz.` gibi) artık `lang.mera.xxx`'ten okunuyor.
+
+**ÖNEMLİ HATA DÜZELTMESİ (bu geçiş sırasında bulundu):**
+`mera/detay.html`'deki `verimBilgisiHesapla()` fonksiyonu, ÖNCEKİ bir
+taslak sürümden kalma YANLIŞ alan adları (`v.uretilenYesilOt`,
+`v.toplamKapasiteBbhb` vb.) kullanıyordu - bunlar backend'in (`mera
+VerimAyarlari.service.js`) GERÇEKTEN döndürdüğü alan adlarıyla
+(`tablo1YararlanilabilirYesil`, `tablo2UretilenYesil`,
+`tablo3UretilenKuru`) HİÇ EŞLEŞMİYORDU. Sayfa açılır açılmaz JS
+hatası verecekti - fark edilip düzeltildi.
+
 ## Stack
 
 Node.js 20, Express.js, Mongoose 8, MongoDB 7, Bootstrap 5, Vanilla JS,
@@ -349,6 +385,11 @@ pdf-parse, diff (jsdiff, CDN), Docker/Coolify.
 
 ## Bilinen Sınırlamalar
 
+- `config/lang/tr.js` geçişi SADECE Mera Modülü'nde tamamlandı - BBHB
+  frontend'i, ÇKS, EKGB, 3T, Mevzuat, Personel, İl Mera Komisyonu
+  sayfaları ve Ayarlar'ın diğer sekmeleri HÂLÂ literal Türkçe string
+  kullanıyor (bu, bu turun kapsamı dışında bırakıldı - istenirse
+  ayrı bir aşamada aynı desenle taşınabilir).
 - Mevzuat.gov.tr'den içerik çekme (`mevzuat.gov-cek.js`), geliştirme
   ortamının ağ erişimi kısıtlı olduğu için sadece taklit edilmiş
   (mock) isteklerle test edildi - canlı ortamda ilk kullanımda

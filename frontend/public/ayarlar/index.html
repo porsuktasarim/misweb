@@ -74,7 +74,7 @@
               <button class="nav-link" data-bs-toggle="tab" data-bs-target="#belge-ayarlari-tab">Belge Görünüm Ayarları</button>
             </li>
             <li class="nav-item">
-              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#mera-verim-tab">Mera Verim Ayarları</button>
+              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#mera-verim-tab" id="txtMeraVerimSekmeBaslik">Mera Verim Ayarları</button>
             </li>
           </ul>
 
@@ -217,54 +217,49 @@
           </div>
 
           <div class="tab-pane fade" id="mera-verim-tab">
-            <p class="text-muted small">
-              4342 sayılı Kanuna tabi alanlarda yararlanılan/üretilen
-              yeşil/kuru ot verim tabloları (Ek-1) ve illerin yıllık
-              ortalama yağış kuşakları (Ek-2) - Mera Modülü'ndeki
-              Otlatma Kapasitesi hesaplamasında BURADAN veri çekilir.
-            </p>
+            <p class="text-muted small" id="mvAciklama"></p>
 
-            <h6>Tüketim / Dönem Ayarları</h6>
+            <h6 id="mvTuketimBaslik"></h6>
             <div class="row g-2 mb-3" style="max-width:600px;">
               <div class="col-md-4">
-                <label class="form-label small">Günlük Yeşil Ot Tüketimi (kg/BBHB)</label>
+                <label class="form-label small" id="mvLblGunlukYesil"></label>
                 <input type="number" step="0.1" class="form-control form-control-sm" id="mvGunlukYesil">
               </div>
               <div class="col-md-4">
-                <label class="form-label small">Günlük Kuru Ot Tüketimi (kg/BBHB)</label>
+                <label class="form-label small" id="mvLblGunlukKuru"></label>
                 <input type="number" step="0.1" class="form-control form-control-sm" id="mvGunlukKuru">
               </div>
               <div class="col-md-4">
-                <label class="form-label small">Dönem (gün)</label>
+                <label class="form-label small" id="mvLblDonemGun"></label>
                 <input type="number" class="form-control form-control-sm" id="mvDonemGun">
               </div>
             </div>
 
-            <h6>Yağış Kuşağına Göre Verim Tabloları (Kg/da)</h6>
+            <h6 id="mvTabloBaslik"></h6>
             <div class="row g-3 mb-3">
               <div class="col-lg-4">
-                <div class="small fw-semibold mb-1">Tablo-1: Yararlanılabilir Yeşil Ot</div>
-                <table class="table table-sm" id="mvTablo1"><thead><tr><th>Yağış (mm)</th><th>Ç.İyi</th><th>İyi</th><th>Orta</th><th>Zayıf</th></tr></thead><tbody></tbody></table>
+                <div class="small fw-semibold mb-1" id="mvTablo1Ad"></div>
+                <table class="table table-sm" id="mvTablo1"><thead><tr id="mvTablo1Thead"></tr></thead><tbody></tbody></table>
               </div>
               <div class="col-lg-4">
-                <div class="small fw-semibold mb-1">Tablo-2: Üretilen Yeşil Ot</div>
-                <table class="table table-sm" id="mvTablo2"><thead><tr><th>Yağış (mm)</th><th>Ç.İyi</th><th>İyi</th><th>Orta</th><th>Zayıf</th></tr></thead><tbody></tbody></table>
+                <div class="small fw-semibold mb-1" id="mvTablo2Ad"></div>
+                <table class="table table-sm" id="mvTablo2"><thead><tr id="mvTablo2Thead"></tr></thead><tbody></tbody></table>
               </div>
               <div class="col-lg-4">
-                <div class="small fw-semibold mb-1">Tablo-3: Üretilen Kuru Ot</div>
-                <table class="table table-sm" id="mvTablo3"><thead><tr><th>Yağış (mm)</th><th>Ç.İyi</th><th>İyi</th><th>Orta</th><th>Zayıf</th></tr></thead><tbody></tbody></table>
+                <div class="small fw-semibold mb-1" id="mvTablo3Ad"></div>
+                <table class="table table-sm" id="mvTablo3"><thead><tr id="mvTablo3Thead"></tr></thead><tbody></tbody></table>
               </div>
             </div>
 
-            <h6>İllerin Yağış Kuşakları</h6>
+            <h6 id="mvIllerBaslik"></h6>
             <div class="table-responsive mb-3" style="max-height:400px; overflow-y:auto;">
               <table class="table table-sm">
-                <thead><tr><th>İl</th><th>Yağış Kuşağı</th></tr></thead>
+                <thead><tr id="mvIllerThead"></tr></thead>
                 <tbody id="mvIllerTablosu"></tbody>
               </table>
             </div>
 
-            <button class="btn btn-sm btn-primary" id="mvKaydetBtn">Kaydet</button>
+            <button class="btn btn-sm btn-primary" id="mvKaydetBtn"></button>
             <span id="mvSonuc" class="small ms-2"></span>
           </div>
         </div>
@@ -304,6 +299,7 @@
   <script src="https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js"></script>
   <script src="/assets/js/mis-menu.js?v=12"></script>
   <script src="/assets/js/shell.js?v=12"></script>
+  <script src="/assets/js/mis-lang.js?v=1"></script>
   <script>
     misKabuguBaslat('ayarlar', 'Ayarlar<span class="ayrac">/</span>İl-İlçe-Köy-Mahalle Listesi');
 
@@ -1295,6 +1291,25 @@
     }
 
     async function meraVerimAyarlariniYukle() {
+      const LANG = await misLangYukle();
+      document.getElementById('txtMeraVerimSekmeBaslik').textContent = LANG.meraVerimAyarlari.baslik;
+      document.getElementById('mvAciklama').textContent = LANG.meraVerimAyarlari.aciklama;
+      document.getElementById('mvTuketimBaslik').textContent = LANG.meraVerimAyarlari.tuketimDonemBaslik;
+      document.getElementById('mvLblGunlukYesil').textContent = LANG.meraVerimAyarlari.gunlukYesilOtTuketimi;
+      document.getElementById('mvLblGunlukKuru').textContent = LANG.meraVerimAyarlari.gunlukKuruOtTuketimi;
+      document.getElementById('mvLblDonemGun').textContent = LANG.meraVerimAyarlari.donemGun;
+      document.getElementById('mvTabloBaslik').textContent = LANG.meraVerimAyarlari.tabloBaslik;
+      document.getElementById('mvTablo1Ad').textContent = LANG.meraVerimAyarlari.tablo1Ad;
+      document.getElementById('mvTablo2Ad').textContent = LANG.meraVerimAyarlari.tablo2Ad;
+      document.getElementById('mvTablo3Ad').textContent = LANG.meraVerimAyarlari.tablo3Ad;
+      const theadHtml = `<th>${LANG.meraVerimAyarlari.yagisMm}</th><th>${LANG.meraVerimAyarlari.cokIyiKisa}</th><th>${LANG.meraVerimAyarlari.iyiKisa}</th><th>${LANG.meraVerimAyarlari.ortaKisa}</th><th>${LANG.meraVerimAyarlari.zayifKisa}</th>`;
+      document.getElementById('mvTablo1Thead').innerHTML = theadHtml;
+      document.getElementById('mvTablo2Thead').innerHTML = theadHtml;
+      document.getElementById('mvTablo3Thead').innerHTML = theadHtml;
+      document.getElementById('mvIllerBaslik').textContent = LANG.meraVerimAyarlari.illerBaslik;
+      document.getElementById('mvIllerThead').innerHTML = `<th>${LANG.ortak.il}</th><th>${LANG.mera.yagisKusagi}</th>`;
+      document.getElementById('mvKaydetBtn').textContent = LANG.ortak.kaydet;
+
       const json = await fetch('/api/mera-verim-ayarlari').then((r) => r.json());
       if (!json.success) return;
       _mvAyarlar = json.data;
