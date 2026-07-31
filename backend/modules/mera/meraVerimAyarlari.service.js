@@ -17,7 +17,46 @@ function ilkVersiyon(satirlar) {
   return { aktifIndex: 0, versiyonlar: [{ satirlar, yaziTarihi: ILK_KURULUM_YAZI_TARIHI, yaziSayisi: ILK_KURULUM_YAZI_SAYISI, yuklemeTarihi: new Date(), kaynakTipi: 'elle' }] };
 }
 
+/**
+ * ESKI SEMA GOCU (migration) - GUVENLIK AGI: bu servis daha once DUZ
+ * DIZI semasi kullaniyordu (orn. tablo1YararlanilabilirYesil DOGRUDAN
+ * bir dizi idi), SONRA versiyonlu {aktifIndex, versiyonlar} semasina
+ * GECIRILDI. Eger veritabaninda HALA eski duz-dizi formatinda bir
+ * belge varsa, normal Mongoose okumasi (sema-cast) bunu SESSIZCE BOS/
+ * varsayilan gosterebilir - VERI KAYBI GIBI GORUNUR (esasen kaybolmaz,
+ * ama YENI sema uzerinden ERISILEMEZ olur). Bu fonksiyon, Mongoose'un
+ * SEMA-CAST katmanini BYPASS EDEN ham (raw) MongoDB sorgusuyla eski
+ * formati TESPIT EDIP OTOMATIK GOCURUR - HICBIR VERI SILINMEZ, sadece
+ * yeni semaya UYGUN HALE getirilir (eski veri "İlk kurulum (otomatik
+ * göç...)" notuyla bir versiyon olarak islenir).
+ */
+async function eskiSemadanGocEt() {
+  const ham = await MeraVerimAyarlari.collection.findOne({});
+  if (!ham) return;
+
+  const guncellenecekAlanlar = {};
+  for (const tabloAdi of TABLO_ADLARI) {
+    const deger = ham[tabloAdi];
+    if (Array.isArray(deger) && deger.length) {
+      guncellenecekAlanlar[tabloAdi] = {
+        aktifIndex: 0,
+        versiyonlar: [{
+          satirlar: deger,
+          yaziTarihi: ILK_KURULUM_YAZI_TARIHI,
+          yaziSayisi: `${ILK_KURULUM_YAZI_SAYISI} (otomatik göç - eski veri formatı tespit edildi, hiçbir satır silinmedi)`,
+          yuklemeTarihi: new Date(),
+          kaynakTipi: 'elle',
+        }],
+      };
+    }
+  }
+  if (Object.keys(guncellenecekAlanlar).length) {
+    await MeraVerimAyarlari.collection.updateOne({ _id: ham._id }, { $set: guncellenecekAlanlar });
+  }
+}
+
 async function ayarlariGetir() {
+  await eskiSemadanGocEt();
   let kayit = await MeraVerimAyarlari.findOne();
   if (!kayit) {
     kayit = await MeraVerimAyarlari.create({
