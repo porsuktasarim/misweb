@@ -28,22 +28,12 @@ async function ayarlariGuncelle(veri) {
 
 /**
  * Verilen il + arazi durum sinifi + alan (m2) icin OTLATMA
- * KAPASITESI hesaplar. KAYNAK BELGEDE (kullanicinin Ek-1'i) SADECE 3
- * tablo var (Uretilen Yesil, Yararlanilabilir Yesil, Uretilen Kuru) -
- * ama "Yararlanilabilir Kuru Ot" (4. tablo) HIC YOK. Kullanici bunu
- * SAYISAL OLARAK DOGRULADI: Yararlanilabilir Kuru = Uretilen Kuru x
- * 0.5 (orn. 202.5 x 0.5 = 101.25 kg/da) - bu sekilde hem yesil hem
- * kuru uzerinden hesaplanan DONEMLIK BBHB AYNI CIKIYOR (2.25), ki bu
- * kendi icinde TUTARLI oldugunun kaniti. Bu yuzden Tablo-4 AYRI bir
- * duzenlenebilir tablo olarak SAKLANMAZ - HER ZAMAN Tablo-3'ten
- * TURETILIR (Tablo-3 degisirse otomatik guncellenir).
- *
- * GOSTERIM SIRASI (kullanicinin acik istegi): Uretilen Yesil ->
- * Yararlanilabilir Yesil -> Uretilen Kuru -> Yararlanilabilir Kuru.
- *
- * NIHAI OTLATMA KAPASITESI (toplam + donemlik BBHB) SADECE
- * Yararlanilabilir Yesil Ot uzerinden hesaplanir - digerleri
- * bilgi/karsilastirma amaclidir, "resmi" kapasite degeri degildir.
+ * KAPASITESI hesaplar - Ek-1'deki 3 tablonun (Tablo-1 Yararlanilabilir
+ * Yesil, Tablo-2 Uretilen Yesil, Tablo-3 Uretilen Kuru) HER BIRI icin
+ * AYRI AYRI: kg/da, toplam kg, gunluk BBHB, donemlik (varsayilan 180
+ * gun) otlatma kapasitesi BBHB. TEK bir "nihai" deger URETILMEZ - 3
+ * SONUC BIRLIKTE gosterilir (kullanicinin acik karari - onceki bir
+ * taslakta "4. turetilmis tablo + nihai deger" vardi, KALDIRILDI).
  */
 async function otlatmaKapasitesiHesapla({ il, araziDurumSinifi, alanM2 }) {
   const ayarlar = await ayarlariGetir();
@@ -62,34 +52,28 @@ async function otlatmaKapasitesiHesapla({ il, araziDurumSinifi, alanM2 }) {
   const durumAnahtari = { 'Çok İyi': 'cokIyi', İyi: 'iyi', Orta: 'orta', Zayıf: 'zayif' }[araziDurumSinifi];
   const dekar = alanM2 / 1000;
 
-  const tabloyaGoreHesapla = (tablo, gunlukTuketimKg, katsayi = 1) => {
-    const satir = tablo.find((s) => s.bant === ilKaydi.bant);
-    if (!satir) return null;
-    const kgDa = satir[durumAnahtari] * katsayi;
+  const tabloyaGoreHesapla = (tablo, gunlukTuketimKg) => {
+    const satir = (tablo || []).find((s) => s.bant === ilKaydi.bant);
+    // Satir bulunamazsa (orn. veri eksikse) SESSIZCE null DONDURMEK
+    // YERINE 0'li bir yapi donduruyoruz - boylece frontend'de
+    // "undefined.kgDa" gibi bir CRASH olusmaz, panel "0" gosterir
+    // (veri eksikligini fark etmeyi kolaylastirir, sayfa kilitlenmez).
+    if (!satir) return { kgDa: 0, toplamKg: 0, gunlukBbhb: 0, donemlikBbhb: 0, veriEksik: true };
+    const kgDa = satir[durumAnahtari] || 0;
     const toplamKg = kgDa * dekar;
     const gunlukBbhb = toplamKg / gunlukTuketimKg;
     const donemlikBbhb = toplamKg / (gunlukTuketimKg * ayarlar.donemGunSayisi);
     return { kgDa, toplamKg, gunlukBbhb, donemlikBbhb };
   };
 
-  const uretilenYesilOt = tabloyaGoreHesapla(ayarlar.tablo2UretilenYesil, ayarlar.gunlukYesilOtTuketimiKg);
-  const yararlanilabilirYesilOt = tabloyaGoreHesapla(ayarlar.tablo1YararlanilabilirYesil, ayarlar.gunlukYesilOtTuketimiKg);
-  const uretilenKuruOt = tabloyaGoreHesapla(ayarlar.tablo3UretilenKuru, ayarlar.gunlukKuruOtTuketimiKg);
-  // Tablo-4 (Yararlanilabilir Kuru) = Tablo-3 x 0.5 (TURETILMIS - kaynak belgede yok, kullanici tarafindan sayisal olarak dogrulandi).
-  const yararlanilabilirKuruOt = tabloyaGoreHesapla(ayarlar.tablo3UretilenKuru, ayarlar.gunlukKuruOtTuketimiKg, 0.5);
-
   return {
     hesaplanabilir: true,
     yagisKusagi: ilKaydi.bant,
     dekar,
     donemGunSayisi: ayarlar.donemGunSayisi,
-    uretilenYesilOt,
-    yararlanilabilirYesilOt,
-    uretilenKuruOt,
-    yararlanilabilirKuruOt,
-    // NIHAI OTLATMA KAPASITESI - sadece Yararlanilabilir Yesil Ot'tan.
-    toplamKapasiteBbhb: yararlanilabilirYesilOt.gunlukBbhb,
-    donemlikOtlatmaKapasitesiBbhb: yararlanilabilirYesilOt.donemlikBbhb,
+    tablo1YararlanilabilirYesil: tabloyaGoreHesapla(ayarlar.tablo1YararlanilabilirYesil, ayarlar.gunlukYesilOtTuketimiKg),
+    tablo2UretilenYesil: tabloyaGoreHesapla(ayarlar.tablo2UretilenYesil, ayarlar.gunlukYesilOtTuketimiKg),
+    tablo3UretilenKuru: tabloyaGoreHesapla(ayarlar.tablo3UretilenKuru, ayarlar.gunlukKuruOtTuketimiKg),
   };
 }
 

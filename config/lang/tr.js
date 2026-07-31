@@ -209,7 +209,7 @@ module.exports = {
     tablo2Ad: 'Tablo-2: Üretilen Yeşil Ot',
     tablo3Ad: 'Tablo-3: Üretilen Kuru Ot',
     yagisMm: 'Yağış (mm)',
-    cokIyiKisa: 'Ç.İyi',
+    cokIyiKisa: 'Çok İyi',
     iyiKisa: 'İyi',
     ortaKisa: 'Orta',
     zayifKisa: 'Zayıf',

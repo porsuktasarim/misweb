@@ -90,6 +90,30 @@ async function misVersiyonYukle() {
   }
 }
 
+/**
+ * "Görünüm Ayarları"ndaki (Ayarlar sayfası) BÖLGE-BAZLI font
+ * boyutlarını (Sol Menü/Üst Menü/Ana İçerik Sol/Ana İçerik Sağ) CSS
+ * custom property olarak <html>'e yazar - layout.css bu degiskenleri
+ * KULLANAN secicilere sahip. TUM sayfalarda (misKabuguBaslat cagiran
+ * HER sayfada) OTOMATIK calisir - sayfa bazinda ayri kod GEREKMEZ.
+ * Genisletilebilir: yeni bir "anahtar" eklenirse BURAYA dokunmaya
+ * gerek YOK, backend'deki VARSAYILAN_TEMA_BOLUMLERI'ne eklenip
+ * layout.css'te karsilik gelen CSS degiskeni KULLANILMASI yeterli.
+ */
+async function misGorunumAyarlariniUygula() {
+  try {
+    const res = await fetch('/api/belge-ayarlari');
+    const json = await res.json();
+    if (!json.success) return;
+    (json.data.temaBolumleri || []).forEach((b) => {
+      document.documentElement.style.setProperty(`--font-${b.anahtar}-baslik`, `${b.baslikBoyutuPx}px`);
+      document.documentElement.style.setProperty(`--font-${b.anahtar}-metin`, `${b.metinBoyutuPx}px`);
+    });
+  } catch (err) {
+    // Gorunum ayari uygulanamazsa sessizce gec - varsayilan CSS boyutlari kullanilir, kritik degil.
+  }
+}
+
 const KABUK_SINIFI = 'menu-daraltilmis';
 const DEPO_ANAHTARI = 'mis.kenarCubugu.daraltilmis';
 
@@ -120,6 +144,7 @@ function misKabuguBaslat(aktifAnahtar, aracBaslikHtml) {
 
   misAktifMenuyuIsaretle(aktifAnahtar);
   misVersiyonYukle();
+  misGorunumAyarlariniUygula();
 
   const kabuk = document.getElementById('mis-kabuk');
   const daraltilmisMi = localStorage.getItem(DEPO_ANAHTARI) === '1';

@@ -4,7 +4,7 @@
  * TEK KAYITLIK (singleton) GÖRÜNÜM AYARLARI - hem 3T'nin ürettiği
  * Word/PDF çıktılarında (Duyuru, Duyuru Tutanağı, Tebliğ Belgesi vb.)
  * kullanılan "İMZA" rengi/yazı tipi, HEM DE arayüzdeki (ekrandaki)
- * FARKLI TEMA PARÇALARININ (Ayarlar sayfası, Verim Bilgileri tablosu
+ * FARKLI TEMA PARÇALARININ (Sol Menü, Üst Menü, Ana İçerik Sol/Sağ
  * vb.) BAŞLIK ve METİN font boyutları BURADAN yönetilir - genişletilebilir
  * bir liste (yeni bir "tema parçası" gerektiğinde SADECE varsayılan
  * veriye yeni bir satır eklenir, kod değişmez).
@@ -23,8 +23,10 @@ const temaBolumuSchema = new mongoose.Schema(
 );
 
 const VARSAYILAN_TEMA_BOLUMLERI = [
-  { anahtar: 'ayarlarSayfasi', ad: 'Ayarlar Sayfası', baslikBoyutuPx: 15, metinBoyutuPx: 12 },
-  { anahtar: 'verimTablosu', ad: 'Verim Bilgileri / Otlatma Kapasitesi Tablosu', baslikBoyutuPx: 13, metinBoyutuPx: 11 },
+  { anahtar: 'solMenu', ad: 'Sol Menü', baslikBoyutuPx: 11, metinBoyutuPx: 13 },
+  { anahtar: 'ustMenu', ad: 'Üst Menü', baslikBoyutuPx: 15, metinBoyutuPx: 13 },
+  { anahtar: 'anaIcerikSol', ad: 'Ana İçerik - Sol Bölge', baslikBoyutuPx: 18, metinBoyutuPx: 13 },
+  { anahtar: 'anaIcerikSag', ad: 'Ana İçerik - Sağ Bölge', baslikBoyutuPx: 16, metinBoyutuPx: 13 },
 ];
 
 const belgeAyarlariSchema = new mongoose.Schema(

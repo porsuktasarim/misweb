@@ -351,17 +351,57 @@ font boyutlarını da yönetiyor. `BelgeAyarlari` modeline `temaBolumleri`
 adında GENİŞLETİLEBİLİR bir dizi eklendi - her eleman `{anahtar, ad,
 baslikBoyutuPx, metinBoyutuPx}` şeklinde: yeni bir "tema parçası"
 gerektiğinde SADECE varsayılan veriye (`VARSAYILAN_TEMA_BOLUMLERI`)
-yeni bir satır eklenir, kod değişmez. Şu an 2 parça var (ikisi de
-küçültülmüş varsayılan boyutlarla): "Ayarlar Sayfası" (başlık 15px/
-metin 12px) ve "Verim Bilgileri / Otlatma Kapasitesi Tablosu"
-(başlık 13px/metin 11px). Ayarlar sayfasının kendisi VE Mera parsel
-detay sayfasındaki Verim Bilgileri paneli, sayfa AÇILIR AÇILMAZ
-(sekmeye tıklanmadan) `/api/belge-ayarlari`'ı çekip CSS custom
-property'lerine (`--gorunum-ayarlar-baslik/metin`,
-`--verim-tablosu-baslik/metin`) yazıyor - ilgili CSS seçicileri bu
-değişkenleri kullanıyor. Ayarlar sekmesindeki tablo üzerinden HER
-parça için başlık/metin boyutu AYRI AYRI px cinsinden düzenlenip
-kaydedilebiliyor.
+yeni bir satır eklenir, kod değişmez.
+
+**YENİDEN TASARLANDI (kullanıcı geri bildirimiyle): sayfa-bazlı DEĞİL,
+BÖLGE-BAZLI.** İlk sürümde "Ayarlar Sayfası" / "Verim Bilgileri
+Tablosu" gibi sayfa-özel parçalar vardı - kullanıcı bunun yerine
+arayüzün YAPISAL bölgelerini istedi. Şu an 4 bölge var: **Sol Menü**
+(başlık 11px/metin 13px), **Üst Menü** (başlık 15px/metin 13px),
+**Ana İçerik - Sol Bölge** (başlık 18px/metin 13px), **Ana İçerik -
+Sağ Bölge** (başlık 16px/metin 13px). Uygulama mekanizması artık
+SAYFA-ÖZEL DEĞİL, GLOBAL: `shell.js`'e `misGorunumAyarlariniUygula()`
+eklendi, `misKabuguBaslat()` (HER sayfanın çağırdığı ortak kabuk
+fonksiyonu) içinde otomatik çalışıyor - `/api/belge-ayarlari`'ı çekip
+her bölüm için `--font-{anahtar}-baslik` / `--font-{anahtar}-metin`
+CSS custom property'lerini `<html>`'e yazıyor. `layout.css`'teki
+`.mis-anamenu` (sol menü), `.mis-ustcubuk`/`.mis-arac-adi` (üst menü),
+`.mis-icerik-birincil`/`.mis-icerik-ikincil` (ana içerik sol/sağ)
+seçicileri bu değişkenleri kullanıyor - böylece TEK BİR AYAR TÜM
+SAYFALARDA (Ayarlar, Mera, BBHB, 3T, hepsi) aynı anda etkili oluyor,
+sayfa başına ayrı kod YAZILMASINA gerek kalmıyor. Eski sayfa-özel
+kod (`ayarlarSayfasiFontUygula()`, `verimTablosuFontUygula()` ve
+karşılık gelen CSS kuralları) temizlendi. Ayarlar sekmesindeki
+tablo üzerinden her bölüm için başlık/metin boyutu ayrı ayrı px
+cinsinden düzenlenip kaydedilebiliyor; kaydedince sayfa
+yenilenmeden hemen uygulanıyor. Kullanıcının notu doğrultusunda
+buraya ileride başka bölgeler/ayarlar da eklenebilir (kod
+değişikliği gerektirmeden, sadece varsayılan veriye satır ekleyerek).
+
+**AYRICA BULUNAN VE DÜZELTİLEN KRİTİK HATA:** Mera parsel detayındaki
+"Verim Bilgileri / Otlatma Kapasitesi" paneli SONSUZA KADAR
+"Yükleniyor..." durumunda kalıyordu. Kök neden: `meraVerimAyarlari.
+service.js`'deki `otlatmaKapasitesiHesapla()` hâlâ ÖNCEKİ bir taslak
+tasarımın alan adlarını (`uretilenYesilOt`, `yararlanilabilirYesilOt`,
+`toplamKapasiteBbhb` gibi - 4 tablo + "nihai" tek değer)
+döndürüyordu, ama frontend (`mera/detay.html`) GERÇEKTEN 3-tablo
+yapısını (`tablo1YararlanilabilirYesil`, `tablo2UretilenYesil`,
+`tablo3UretilenKuru`) bekliyordu - önceki bir turda SADECE frontend
+düzeltilmiş, backend'in KENDİSİ hiç kontrol edilmemişti. Sonuç:
+`undefined.kgDa` okuma hatası, panel hiç güncellenmeden "Yükleniyor"
+metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
+çevrildi (İstanbul/İyi/50 da örneğiyle yeniden test edildi: 405/2,25,
+810/4,5, 810/4,5 BBHB - hepsi doğru), AYRICA frontend'e try/catch
+eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
+sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
+
+## Mera Verim Ayarları - Ek Düzeltmeler
+
+Ayarlar sayfasındaki Mera Verim Ayarları sekmesinde: "Ç.İyi" kısaltması
+"Çok İyi" olarak tam yazıldı (tüm 3 tablonun başlıklarında). Tablo-1,
+Tablo-2, Tablo-3 ve İllerin Yağış Kuşakları artık Bootstrap accordion
+(açılır-kapanır) yapısında - sayfa daha az yer kaplıyor, başlıklar
+TAM metin olarak gösteriliyor (kısaltma yok).
 
 ## Dil Dosyası (`config/lang/tr.js`)
 

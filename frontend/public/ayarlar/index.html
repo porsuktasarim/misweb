@@ -11,14 +11,6 @@
   <link href="https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
   <link href="/assets/css/layout.css?v=12" rel="stylesheet" />
   <style>
-    /* "Görünüm Ayarları"ndan (Ayarlar sekmesi) GELEN, ekrandaki font
-       boyutlarini KONTROL EDEN CSS degiskenleri - JS tarafinda
-       ayarlarSayfasiFontUygula() ile doldurulur, varsayilan degerler
-       burada (henuz yuklenmeden once/API basarisiz olursa). */
-    .mis-icerik-birincil .mis-panel { font-size: var(--gorunum-ayarlar-metin, 13px); }
-    .mis-icerik-birincil .mis-panel h2 { font-size: var(--gorunum-ayarlar-baslik, 22px); }
-    .mis-icerik-birincil .mis-panel h5, .mis-icerik-birincil .mis-panel h6 { font-size: var(--gorunum-ayarlar-baslik, 16px); }
-
     .mis-yerlesim-sutun {
       background: var(--renk-yuzey);
       border: 1px solid var(--renk-kenarlik);
@@ -259,27 +251,52 @@
             </div>
 
             <h6 id="mvTabloBaslik"></h6>
-            <div class="row g-3 mb-3">
-              <div class="col-lg-4">
-                <div class="small fw-semibold mb-1" id="mvTablo1Ad"></div>
-                <table class="table table-sm" id="mvTablo1"><thead><tr id="mvTablo1Thead"></tr></thead><tbody></tbody></table>
+            <div class="accordion mb-3" id="mvTabloAccordion">
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mvTablo1Collapse" id="mvTablo1Ad"></button>
+                </h2>
+                <div id="mvTablo1Collapse" class="accordion-collapse collapse" data-bs-parent="#mvTabloAccordion">
+                  <div class="accordion-body p-2">
+                    <table class="table table-sm mb-0" id="mvTablo1"><thead><tr id="mvTablo1Thead"></tr></thead><tbody></tbody></table>
+                  </div>
+                </div>
               </div>
-              <div class="col-lg-4">
-                <div class="small fw-semibold mb-1" id="mvTablo2Ad"></div>
-                <table class="table table-sm" id="mvTablo2"><thead><tr id="mvTablo2Thead"></tr></thead><tbody></tbody></table>
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mvTablo2Collapse" id="mvTablo2Ad"></button>
+                </h2>
+                <div id="mvTablo2Collapse" class="accordion-collapse collapse" data-bs-parent="#mvTabloAccordion">
+                  <div class="accordion-body p-2">
+                    <table class="table table-sm mb-0" id="mvTablo2"><thead><tr id="mvTablo2Thead"></tr></thead><tbody></tbody></table>
+                  </div>
+                </div>
               </div>
-              <div class="col-lg-4">
-                <div class="small fw-semibold mb-1" id="mvTablo3Ad"></div>
-                <table class="table table-sm" id="mvTablo3"><thead><tr id="mvTablo3Thead"></tr></thead><tbody></tbody></table>
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mvTablo3Collapse" id="mvTablo3Ad"></button>
+                </h2>
+                <div id="mvTablo3Collapse" class="accordion-collapse collapse" data-bs-parent="#mvTabloAccordion">
+                  <div class="accordion-body p-2">
+                    <table class="table table-sm mb-0" id="mvTablo3"><thead><tr id="mvTablo3Thead"></tr></thead><tbody></tbody></table>
+                  </div>
+                </div>
               </div>
-            </div>
-
-            <h6 id="mvIllerBaslik"></h6>
-            <div class="table-responsive mb-3" style="max-height:400px; overflow-y:auto;">
-              <table class="table table-sm">
-                <thead><tr id="mvIllerThead"></tr></thead>
-                <tbody id="mvIllerTablosu"></tbody>
-              </table>
+              <div class="accordion-item">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#mvIllerCollapse" id="mvIllerBaslik"></button>
+                </h2>
+                <div id="mvIllerCollapse" class="accordion-collapse collapse" data-bs-parent="#mvTabloAccordion">
+                  <div class="accordion-body p-2">
+                    <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
+                      <table class="table table-sm mb-0">
+                        <thead><tr id="mvIllerThead"></tr></thead>
+                        <tbody id="mvIllerTablosu"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <button class="btn btn-sm btn-primary" id="mvKaydetBtn"></button>
@@ -1263,16 +1280,6 @@
         </tr>`).join('');
     }
 
-    /** "Ayarlar Sayfası" tema parcasinin boyutlarini SAYFA ACILIR ACILMAZ (sekmeye tiklanmadan) CSS degiskenlerine uygular. */
-    async function ayarlarSayfasiFontUygula() {
-      const json = await apiGet('/api/belge-ayarlari');
-      if (!json.success) return;
-      const bolum = (json.data.temaBolumleri || []).find((b) => b.anahtar === 'ayarlarSayfasi');
-      if (!bolum) return;
-      document.documentElement.style.setProperty('--gorunum-ayarlar-baslik', `${bolum.baslikBoyutuPx}px`);
-      document.documentElement.style.setProperty('--gorunum-ayarlar-metin', `${bolum.metinBoyutuPx}px`);
-    }
-
     document.getElementById('baImzaRengi').addEventListener('input', (e) => {
       document.getElementById('baImzaRengiHex').value = e.target.value;
     });
@@ -1297,14 +1304,14 @@
       });
       const json = await res.json();
       sonucAlan.innerHTML = json.success ? '<span class="text-success">Kaydedildi.</span>' : `<span class="text-danger">${json.message}</span>`;
-      if (json.success) ayarlarSayfasiFontUygula();
+      // Kaydedilince YENI boyutlar SAYFA YENILENMEDEN hemen uygulansin -
+      // bu GENEL (tum sayfalarda calisan) fonksiyon shell.js'te tanimli.
+      if (json.success && typeof misGorunumAyarlariniUygula === 'function') misGorunumAyarlariniUygula();
     });
 
     document.querySelector('[data-bs-target="#belge-ayarlari-tab"]').addEventListener('shown.bs.tab', () => {
       belgeAyarlariniYukle();
     }, { once: true });
-
-    ayarlarSayfasiFontUygula();
 
     // ================= MERA VERİM AYARLARI =================
     const MV_YAGIS_BANTLARI = ['200-350', '350-500', '500-650', '650-800', '800-950', '950-1100', '1100-1250'];

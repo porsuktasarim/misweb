@@ -14,9 +14,6 @@
   <style>
     .not-karti { border: 1px solid #e5e5e5; border-radius: 6px; padding: 10px; margin-bottom: 10px; }
     .not-versiyon { background: #f8f9fa; border-left: 3px solid #d8d8d8; padding: 6px 10px; margin-top: 6px; font-size: 12px; color: #666; }
-    /* "Görünüm Ayarları"ndan gelen boyutlar - JS'te verimTablosuFontUygula() ile doldurulur. */
-    #verimBilgisiAlani { font-size: var(--verim-tablosu-metin, 12px); }
-    #verimBilgisiAlani table th { font-size: var(--verim-tablosu-baslik, 12px); }
   </style>
 </head>
 <body>
@@ -288,49 +285,46 @@
       const alan = document.getElementById('verimBilgisiAlani');
       if (!kayit.meraAlaniM2) { alan.innerHTML = `<p class="text-muted small">${LANG.mera.verimAlanGerekli}</p>`; return; }
 
-      const params = new URLSearchParams({ il: kayit.il, araziDurumSinifi: kayit.araziDurumSinifi || '', alanM2: kayit.meraAlaniM2 });
-      const json = await fetch(`/api/mera-verim-ayarlari/hesapla?${params}`).then((r) => r.json());
-      if (!json.success) { alan.innerHTML = `<p class="text-danger small">${json.message}</p>`; return; }
-      const v = json.data;
+      try {
+        const params = new URLSearchParams({ il: kayit.il, araziDurumSinifi: kayit.araziDurumSinifi || '', alanM2: kayit.meraAlaniM2 });
+        const json = await fetch(`/api/mera-verim-ayarlari/hesapla?${params}`).then((r) => r.json());
+        if (!json.success) { alan.innerHTML = `<p class="text-danger small">${json.message}</p>`; return; }
+        const v = json.data;
 
-      if (!v.hesaplanabilir) { alan.innerHTML = `<p class="text-warning small">${v.mesaj}</p>`; return; }
+        if (!v.hesaplanabilir) { alan.innerHTML = `<p class="text-warning small">${v.mesaj}</p>`; return; }
 
-      const satir = (baslik, t) => `
-        <tr>
-          <td>${baslik}</td>
-          <td>${t.kgDa.toLocaleString('tr-TR')} kg/da</td>
-          <td>${t.toplamKg.toLocaleString('tr-TR')} kg</td>
-          <td>${t.gunlukBbhb.toFixed(2)}</td>
-          <td>${t.donemlikBbhb.toFixed(2)}</td>
-        </tr>`;
+        const satir = (baslik, t) => `
+          <tr>
+            <td>${baslik}</td>
+            <td>${(t.kgDa ?? 0).toLocaleString('tr-TR')} kg/da</td>
+            <td>${(t.toplamKg ?? 0).toLocaleString('tr-TR')} kg</td>
+            <td>${(t.gunlukBbhb ?? 0).toFixed(2)}</td>
+            <td>${(t.donemlikBbhb ?? 0).toFixed(2)}</td>
+          </tr>`;
 
-      alan.innerHTML = `
-        <div class="small mb-2">
-          <strong>${LANG.mera.yagisKusagi}:</strong> ${guvenliMetin(v.yagisKusagi)} mm &nbsp;·&nbsp;
-          <strong>${LANG.mera.alan}:</strong> ${v.dekar} da &nbsp;·&nbsp;
-          <strong>${LANG.mera.donem}:</strong> ${v.donemGunSayisi} gün
-        </div>
-        <div class="table-responsive">
-          <table class="table table-sm">
-            <thead><tr><th>${LANG.mera.tabloBaslik || 'Tablo'}</th><th>${LANG.mera.verim}</th><th>${LANG.ortak.toplam}</th><th>${LANG.mera.gunlukBbhb}</th><th>${LANG.mera.otlatmaKapasitesiDonemlik}</th></tr></thead>
-            <tbody>
-              ${satir(LANG.mera.tablo1Ad, v.tablo1YararlanilabilirYesil)}
-              ${satir(LANG.mera.tablo2Ad, v.tablo2UretilenYesil)}
-              ${satir(LANG.mera.tablo3Ad, v.tablo3UretilenKuru)}
-            </tbody>
-          </table>
-        </div>
-        <p class="text-muted small mb-0">${LANG.mera.otlatmaKapasitesiNotu}</p>`;
-    }
-
-    /** "Görünüm Ayarları"ndaki "verimTablosu" tema parçasının boyutlarını CSS değişkenlerine uygular. */
-    async function verimTablosuFontUygula() {
-      const json = await fetch('/api/belge-ayarlari').then((r) => r.json());
-      if (!json.success) return;
-      const bolum = (json.data.temaBolumleri || []).find((b) => b.anahtar === 'verimTablosu');
-      if (!bolum) return;
-      document.documentElement.style.setProperty('--verim-tablosu-baslik', `${bolum.baslikBoyutuPx}px`);
-      document.documentElement.style.setProperty('--verim-tablosu-metin', `${bolum.metinBoyutuPx}px`);
+        alan.innerHTML = `
+          <div class="small mb-2">
+            <strong>${LANG.mera.yagisKusagi}:</strong> ${guvenliMetin(v.yagisKusagi)} mm &nbsp;·&nbsp;
+            <strong>${LANG.mera.alan}:</strong> ${v.dekar} da &nbsp;·&nbsp;
+            <strong>${LANG.mera.donem}:</strong> ${v.donemGunSayisi} gün
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead><tr><th>${LANG.mera.tabloBaslik || 'Tablo'}</th><th>${LANG.mera.verim}</th><th>${LANG.ortak.toplam}</th><th>${LANG.mera.gunlukBbhb}</th><th>${LANG.mera.otlatmaKapasitesiDonemlik}</th></tr></thead>
+              <tbody>
+                ${satir(LANG.mera.tablo1Ad, v.tablo1YararlanilabilirYesil || {})}
+                ${satir(LANG.mera.tablo2Ad, v.tablo2UretilenYesil || {})}
+                ${satir(LANG.mera.tablo3Ad, v.tablo3UretilenKuru || {})}
+              </tbody>
+            </table>
+          </div>
+          <p class="text-muted small mb-0">${LANG.mera.otlatmaKapasitesiNotu}</p>`;
+      } catch (hata) {
+        // Beklenmeyen bir hata olursa panel "Yükleniyor..." da SONSUZA
+        // KADAR TAKILI KALMAZ - GORUNUR bir hata mesaji gosterilir.
+        console.error('Verim bilgisi hesaplanamadı:', hata);
+        alan.innerHTML = `<p class="text-danger small">Verim bilgisi hesaplanırken beklenmeyen bir hata oluştu: ${guvenliMetin(hata.message)}</p>`;
+      }
     }
 
     async function baslat() {
@@ -429,7 +423,6 @@
       });
 
       misKabuguBaslat('mera', `${LANG.mera.kisaAd}<span class="ayrac">/</span>${LANG.mera.parselDetayi}`);
-      verimTablosuFontUygula();
       await sabitleriDoldur();
       await kaydiYukle();
     }

@@ -119,6 +119,7 @@ h1, h2, h3, .mis-baslik-yazitipi {
   align-items: center;
   padding: 0 20px;
   gap: 16px;
+  font-size: var(--font-ustMenu-metin, 13px);
 }
 
 .mis-menu-toggle {
@@ -138,7 +139,7 @@ h1, h2, h3, .mis-baslik-yazitipi {
 .mis-arac-adi {
   font-family: var(--yazi-baslik);
   font-weight: 600;
-  font-size: 15px;
+  font-size: var(--font-ustMenu-baslik, 15px);
   color: var(--renk-metin);
   margin-left: 4px;
 }
@@ -178,7 +179,7 @@ h1, h2, h3, .mis-baslik-yazitipi {
 
 .mis-anamenu-grup-baslik {
   color: #8fa895;
-  font-size: 11px;
+  font-size: var(--font-solMenu-baslik, 11px);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 14px 18px 6px;
@@ -194,7 +195,7 @@ h1, h2, h3, .mis-baslik-yazitipi {
   padding: 10px 18px;
   color: #d7e3da;
   text-decoration: none;
-  font-size: 14px;
+  font-size: var(--font-solMenu-metin, 14px);
   white-space: nowrap;
   overflow: hidden;
   border-left: 3px solid transparent;
@@ -223,8 +224,23 @@ h1, h2, h3, .mis-baslik-yazitipi {
   align-content: start;
 }
 
-.mis-icerik-birincil { min-width: 0; }
-.mis-icerik-ikincil { min-width: 0; }
+.mis-icerik-birincil {
+  min-width: 0;
+  font-size: var(--font-anaIcerikSol-metin, 13px);
+}
+.mis-icerik-birincil h1, .mis-icerik-birincil h2, .mis-icerik-birincil h3,
+.mis-icerik-birincil h4, .mis-icerik-birincil h5, .mis-icerik-birincil h6 {
+  font-size: var(--font-anaIcerikSol-baslik, 18px);
+}
+
+.mis-icerik-ikincil {
+  min-width: 0;
+  font-size: var(--font-anaIcerikSag-metin, 13px);
+}
+.mis-icerik-ikincil h1, .mis-icerik-ikincil h2, .mis-icerik-ikincil h3,
+.mis-icerik-ikincil h4, .mis-icerik-ikincil h5, .mis-icerik-ikincil h6 {
+  font-size: var(--font-anaIcerikSag-baslik, 16px);
+}
 
 .mis-panel {
   background: var(--renk-yuzey);
