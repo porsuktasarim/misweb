@@ -40,8 +40,9 @@
 
           <div class="row g-2 mb-3">
             <div class="col-md-3"><select id="filtreIl" class="form-select form-select-sm"></select></div>
-            <div class="col-md-3"><select id="filtreIlce" class="form-select form-select-sm"></select></div>
-            <div class="col-md-3"><select id="filtreMahalle" class="form-select form-select-sm"></select></div>
+            <div class="col-md-2"><select id="filtreIlce" class="form-select form-select-sm"></select></div>
+            <div class="col-md-2"><select id="filtreMahalle" class="form-select form-select-sm"></select></div>
+            <div class="col-md-2"><select id="filtreDurum" class="form-select form-select-sm"></select></div>
             <div class="col-md-3"><button class="btn btn-primary btn-sm w-100" id="yeniParselBtn"></button></div>
           </div>
 
@@ -95,7 +96,7 @@
     function guvenliMetin(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
     let LANG = null;
-    let _filtreIl = '', _filtreIlce = '', _filtreMahalle = '';
+    let _filtreIl = '', _filtreIlce = '', _filtreMahalle = '', _filtreDurum = 'Aktif';
 
     function durumRozeti(yapildiMi) {
       return yapildiMi
@@ -103,14 +104,20 @@
         : '<span class="badge bg-secondary-subtle text-secondary-emphasis mera-durum-rozet">-</span>';
     }
 
+    function parselDurumRozeti(durum) {
+      const renkler = { Aktif: 'bg-success-subtle text-success-emphasis', Pasif: 'bg-warning-subtle text-warning-emphasis', Silindi: 'bg-danger-subtle text-danger-emphasis' };
+      return `<span class="badge ${renkler[durum] || 'bg-secondary-subtle'} mera-durum-rozet">${guvenliMetin(durum)}</span>`;
+    }
+
     async function parselleriYukle() {
       const params = new URLSearchParams();
       if (_filtreIl) params.set('il', _filtreIl);
       if (_filtreIlce) params.set('ilce', _filtreIlce);
       if (_filtreMahalle) params.set('koyMahalle', _filtreMahalle);
+      if (_filtreDurum) params.set('durum', _filtreDurum);
       const json = await fetch(`/api/mera?${params}`).then((r) => r.json());
       const govde = document.getElementById('parselTablosu');
-      if (!json.success || !json.data.length) { govde.innerHTML = `<tr><td colspan="10" class="text-muted small">${LANG.ortak.kayitBulunamadi}</td></tr>`; return; }
+      if (!json.success || !json.data.length) { govde.innerHTML = `<tr><td colspan="11" class="text-muted small">${LANG.ortak.kayitBulunamadi}</td></tr>`; return; }
       govde.innerHTML = json.data.map((p) => `
         <tr>
           <td>${guvenliMetin(p.il)}</td>
@@ -122,6 +129,7 @@
           <td>${durumRozeti(p.tespitYapildiMi)}</td>
           <td>${durumRozeti(p.tahditYapildiMi)}</td>
           <td>${durumRozeti(p.tahsisYapildiMi)}</td>
+          <td>${parselDurumRozeti(p.durum)}</td>
           <td><a class="btn btn-sm btn-outline-primary" href="/mera/detay.html?id=${p._id}">${LANG.ortak.detay}</a></td>
         </tr>`).join('');
     }
@@ -143,8 +151,11 @@
       document.getElementById('theadSatiri').innerHTML = `
         <th>${LANG.ortak.il}</th><th>${LANG.ortak.ilce}</th><th>${LANG.ortak.mahalle}</th>
         <th>${LANG.mera.adaNo}</th><th>${LANG.mera.parselNo}</th><th>${LANG.mera.araziNiteligi}</th>
-        <th>${LANG.mera.tespit}</th><th>${LANG.mera.tahdit}</th><th>${LANG.mera.tahsis}</th><th></th>`;
-      document.getElementById('parselTablosu').innerHTML = `<tr><td colspan="10" class="text-muted small">${LANG.ortak.yukleniyor}</td></tr>`;
+        <th>${LANG.mera.tespit}</th><th>${LANG.mera.tahdit}</th><th>${LANG.mera.tahsis}</th><th>${LANG.mera.durum}</th><th></th>`;
+      document.getElementById('parselTablosu').innerHTML = `<tr><td colspan="11" class="text-muted small">${LANG.ortak.yukleniyor}</td></tr>`;
+
+      document.getElementById('filtreDurum').innerHTML = ['Aktif', 'Pasif', 'Tümü'].map((d) => `<option value="${d}" ${d === 'Aktif' ? 'selected' : ''}>${d}</option>`).join('');
+      document.getElementById('filtreDurum').addEventListener('change', (e) => { _filtreDurum = e.target.value; parselleriYukle(); });
 
       misYerSeciciKur({
         ilSelectId: 'filtreIl', ilceSelectId: 'filtreIlce', mahalleSelectId: 'filtreMahalle',

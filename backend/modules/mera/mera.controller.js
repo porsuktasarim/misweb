@@ -45,7 +45,15 @@ async function guncelleHandler(req, res) {
 
 async function silHandler(req, res) {
   try {
-    return basarili(res, await service.sil(req.params.id), 'Parsel silindi');
+    return basarili(res, await service.sil(req.params.id, req.body.kullaniciAdi), 'Parsel silindi (pasif duruma alındı, veri kaybolmadı)');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function durumDegistirHandler(req, res) {
+  try {
+    return basarili(res, await service.durumDegistir(req.params.id, req.body.durum, req.body.kullaniciAdi), 'Durum güncellendi');
   } catch (err) {
     return basarisiz(res, err.message);
   }
@@ -77,7 +85,11 @@ async function notDosyaEkleHandler(req, res) {
 
 async function sabitlerHandler(req, res) {
   try {
-    return basarili(res, { araziNitelikleri: service.ARAZI_NITELIKLERI, araziKaynaklari: service.ARAZI_KAYNAKLARI, araziDurumSiniflari: service.ARAZI_DURUM_SINIFLARI, topraksiniflari: service.TOPRAK_SINIFLARI, islahDurumlari: service.ISLAH_DURUMLARI });
+    return basarili(res, {
+      araziNitelikleri: service.ARAZI_NITELIKLERI, araziKaynaklari: service.ARAZI_KAYNAKLARI,
+      araziDurumSiniflari: service.ARAZI_DURUM_SINIFLARI, topraksiniflari: service.TOPRAK_SINIFLARI,
+      islahDurumlari: service.ISLAH_DURUMLARI, parselDurumlari: service.PARSEL_DURUMLARI,
+    });
   } catch (err) {
     return basarisiz(res, err.message);
   }
@@ -131,9 +143,17 @@ async function komsuParsellerHandler(req, res) {
   }
 }
 
+async function dosyaYukleHandler(req, res) {
+  try {
+    return basarili(res, await service.dosyaYukle(req.params.id, req.file, req.body.dosyaTipiAnahtari, req.body.kullaniciAdi), 'Dosya yüklendi');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 module.exports = {
-  listeHandler, getirHandler, olusturHandler, guncelleHandler, silHandler,
+  listeHandler, getirHandler, olusturHandler, guncelleHandler, silHandler, durumDegistirHandler,
   notEkleHandler, notDuzenleHandler, notDosyaEkleHandler, sabitlerHandler,
   topluYukleHandler, sablonIndirHandler, raporIndirHandler,
-  haritaDosyaYukleHandler, komsuParsellerHandler,
+  haritaDosyaYukleHandler, komsuParsellerHandler, dosyaYukleHandler,
 };

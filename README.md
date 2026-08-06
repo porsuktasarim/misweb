@@ -395,6 +395,52 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
+## Mera - Durum Yönetimi + Dosyalar Sekmesi + Sistem Ayarları (YENİ)
+
+**1. DURUM YÖNETİMİ (Aktif/Pasif/Silindi):** `MeraParseli` modeline
+`durum` alanı eklendi. **"Sil" ARTIK GERÇEKTEN SİLMİYOR** - sistemin
+genel felsefesiyle (notlar/harita versiyonları hiç kaybolmaz) tutarlı
+olması için "Sil" ve "Pasife Al" AYNI mekanizmayı (durum değişikliği)
+kullanıyor, sadece hedef durum farklı. Parsel detay sayfasının
+başlığında durum rozeti + "Pasife Al/Aktif Et" ve "Sil" butonları
+var - "Sil" onay istiyor, sonrasında listeye yönlendiriyor. Liste
+sayfasına "Durum" filtresi eklendi (Aktif/Pasif/Tümü, varsayılan
+Aktif) ve "Durum" sütunu (renkli rozet: yeşil/sarı/kırmızı).
+`listele()` servis fonksiyonu varsayılan olarak "Silindi" durumundaki
+kayıtları GİZLER (veri kaybolmaz, sadece listede görünmez).
+
+**2. "DOSYALAR" SEKMESİ (YENİ):** Genel Bilgiler/Notlar/Log yanına
+eklendi. Genel amaçlı belge yükleme (harita/CBS dosyalarından AYRI
+bir alan - `MeraParseli.dosyalar`) + **harita dosyaları (orijinal
+format VE otomatik üretilen GeoJSON türevi DAHİL) AYNI listede
+BİRLİKTE** gösteriliyor (kullanıcının açık isteği). Her satırda:
+dosya adı, tip, kaynak (Dosyalar/Harita vN), tarih, İndir butonu.
+**PDF veya görsel (.pdf/.jpg/.jpeg/.png/.gif/.webp) dosyaya
+TIKLANINCA Bootstrap modal içinde POPUP ÖNİZLEME açılıyor** (görseller
+`<img>`, PDF `<iframe>` ile) - diğer formatlar doğrudan indiriliyor.
+
+**3. YÖNETİLEBİLİR BELGE TİPLERİ + OTOMATİK ADLANDIRMA:** `BelgeAyarlari`
+modeline `meraDosyaTipleri` dizisi eklendi - varsayılan olarak Tapu
+Senedi, Tespit Tutanağı, Fotoğraf (hepsi otomatik adlandırmalı) ve
+Diğer Belge (orijinal ad korunur) geliyor, Sistem Ayarları'ndan
+eklenip çıkarılabiliyor. "Otomatik Adlandırma" açık olan bir tip
+seçilirse dosya `İl-İlçe-Mahalle-Ada-Parsel-Tip-vN` biçiminde otomatik
+adlandırılıyor (harita dosyalarıyla AYNI mantık, harita için zaten
+var olan `dosyaAdiTemizle()` yardımcı fonksiyonu yeniden kullanıldı) -
+test edildi: `Istanbul-Silivri-Bekirli-123-45-Tapu-Senedi-v1.pdf`.
+
+**4. "GÖRÜNÜM AYARLARI" → "SİSTEM AYARLARI":** Sekme adı, artık SADECE
+görsel değil veri-tanımlama (Mera Dosya Tipleri) ayarlarını da
+barındırdığı için genişletildi. Sekme içinde yeni "Mera Dosya
+Tipleri" tablosu (ad + otomatik adlandırma checkbox + satır silme) ve
+"+ Belge Tipi Ekle" butonu var, aynı Kaydet butonuyla birlikte
+kaydediliyor.
+
+**Test edilen backend akışı:** model → service → controller → routes
+zinciri tam yüklendi, `PARSEL_DURUMLARI` (`["Aktif","Pasif","Silindi"]`)
+ve `VARSAYILAN_MERA_DOSYA_TIPLERI` doğrulandı, otomatik adlandırma
+mantığı izole test edildi.
+
 ## Mera - Otomatik GeoJSON Dönüşümü (YENİ) - KURULUM GEREKLİ
 
 **KULLANICI SORUSU ÜZERİNE:** "Bu formatlar içinde en iyi veri saklama

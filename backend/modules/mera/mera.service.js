@@ -8,16 +8,24 @@ const lang = require('../../../config/lang/tr');
 const meraImport = require('./mera.import');
 const meraExport = require('./mera.export');
 const haritaDonustur = require('./mera.harita-donustur');
+const BelgeAyarlari = require('../belge-ayarlari/belgeAyarlari.model');
 
 function logEkle(kayit, islem, detay, kullaniciAdi) {
   kayit.loglar.push({ islem, detay, kullaniciAdi: kullaniciAdi || '', tarih: new Date() });
 }
 
-async function listele({ il, ilce, koyMahalle } = {}) {
+async function listele({ il, ilce, koyMahalle, durum } = {}) {
   const filtre = {};
   if (il) filtre.il = il;
   if (ilce) filtre.ilce = ilce;
   if (koyMahalle) filtre.koyMahalle = koyMahalle;
+  // Varsayilan: "Silindi" durumundaki parseller listede GORUNMEZ (ama
+  // veritabaninda KALICI olarak durur) - durum ACIKCA istenirse
+  // (orn. "Aktif"/"Pasif"/"Silindi") o filtre uygulanir, "Tumu"
+  // istenirse HICBIR durum filtresi uygulanmaz (hepsi gorunur).
+  if (durum === 'Tümü') { /* filtre yok */ }
+  else if (durum) filtre.durum = durum;
+  else filtre.durum = { $ne: 'Silindi' };
   return MeraParseli.find(filtre).sort({ il: 1, ilce: 1, koyMahalle: 1, adaNo: 1, parselNo: 1 });
 }
 
@@ -90,10 +98,27 @@ async function guncelle(id, veri, kullaniciAdi) {
   return kayit;
 }
 
-async function sil(id) {
-  const kayit = await MeraParseli.findByIdAndDelete(id);
-  if (!kayit) throw new Error(`${lang.mera.parselBulunamadi}: ${id}`);
+/**
+ * Parsel ASLA veritabanindan GERCEKTEN silinmez (sistemin genel
+ * felsefesi - notlar/harita versiyonlari gibi). "Sil" ve "Pasife Al"
+ * AYNI mekanizmayi (durum degisikligi) kullanir - SADECE hedef durum
+ * farklidir. Gecerli degerler: 'Aktif' | 'Pasif' | 'Silindi'.
+ */
+async function durumDegistir(id, yeniDurum, kullaniciAdi) {
+  const kayit = await getir(id);
+  const GECERLI_DURUMLAR = MeraParseli.PARSEL_DURUMLARI;
+  if (!GECERLI_DURUMLAR.includes(yeniDurum)) throw new Error(`Geçersiz durum: ${yeniDurum}`);
+  const eskiDurum = kayit.durum;
+  if (eskiDurum === yeniDurum) return kayit;
+  kayit.durum = yeniDurum;
+  logEkle(kayit, 'durumDegistirildi', `Durum: ${eskiDurum} -> ${yeniDurum}`, kullaniciAdi);
+  await kayit.save();
   return kayit;
+}
+
+/** GERIYE DONUK UYUMLULUK icin - "Sil" ARTIK YUMUSAK (durum='Silindi'), gercekten SILMEZ. */
+async function sil(id, kullaniciAdi) {
+  return durumDegistir(id, 'Silindi', kullaniciAdi);
 }
 
 /** Not EKLER - notlar ASLA SILINEMEZ, sadece notDuzenle ile GUNCELLENEBILIR (versiyon gecmisiyle). */
@@ -237,10 +262,44 @@ async function komsuParseller(il, ilce, koyMahalle, haricId) {
     .filter((p) => p.sonHaritaDosyasi);
 }
 
+/**
+ * Parselin "Dosyalar" sekmesine GENEL AMACLI bir belge EKLER (harita/
+ * CBS dosyalarindan AYRI). dosyaTipiAnahtari, Sistem Ayarlari'ndaki
+ * (BelgeAyarlari.meraDosyaTipleri) YONETILEBILIR bir tipe karsilik
+ * gelir - o tip "otomatikAdlandirma: true" ise dosya "IL-ILCE-
+ * MAHALLE-ADA-PARSEL-{TIP}-vN" seklinde OTOMATIK adlandirilir (harita
+ * dosyalariyla AYNI mantik); false ise (veya tip belirtilmezse)
+ * kullanicinin YUKLEDIGI ORIJINAL dosya adi KORUNUR.
+ */
+async function dosyaYukle(id, dosya, dosyaTipiAnahtari, kullaniciAdi) {
+  const kayit = await getir(id);
+  if (!dosya) throw new Error(lang.mera.dosyaSecilmedi);
+
+  const ayarlar = await BelgeAyarlari.findOne();
+  const dosyaTipleri = (ayarlar && ayarlar.meraDosyaTipleri) || [];
+  const tip = dosyaTipleri.find((t) => t.anahtar === dosyaTipiAnahtari);
+
+  const uzanti = path.extname(dosya.originalname);
+  let orijinalAd = dosya.originalname;
+  if (tip && tip.otomatikAdlandirma) {
+    const ayniTipSayisi = kayit.dosyalar.filter((d) => d.dosyaTipiAnahtari === dosyaTipiAnahtari).length;
+    const parcalar = [kayit.il, kayit.ilce, kayit.koyMahalle, kayit.adaNo, kayit.parselNo, tip.ad].map(dosyaAdiTemizle).filter(Boolean);
+    orijinalAd = `${parcalar.join('-')}-v${ayniTipSayisi + 1}${uzanti}`;
+  }
+
+  kayit.dosyalar.push({
+    dosyaYolu: dosya.path, orijinalAd, dosyaTipiAnahtari: dosyaTipiAnahtari || '',
+    formatUzantisi: uzanti.toLowerCase(), yuklemeTarihi: new Date(), yukleyenKullanici: kullaniciAdi || '',
+  });
+  logEkle(kayit, 'dosyaEklendi', `${orijinalAd}${tip ? ` (${tip.ad})` : ''}`, kullaniciAdi);
+  await kayit.save();
+  return kayit;
+}
+
 module.exports = {
-  listele, getir, olustur, guncelle, sil, notEkle, notDuzenle, notDosyaEkle,
-  topluYukle, sablonIndir, raporIndir, haritaDosyaYukle, komsuParseller,
+  listele, getir, olustur, guncelle, sil, durumDegistir, notEkle, notDuzenle, notDosyaEkle,
+  topluYukle, sablonIndir, raporIndir, haritaDosyaYukle, komsuParseller, dosyaYukle,
   ARAZI_NITELIKLERI: MeraParseli.ARAZI_NITELIKLERI, ARAZI_KAYNAKLARI: MeraParseli.ARAZI_KAYNAKLARI,
   ARAZI_DURUM_SINIFLARI: MeraParseli.ARAZI_DURUM_SINIFLARI, TOPRAK_SINIFLARI: MeraParseli.TOPRAK_SINIFLARI,
-  ISLAH_DURUMLARI: MeraParseli.ISLAH_DURUMLARI,
+  ISLAH_DURUMLARI: MeraParseli.ISLAH_DURUMLARI, PARSEL_DURUMLARI: MeraParseli.PARSEL_DURUMLARI,
 };

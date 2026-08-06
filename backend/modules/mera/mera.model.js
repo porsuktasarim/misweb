@@ -28,6 +28,12 @@ const ARAZI_DURUM_SINIFLARI = ['Çok İyi', 'İyi', 'Orta', 'Zayıf', 'Belirlenm
 // Korunmasi mevzuatinda kullanilan I-VIII sinif sistemi).
 const TOPRAK_SINIFLARI = ['I. Sınıf', 'II. Sınıf', 'III. Sınıf', 'IV. Sınıf', 'V. Sınıf', 'VI. Sınıf', 'VII. Sınıf', 'VIII. Sınıf'];
 const ISLAH_DURUMLARI = ['Islah Edilmedi', 'Islah Ediliyor', 'Islah Edildi'];
+// Parsel KAYITLARI ASLA GERCEKTEN SILINMEZ (sistemin genel felsefesi -
+// notlar/harita versiyonlari gibi) - "Sil" ARTIK "Pasife Al" ile AYNI
+// PRENSIPTE calisir: kayit veritabaninda KALIR, sadece durum degisir.
+// "Silindi" durumu, GERCEKTEN kaza ile olusturulmus/gecersiz kayitlar
+// icin - listede GORUNMEZ ama VERI KAYBOLMAZ, istenirse geri donulur.
+const PARSEL_DURUMLARI = ['Aktif', 'Pasif', 'Silindi'];
 
 const notVersiyonSchema = new mongoose.Schema(
   { metin: { type: String, required: true }, degistirmeTarihi: { type: Date, default: Date.now }, degistirenKullanici: { type: String, default: '' } },
@@ -87,7 +93,25 @@ const haritaDosyaSchema = new mongoose.Schema(
     // TEK BASINA parselin GUNCEL verisini de tasir. Harita GORUNTULEME
     // HER ZAMAN bu (garanti calisir/veri-zengin) dosyayi TERCIH EDER,
     // yoksa orijinale (formatTipi'ne gore) doner.
-    geojsonYolu: { type: String, default: null },
+        geojsonYolu: { type: String, default: null },
+  },
+  { _id: false }
+);
+
+// Mera detayindaki "Dosyalar" sekmesi icin GENEL AMACLI belge ekleri
+// (harita/CBS dosyalarindan AYRI - onlar haritaDosyalari'nda kalir,
+// AMA "Dosyalar" sekmesinde HER IKISI de BIRLIKTE listelenir). Bazi
+// TEMEL belge TIPLERI (Ayarlar > Sistem Ayarlari'ndan yonetilir,
+// asagida BelgeAyarlari.meraDosyaTipleri) icin OTOMATIK ADLANDIRMA
+// sablonu uygulanir - digerleri orijinal dosya adiyla saklanir.
+const dosyaSchema = new mongoose.Schema(
+  {
+    dosyaYolu: { type: String, required: true },
+    orijinalAd: { type: String, required: true }, // gosterilen/indirilen ad (sablonlu VEYA orijinal yuklenen ad)
+    dosyaTipiAnahtari: { type: String, default: '' }, // BelgeAyarlari.meraDosyaTipleri[].anahtar - bos ise "Diger"
+    formatUzantisi: { type: String, default: '' }, // '.pdf', '.jpg' vb. - onizleme (popup) turunu BELIRLER
+    yuklemeTarihi: { type: Date, default: Date.now },
+    yukleyenKullanici: { type: String, default: '' },
   },
   { _id: false }
 );
@@ -114,7 +138,11 @@ const meraParseliSchema = new mongoose.Schema(
     egimi: { type: String, default: '' },
     topraksinifi: { type: String, enum: TOPRAK_SINIFLARI },
     tapuKimlikNo: { type: String, default: '' },
+    // Parsel ASLA gercekten silinmez - "Sil" butonu bu alani
+    // 'Silindi' yapar, veri KALICI olarak durur (bkz. yukaridaki not).
+    durum: { type: String, enum: PARSEL_DURUMLARI, default: 'Aktif' },
     notlar: { type: [notSchema], default: [] },
+    dosyalar: { type: [dosyaSchema], default: [] },
     haritaDosyalari: { type: [haritaDosyaSchema], default: [] },
     loglar: { type: [logSchema], default: [] },
   },
@@ -129,3 +157,4 @@ module.exports.ARAZI_KAYNAKLARI = ARAZI_KAYNAKLARI;
 module.exports.ARAZI_DURUM_SINIFLARI = ARAZI_DURUM_SINIFLARI;
 module.exports.TOPRAK_SINIFLARI = TOPRAK_SINIFLARI;
 module.exports.ISLAH_DURUMLARI = ISLAH_DURUMLARI;
+module.exports.PARSEL_DURUMLARI = PARSEL_DURUMLARI;

@@ -1,13 +1,15 @@
 /**
  * belgeAyarlari.model.js
  *
- * TEK KAYITLIK (singleton) GÖRÜNÜM AYARLARI - hem 3T'nin ürettiği
- * Word/PDF çıktılarında (Duyuru, Duyuru Tutanağı, Tebliğ Belgesi vb.)
- * kullanılan "İMZA" rengi/yazı tipi, HEM DE arayüzdeki (ekrandaki)
- * FARKLI TEMA PARÇALARININ (Sol Menü, Üst Menü, Ana İçerik Sol/Sağ
- * vb.) BAŞLIK ve METİN font boyutları BURADAN yönetilir - genişletilebilir
- * bir liste (yeni bir "tema parçası" gerektiğinde SADECE varsayılan
- * veriye yeni bir satır eklenir, kod değişmez).
+ * TEK KAYITLIK (singleton) SISTEM AYARLARI (eski adi "Gorunum
+ * Ayarlari" idi - kapsam genisledi, artik SADECE gorsel DEGIL, Mera
+ * dosya TIPLERI gibi veri-tanimlama ayarlarini da barindiriyor). Uc
+ * ana bolum: (1) 3T'nin urettigi Word/PDF ciktilarindaki "İMZA"
+ * rengi/yazi tipi, (2) arayuzdeki (ekrandaki) FARKLI tema
+ * parcalarinin (Sol Menu, Ust Menu, Ana Icerik Sol/Sag vb.) BASLIK
+ * ve METIN font boyutlari, (3) Mera Modulu icin YONETILEBILIR belge
+ * tipleri (Tapu Senedi, Tespit Tutanagi vb.) - hepsi GENISLETILEBILIR
+ * listeler (yeni bir satir eklendiginde kod DEGISMEZ).
  */
 
 const mongoose = require('mongoose');
@@ -50,6 +52,28 @@ const VARSAYILAN_HARITA_STILI = {
   altKatmanlar: { cizgiRengi: '#9e9e9e', cizgiKalinligi: 1.5, doluMu: false, doluRengi: '#9e9e9e' },
 };
 
+// Mera parseli "Dosyalar" sekmesinde yuklenebilecek BELGE TIPLERI -
+// KULLANICI TARAFINDAN Sistem Ayarlari'ndan EKLENIP CIKARILABILIR
+// (genisletilebilir liste, kod degisikligi GEREKMEZ). "otomatikAdlandirma"
+// true ise dosya "IL-ILCE-MAHALLE-ADA-PARSEL-{TIP}-vN" seklinde
+// OTOMATIK adlandirilir (harita dosyalariyla AYNI mantik), false ise
+// kullanicinin yukledigi ORIJINAL dosya adi KORUNUR.
+const meraDosyaTipiSchema = new mongoose.Schema(
+  {
+    anahtar: { type: String, required: true },
+    ad: { type: String, required: true },
+    otomatikAdlandirma: { type: Boolean, default: true },
+  },
+  { _id: false }
+);
+
+const VARSAYILAN_MERA_DOSYA_TIPLERI = [
+  { anahtar: 'tapuSenedi', ad: 'Tapu Senedi', otomatikAdlandirma: true },
+  { anahtar: 'tespitTutanagi', ad: 'Tespit Tutanağı', otomatikAdlandirma: true },
+  { anahtar: 'fotograf', ad: 'Fotoğraf', otomatikAdlandirma: true },
+  { anahtar: 'diger', ad: 'Diğer Belge', otomatikAdlandirma: false },
+];
+
 const belgeAyarlariSchema = new mongoose.Schema(
   {
     // Acik gri varsayilan - imza cizgisi/etiketleri VE "İMZA" yazisi
@@ -70,6 +94,8 @@ const belgeAyarlariSchema = new mongoose.Schema(
       ustKatman: { type: haritaKatmanStiliSchema, default: () => VARSAYILAN_HARITA_STILI.ustKatman },
       altKatmanlar: { type: haritaKatmanStiliSchema, default: () => VARSAYILAN_HARITA_STILI.altKatmanlar },
     },
+    // Mera parseli "Dosyalar" sekmesindeki YONETILEBILIR belge tipleri.
+    meraDosyaTipleri: { type: [meraDosyaTipiSchema], default: VARSAYILAN_MERA_DOSYA_TIPLERI },
   },
   { timestamps: true }
 );
@@ -77,3 +103,4 @@ const belgeAyarlariSchema = new mongoose.Schema(
 module.exports = mongoose.model('BelgeAyarlari', belgeAyarlariSchema);
 module.exports.VARSAYILAN_TEMA_BOLUMLERI = VARSAYILAN_TEMA_BOLUMLERI;
 module.exports.VARSAYILAN_HARITA_STILI = VARSAYILAN_HARITA_STILI;
+module.exports.VARSAYILAN_MERA_DOSYA_TIPLERI = VARSAYILAN_MERA_DOSYA_TIPLERI;

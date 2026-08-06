@@ -45,15 +45,23 @@
             <div>
               <h2 id="baslikAlani"></h2>
               <a href="/mera/" class="small" id="txtListeyeDon"></a>
+              <span id="parselDurumRozeti" class="ms-2"></span>
             </div>
-            <div style="max-width:220px;">
-              <label class="form-label small fw-semibold mb-1" id="txtKullaniciAdiniz"></label>
-              <input type="text" class="form-control form-control-sm" id="kullaniciAdiInput">
+            <div class="d-flex align-items-end gap-2">
+              <div class="btn-group btn-group-sm">
+                <button type="button" class="btn btn-outline-warning" id="pasifeAlBtn"></button>
+                <button type="button" class="btn btn-outline-danger" id="silBtn"></button>
+              </div>
+              <div style="max-width:220px;">
+                <label class="form-label small fw-semibold mb-1" id="txtKullaniciAdiniz"></label>
+                <input type="text" class="form-control form-control-sm" id="kullaniciAdiInput">
+              </div>
             </div>
           </div>
 
           <ul class="nav nav-tabs mb-3">
             <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#genel-tab" id="txtSekmeGenel"></button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#dosyalar-tab" id="txtSekmeDosyalar"></button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#notlar-tab" id="txtSekmeNotlar"></button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#log-tab" id="txtSekmeLog"></button></li>
           </ul>
@@ -154,6 +162,33 @@
               </div>
             </div>
 
+            <div class="tab-pane fade" id="dosyalar-tab">
+              <div class="border rounded p-2 mb-3">
+                <div class="small fw-semibold mb-2" id="txtDosyaYukleBaslik"></div>
+                <div class="row g-2">
+                  <div class="col-md-4">
+                    <label class="form-label small" id="lblDosyaTipi"></label>
+                    <select class="form-select form-select-sm" id="dosyaTipiSecici"></select>
+                  </div>
+                  <div class="col-md-5">
+                    <label class="form-label small" id="lblDosyaSec"></label>
+                    <input type="file" class="form-control form-control-sm" id="genelDosyaInput">
+                  </div>
+                  <div class="col-md-3 d-flex align-items-end">
+                    <button type="button" class="btn btn-sm btn-primary w-100" id="dosyaYukleBtn"></button>
+                  </div>
+                </div>
+                <span id="dosyaYukleSonuc" class="small"></span>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead><tr id="dosyaTheadSatiri"></tr></thead>
+                  <tbody id="dosyaTablosu"></tbody>
+                </table>
+              </div>
+            </div>
+
             <div class="tab-pane fade" id="notlar-tab">
               <div class="mb-3">
                 <label class="form-label small fw-semibold" id="lblYeniNot"></label>
@@ -187,6 +222,21 @@
     </div>
 
     <footer class="mis-footer" id="mis-footer"></footer>
+  </div>
+
+  <!-- Dosya Önizleme Modalı (PDF/Görsel) -->
+  <div class="modal fade" id="onizlemeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title" id="onizlemeBaslik"></h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0" style="height:75vh;">
+          <div id="onizlemeIcerik" class="w-100 h-100"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -256,11 +306,133 @@
       document.getElementById('gTahsisYapildi').checked = !!kayit.tahsisYapildiMi;
       document.getElementById('gTahsisTarihi').value = kayit.tahsisTarihi ? kayit.tahsisTarihi.slice(0, 10) : '';
 
+      parselDurumunuGoster();
       notlariGoster();
       logGoster();
       verimBilgisiHesapla();
       haritaVersiyonlariniDoldur();
+      dosyaTablosunuGoster();
     }
+
+    // ==================== DURUM YÖNETİMİ (Aktif/Pasif/Silindi) ====================
+    function parselDurumunuGoster() {
+      const renkler = { Aktif: 'bg-success-subtle text-success-emphasis', Pasif: 'bg-warning-subtle text-warning-emphasis', Silindi: 'bg-danger-subtle text-danger-emphasis' };
+      document.getElementById('parselDurumRozeti').innerHTML = `<span class="badge ${renkler[kayit.durum] || 'bg-secondary-subtle'}">${guvenliMetin(kayit.durum)}</span>`;
+      const pasifBtn = document.getElementById('pasifeAlBtn');
+      pasifBtn.textContent = kayit.durum === 'Pasif' ? LANG.mera.aktifEt : LANG.mera.pasifeAl;
+      pasifBtn.dataset.hedefDurum = kayit.durum === 'Pasif' ? 'Aktif' : 'Pasif';
+    }
+
+    async function parselDurumDegistir(yeniDurum) {
+      const res = await fetch(`${API}/${id}/durum`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ durum: yeniDurum, kullaniciAdi: kullaniciAdiInput.value.trim() }),
+      });
+      const json = await res.json();
+      if (!json.success) { alert(json.message); return; }
+      kayit = json.data;
+      parselDurumunuGoster();
+      logGoster();
+    }
+
+    document.getElementById('pasifeAlBtn').addEventListener('click', () => {
+      parselDurumDegistir(document.getElementById('pasifeAlBtn').dataset.hedefDurum);
+    });
+    document.getElementById('silBtn').addEventListener('click', () => {
+      if (!confirm(LANG.mera.silOnay)) return;
+      parselDurumDegistir('Silindi').then(() => { window.location.href = '/mera/'; });
+    });
+
+    // ==================== DOSYALAR SEKMESİ ====================
+    // Genel amacli dosyalar (kayit.dosyalar) VE harita/CBS dosyalari
+    // (kayit.haritaDosyalari - GeoJSON turevi DAHIL) BIRLIKTE, TEK bir
+    // listede gosterilir (kullanicinin acik istegi). PDF/gorsel
+    // dosyalar TIKLANINCA POPUP'TA (modal) ONIZLENIR, digerleri
+    // DOGRUDAN indirilir.
+    const ONIZLENEBILIR_UZANTILAR = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    let _mdtAdSozlugu = {};
+
+    /** Sistem Ayarlari'ndaki Mera Dosya Tiplerini CEKIP secici + ad sozlugunu DOLDURUR. */
+    async function dosyaTipleriniYukle() {
+      const json = await fetch('/api/belge-ayarlari').then((r) => r.json());
+      if (!json.success) return;
+      const tipler = json.data.meraDosyaTipleri || [];
+      _mdtAdSozlugu = Object.fromEntries(tipler.map((t) => [t.anahtar, t.ad]));
+      document.getElementById('dosyaTipiSecici').innerHTML = tipler.map((t) => `<option value="${t.anahtar}">${guvenliMetin(t.ad)}</option>`).join('');
+    }
+
+    function dosyaOnizlenebilirMi(uzanti) {
+      return ONIZLENEBILIR_UZANTILAR.includes((uzanti || '').toLowerCase());
+    }
+
+    window.dosyaOnizle = (url, ad, uzanti) => {
+      const icerikAlani = document.getElementById('onizlemeIcerik');
+      document.getElementById('onizlemeBaslik').textContent = ad;
+      const gorselUzantilar = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+      if (gorselUzantilar.includes(uzanti.toLowerCase())) {
+        icerikAlani.innerHTML = `<img src="${url}" style="max-width:100%; max-height:100%; object-fit:contain; display:block; margin:auto;">`;
+      } else {
+        icerikAlani.innerHTML = `<iframe src="${url}" style="width:100%; height:100%; border:0;"></iframe>`;
+      }
+      new bootstrap.Modal(document.getElementById('onizlemeModal')).show();
+    };
+
+    function dosyaSatiriHtml({ url, ad, tip, uzanti, tarih, kaynak }) {
+      const onizlenebilir = dosyaOnizlenebilirMi(uzanti);
+      const adHucresi = onizlenebilir
+        ? `<a href="#" onclick="dosyaOnizle('${url}', '${guvenliMetin(ad).replace(/'/g, "\\'")}', '${uzanti}'); return false;">${guvenliMetin(ad)}</a>`
+        : guvenliMetin(ad);
+      return `
+        <tr>
+          <td>${adHucresi}</td>
+          <td>${guvenliMetin(tip)}</td>
+          <td>${guvenliMetin(kaynak)}</td>
+          <td>${tarih ? new Date(tarih).toLocaleDateString('tr-TR') : '-'}</td>
+          <td><a class="btn btn-sm btn-outline-secondary" href="${url}" download>${LANG.mera.indir}</a></td>
+        </tr>`;
+    }
+
+    function dosyaTablosunuGoster() {
+      document.getElementById('dosyaTheadSatiri').innerHTML = `<th>${LANG.ortak.dosya}</th><th>${LANG.mera.dosyaTipi}</th><th>${LANG.mera.kaynak}</th><th>${LANG.ortak.tarih}</th><th></th>`;
+
+      const genelDosyalar = (kayit.dosyalar || []).map((d) => ({
+        url: `/${d.dosyaYolu}`, ad: d.orijinalAd, tip: _mdtAdSozlugu[d.dosyaTipiAnahtari] || '-',
+        uzanti: d.formatUzantisi, tarih: d.yuklemeTarihi, kaynak: 'Dosyalar',
+      }));
+
+      const haritaDosyalari = [];
+      (kayit.haritaDosyalari || []).forEach((h) => {
+        haritaDosyalari.push({ url: `/${h.dosyaYolu}`, ad: h.orijinalAd, tip: 'Harita (Orijinal)', uzanti: `.${h.formatTipi}`, tarih: h.yuklemeTarihi, kaynak: `Harita v${h.versiyonNo}` });
+        if (h.geojsonYolu) {
+          haritaDosyalari.push({ url: `/${h.geojsonYolu}`, ad: h.orijinalAd.replace(/\.[^.]+$/, '.geojson'), tip: 'Harita (GeoJSON)', uzanti: '.geojson', tarih: h.yuklemeTarihi, kaynak: `Harita v${h.versiyonNo}` });
+        }
+      });
+
+      const tumDosyalar = [...genelDosyalar, ...haritaDosyalari];
+      const govde = document.getElementById('dosyaTablosu');
+      if (!tumDosyalar.length) { govde.innerHTML = `<tr><td colspan="5" class="text-muted small">${LANG.mera.henuzDosyaYok}</td></tr>`; return; }
+      govde.innerHTML = tumDosyalar.map(dosyaSatiriHtml).join('');
+    }
+
+    document.getElementById('dosyaYukleBtn').addEventListener('click', async () => {
+      const sonucAlan = document.getElementById('dosyaYukleSonuc');
+      const dosya = document.getElementById('genelDosyaInput').files[0];
+      if (!dosya) { sonucAlan.innerHTML = `<span class="text-danger">${LANG.mera.dosyaSecilmedi}</span>`; return; }
+      const formData = new FormData();
+      formData.append('dosya', dosya);
+      formData.append('dosyaTipiAnahtari', document.getElementById('dosyaTipiSecici').value);
+      formData.append('kullaniciAdi', kullaniciAdiInput.value.trim());
+
+      sonucAlan.innerHTML = LANG.ortak.yukleniyor;
+      const res = await fetch(`${API}/${id}/dosya`, { method: 'POST', body: formData });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
+      kayit = json.data;
+      sonucAlan.innerHTML = `<span class="text-success">${LANG.ortak.kaydedildi}</span>`;
+      dosyaTablosunuGoster();
+      logGoster();
+      document.getElementById('genelDosyaInput').value = '';
+    });
 
     // ==================== HARİTA ALT-MODÜLÜ ====================
     // Kutuphaneler: Leaflet (OSM tabanli, KEY GEREKTIRMEZ) + Esri World
@@ -671,8 +843,15 @@
       kullaniciInput.addEventListener('change', () => localStorage.setItem('meraKullaniciAdi', kullaniciInput.value.trim()));
 
       document.getElementById('txtSekmeGenel').textContent = LANG.mera.sekmeGenel;
+      document.getElementById('txtSekmeDosyalar').textContent = LANG.mera.sekmeDosyalar;
       document.getElementById('txtSekmeNotlar').textContent = LANG.mera.sekmeNotlar;
       document.getElementById('txtSekmeLog').textContent = LANG.mera.sekmeLog;
+      document.getElementById('silBtn').textContent = LANG.ortak.sil;
+      document.getElementById('txtDosyaYukleBaslik').textContent = LANG.mera.dosyaYukleBtn;
+      document.getElementById('lblDosyaTipi').textContent = LANG.mera.dosyaTipi;
+      document.getElementById('lblDosyaSec').textContent = LANG.mera.dosyaSec;
+      document.getElementById('dosyaYukleBtn').textContent = LANG.mera.dosyaYukleBtn;
+      await dosyaTipleriniYukle();
 
       document.getElementById('lblIl').textContent = LANG.ortak.il;
       document.getElementById('lblIlce').textContent = LANG.ortak.ilce;

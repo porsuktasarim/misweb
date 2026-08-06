@@ -52,5 +52,7 @@ router.put('/:id/notlar/:notIndex', controller.notDuzenleHandler);
 router.post('/:id/notlar/:notIndex/dosya', upload.single('dosya'), controller.notDosyaEkleHandler);
 router.post('/:id/harita-dosyasi', haritaUpload.single('dosya'), controller.haritaDosyaYukleHandler);
 router.get('/:id/komsu-parseller', controller.komsuParsellerHandler);
+router.put('/:id/durum', controller.durumDegistirHandler);
+router.post('/:id/dosya', upload.single('dosya'), controller.dosyaYukleHandler);
 
 module.exports = router;
