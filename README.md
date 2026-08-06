@@ -397,6 +397,19 @@ sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
 ## Mera - Harita Alt-Modülü (YENİ)
 
+**ÖNEMLİ DÜZELTME (teslimden hemen sonra bulundu):** `leaflet-omnivore`
+CDN adresi YANLIŞ yazılmıştı (`@mapbox/leaflet-omnivore` - böyle bir
+scoped paket YOK, gerçek npm paket adı sadece `leaflet-omnivore`).
+Bu adres 404 verir ve `omnivore` global değişkeni HİÇ TANIMLANMAZDI -
+yani TÜM KML/GPX gösterim özelliği SESSİZCE bozuk kalırdı (kullanıcı
+dosya yükleyince veri kaydedilir ama haritada hiçbir şey ÇİZİLMEZDİ).
+Doğru adres (`unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js`)
+web'den DOSYA İÇERİĞİ okunarak (`omnivore.kml`/`omnivore.gpx`
+fonksiyonlarının gerçekten var olduğu görülerek) doğrulandı ve
+düzeltildi. Leaflet'in kendi CDN adresleri (unpkg.com/leaflet@1.9.4)
+zaten doğruydu, ayrıca resmi Leaflet dokümantasyonunun önerdiği
+`integrity`/`crossorigin` güvenlik öznitelikleri de eklendi.
+
 Parsel detay sayfasına eklendi. **GEREKLİ HİÇBİR NPM PAKETİ YOK** -
 tüm harita kütüphaneleri TARAYICIDA CDN üzerinden yükleniyor (`npm
 install` gerekmiyor):
