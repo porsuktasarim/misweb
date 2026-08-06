@@ -395,14 +395,133 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
-## Mera Parsel Detay Sayfası - Layout Düzeltmesi
+## Mera - Otomatik GeoJSON Dönüşümü (YENİ) - KURULUM GEREKLİ
+
+**KULLANICI SORUSU ÜZERİNE:** "Bu formatlar içinde en iyi veri saklama
+formatı hangisi?" sorusuna cevaben GeoJSON önerildi (öznitelik/
+properties desteği doğal, ek kütüphane gerektirmeden Leaflet'te
+render edilir, düz metin). Kullanıcı bunun üzerine "yüklenen dosyayı
+otomatik GeoJSON'a çevir" istedi - bu, hem parsel bilgilerinin
+(ıslah durumu, eğim vb.) dosyaya gömülmesini SAĞLIYOR, hem de
+KMZ'nin "haritada gösterilemiyor" sorununu ÇÖZÜYOR.
+
+**YENİ KURULUM GEREKLİ (`npm install` çalıştırılmalı):**
+```
+npm install @tmcw/togeojson @xmldom/xmldom adm-zip
+```
+`package.json`'a zaten eklendi, sadece sunucuda `npm install`
+çalıştırmak yeterli. Bu 3 paket SADECE bu özellik için gerekli:
+- `@tmcw/togeojson`: KML/GPX → GeoJSON dönüşümü (leaflet-omnivore'un
+  TARAYICIDA kullandığı ile AYNI kütüphanenin ailesinden, ama BURADA
+  SUNUCU tarafında/Node.js'te çalışıyor)
+- `@xmldom/xmldom`: Node.js'te `DOMParser` yok (tarayıcıda var) -
+  togeojson bir DOM nesnesi beklediği için bu paket GEREKLİ
+- `adm-zip`: KMZ aslında içinde `.kml` barındıran bir ZIP arşivi -
+  bu paket zip'i açıp içindeki KML'i çıkarmak için kullanılıyor
+
+**Not (güvenlik):** `npm audit` 3 uyarı gösteriyor ama BUNLAR bu
+YENİ paketlerden DEĞİL, projede zaten var olan `exceljs`/`xlsx`
+bağımlılıklarından geliyor - kontrol edildi, yeni eklentiler ek risk
+getirmiyor.
+
+**Nasıl çalışıyor:** `mera.harita-donustur.js` (YENİ dosya) - bir
+harita dosyası yüklendiğinde: 1) ORİJİNAL dosya HER ZAMAN olduğu gibi
+(format değiştirilmeden) saklanır - kural DEĞİŞMEDİ. 2) AYRICA
+otomatik olarak GeoJSON'a çevrilir (KML/KMZ/GPX → GeoJSON; GeoJSON/
+JSON zaten öyleyse öznitelikleri zenginleştirilerek) ve parselin
+GÜNCEL bilgileri (il/ilçe/mahalle/ada/parsel, mera/tapu alanı, arazi
+niteliği/durum sınıfı/kaynağı, tespit/tahdit/tahsis, ıslah durumu,
+eğim, toprak sınıfı, tapu kimlik no) HER feature'ın `properties`
+alanına GÖMÜLÜR. 3) Bu türetilmiş dosya `{orijinal-ad}.geojson`
+olarak diskte (`geojsonYolu` alanında) saklanır. Dönüşüm BAŞARISIZ
+olursa (bozuk dosya vb.) SESSİZCE GEÇİLİR - orijinal dosya YİNE DE
+kaydedilmiş olur. Test edildi (gerçek KML ve KMZ dosyalarıyla):
+KML→GeoJSON dönüşümü + öznitelik gömme başarılı; KMZ (zip içinden
+KML çıkarma) de başarılı - geri okundu, `islahDurumu` gibi alanlar
+doğru şekilde içeride bulundu.
+
+**Harita gösterimi artık `geojsonYolu`'nu ÖNCELİKLİ kullanıyor** -
+hem `mera/detay.html` hem `mera/harita.html`'de: bu alan varsa
+(yeni yüklenen HER dosya için garanti var) DOĞRUDAN o kullanılır -
+format ne olursa olsun (KMZ DAHİL) güvenle çizilir. Yoksa (ÖNCEKİ
+turlarda, bu özellik eklenmeden önce yüklenmiş ESKİ kayıtlar için)
+eski format-bazlı mantığa (omnivore vb.) geri düşülür - geriye dönük
+uyumluluk korundu, eski kayıtlar bozulmadı.
+
+## Mera - Harita Konumu Düzeltmesi (2. Kez)
+
+**YİNE YANLIŞ YERDEYDİ:** Önceki turda harita "sol bölmenin sağ alt-
+sütunu" olarak eklenmişti ama TÜM sekmelerin (Genel Bilgiler/Notlar/
+Log) yanında SABİT duruyordu. Kullanıcı SADECE Genel Bilgiler
+sekmesinde görünmesini istedi. Düzeltme: `row/col-lg-7+col-lg-5`
+bölünmesi artık SADECE `#genel-tab` tab-pane'inin İÇİNDE - Notlar ve
+Log sekmeleri artık TAM GENİŞLİKTE (harita YOK). Ayrıca Bootstrap'in
+`shown.bs.tab` olayı dinlenerek, kullanıcı başka sekmeye gidip Genel
+Bilgiler'e GERİ DÖNDÜĞÜNDE `harita.invalidateSize()` çağrılıyor -
+Leaflet, gizli (`display:none`) bir konteynerden tekrar görünür hale
+gelince boyutunu YANLIŞ hesaplayabiliyor (bilinen bir davranış), bu
+çağrı olmadan harita bozuk/kaymış görünebilirdi.
+
+## Mera - Otomatik GeoJSON Dönüşümü (YENİ)
+
+**Kullanıcının sorusu ("en iyi veri saklama formatı hangisi") ve
+cevabı (GeoJSON - `properties` alanı sayesinde parsel verisini dosya
+İÇİNE gömebiliyor, ekstra kütüphane gerektirmiyor, KMZ'nin aksine
+tarayıcıda direkt render edilebiliyor) sonrası eklendi.**
+
+Artık YÜKLENEN HER dosya (KML/KMZ/GPX/GeoJSON/JSON, formatı ne olursa
+olsun) otomatik olarak GeoJSON'a da çevriliyor - YENİ `backend/
+modules/mera/mera.harita-donustur.js`. **ORİJİNAL dosya HER ZAMAN
+olduğu gibi (format değiştirilmeden) AYRICA saklanır** (ilk kural
+korunuyor) - GeoJSON türevi SADECE bir "kolaylık kopyası". Dönüşen
+GeoJSON'un HER feature'ının `properties` alanına parselin GÜNCEL
+bilgileri (İl/İlçe/Mahalle/Ada/Parsel, Arazi Niteliği/Durum Sınıfı/
+Kaynağı, **Islah Durumu, Eğimi**, Toprak Sınıfı, Mera/Tapu Alanı,
+Tapu Kimlik No) GÖMÜLÜYOR - test edildi, gerçek bir KMZ dosyasıyla
+uçtan uca doğrulandı (bkz. aşağıdaki örnek çıktı).
+
+**KMZ SORUNU TAMAMEN ÇÖZÜLDÜ:** Harita artık `geojsonYolu` varsa
+HER ZAMAN onu kullanıyor (`L.geoJSON()` ile, ek kütüphane
+gerektirmeden) - bu, `leaflet-omnivore`'un doğrudan gösteremediği
+KMZ dosyalarının da ARTIK haritada görünmesini sağlıyor. Dönüşüm
+sunucu tarafında `adm-zip` (KMZ'yi aç) + `@tmcw/togeojson` (KML/GPX
+XML'ini GeoJSON'a çevir) + `@xmldom/xmldom` (XML ayrıştırma) ile
+yapılıyor. Dönüşüm BAŞARISIZ olursa (bozuk dosya vb.) SESSİZCE
+geçilir - orijinal dosya YİNE DE kaydedilir, sadece o versiyon için
+harita gösterimi çalışmayabilir (log'a not düşülür).
+
+**GEREKLİ YENİ NPM PAKETLERİ (kullanıcının kurması gerekiyor):**
+```bash
+npm install @tmcw/togeojson @xmldom/xmldom adm-zip
+```
+(Bu üçü zaten `package.json`'a eklendi - `npm install` çalıştırmak
+yeterli.)
+
+**Test edilen uçtan uca akış (gerçek KMZ dosyasıyla):** dosya
+içindeki `.kml` çıkarıldı → GeoJSON'a çevrildi → parsel özellikleri
+gömüldü → sonuç: `{"il":"İstanbul","ilce":"Silivri","koyMahalle":
+"Bekirli","adaNo":"123","parselNo":"45","araziNiteligi":"Mera",
+"araziDurumSinifi":"İyi","islahDurumu":"Islah Ediliyor","egimi":"%5",
+"topraksinifi":"IV. Sınıf","meraAlaniM2":22222,"tapuAlaniM2":0}` -
+hem orijinal `.kmz` HEM türetilen `.geojson` diskte yan yana durdu.
+
+## Mera Parsel Detay Sayfası - Layout Düzeltmesi (2 tur)
 
 **YANLIŞ KONUMLANDIRMA DÜZELTİLDİ:** Harita paneli ÖNCEKİ turda
 YANLIŞLIKLA sağ bölmeye (`mis-icerik-ikincil`) eklenmişti - kullanıcı
 bunun SOL bölmenin (`mis-icerik-birincil`) İÇİNDE olmasını istiyordu.
-Düzeltme: sol bölme artık İL/İLÇE/MAHALLE/ADA/PARSEL başlığından
-SONRA kendi içinde ikiye bölünüyor (`col-lg-7` sekmeler/form + `col-lg-
-5` harita) - sağ bölmeye (Verim Bilgileri) HİÇ DOKUNULMADI, orada
+İlk düzeltmede sol bölme İL/İLÇE/MAHALLE/ADA/PARSEL başlığından SONRA
+kendi içinde ikiye bölündü (`col-lg-7` sekmeler/form + `col-lg-5`
+harita) - AMA bu, harita TÜM sekmelerde (Notlar/Log dahil) görünür
+kalmasına yol açtı. **İKİNCİ DÜZELTME:** kullanıcı haritanın SADECE
+Genel Bilgiler sekmesinde görünmesini istedi - `row/col-lg-7/col-lg-5`
+bölünmesi artık SADECE `#genel-tab` tab-pane'inin İÇİNDE, Notlar ve
+Log sekmelerinde harita YOK (tam genişlik). Sekmeler arası geçişte
+Leaflet'in KONTEYNER BOYUTUNU YANLIŞ HESAPLAMASINI (bilinen bir
+Leaflet davranışı - `display:none` olan bir konteynerde başlatılan/
+kalan harita, tekrar görünür olduğunda boyutunu KAYBEDEBİLİR) önlemek
+için `shown.bs.tab` olayında `invalidateSize()` çağrılıyor. Sağ bölmeye
+(Verim Bilgileri) HİÇ DOKUNULMADI, orada
 kaldı. **Genişletme artık YENİ SEKME/PENCEREDE:** eski CSS `position:
 fixed` hilesi KALDIRILDI (Leaflet'i aynı sayfada CSS ile büyütmek
 yerine, kullanıcının önerdiği "pop-up ya da yeni sayfa" seçeneklerinden

@@ -7,6 +7,7 @@ const path = require('path');
 const lang = require('../../../config/lang/tr');
 const meraImport = require('./mera.import');
 const meraExport = require('./mera.export');
+const haritaDonustur = require('./mera.harita-donustur');
 
 function logEkle(kayit, islem, detay, kullaniciAdi) {
   kayit.loglar.push({ islem, detay, kullaniciAdi: kullaniciAdi || '', tarih: new Date() });
@@ -193,11 +194,29 @@ async function haritaDosyaYukle(id, dosya, kullaniciAdi) {
   const parcalar = [kayit.il, kayit.ilce, kayit.koyMahalle, kayit.adaNo, kayit.parselNo].map(dosyaAdiTemizle).filter(Boolean);
   const orijinalAd = `${parcalar.join('-')}-v${versiyonNo}${uzanti}`;
 
+  // ORIJINAL dosya HER ZAMAN OLDUGU GIBI saklanir (degismez). AYRICA
+  // otomatik olarak GeoJSON'a CEVRILIP (KML/KMZ/GPX -> GeoJSON;
+  // GeoJSON/JSON zaten oyleyse OZELLIKLERI ZENGINLESTIRILEREK)
+  // parselin GUNCEL bilgileri (ıslah durumu, egim vb.) HER feature'in
+  // properties'ine GOMULUR - boylece (a) indirilen GeoJSON TEK BASINA
+  // parselin verisini de tasir, (b) KMZ gibi Leaflet'in DOGRUDAN
+  // GOSTEREMEDIGI formatlar da ARTIK haritada CIZILEBILIR hale gelir.
+  // Donusum BASARISIZ olursa (bozuk dosya vb.) SESSIZCE GECILIR -
+  // ORIJINAL dosya YINE DE kaydedilmis olur, sadece harita gosterimi
+  // o versiyon icin calismayabilir.
+  let geojsonYolu = null;
+  try {
+    const geojson = await haritaDonustur.dosyayiGeojsoneCevir(dosya.path, formatTipi, kayit);
+    geojsonYolu = await haritaDonustur.geojsonKaydet(dosya.path, geojson);
+  } catch (err) {
+    console.error(`Harita dosyası GeoJSON'a çevrilemedi (${orijinalAd}):`, err.message);
+  }
+
   kayit.haritaDosyalari.push({
-    dosyaYolu: dosya.path, orijinalAd, formatTipi, versiyonNo,
+    dosyaYolu: dosya.path, orijinalAd, formatTipi, versiyonNo, geojsonYolu,
     yuklemeTarihi: new Date(), yukleyenKullanici: kullaniciAdi || '',
   });
-  logEkle(kayit, 'haritaDosyasiEklendi', `${orijinalAd} (v${versiyonNo})`, kullaniciAdi);
+  logEkle(kayit, 'haritaDosyasiEklendi', `${orijinalAd} (v${versiyonNo})${geojsonYolu ? '' : ' - GeoJSON dönüşümü başarısız, sadece orijinal format kaydedildi'}`, kullaniciAdi);
   await kayit.save();
   return kayit;
 }

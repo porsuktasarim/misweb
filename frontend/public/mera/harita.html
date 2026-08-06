@@ -144,7 +144,6 @@
 
     function haritaDosyasiniCiz(dosyaKaydi, ad, tip) {
       if (!_harita || !dosyaKaydi) return;
-      const url = `/${dosyaKaydi.dosyaYolu}`;
       const varsayilanStilKaydi = tip === 'ust' ? _haritaVarsayilanStil.ustKatman : _haritaVarsayilanStil.altKatmanlar;
       const katmanId = `katman-${_katmanIdSayaci++}`;
 
@@ -162,6 +161,15 @@
         haritaKatmanListesiCiz();
       };
 
+      // ONCELIK: otomatik uretilen GeoJSON turevi (geojsonYolu) varsa
+      // HER ZAMAN O KULLANILIR - format ne olursa olsun (KML/KMZ/GPX
+      // dahil) GARANTI CALISIR. YOKSA eski format-bazli mantiga duser.
+      if (dosyaKaydi.geojsonYolu) {
+        fetch(`/${dosyaKaydi.geojsonYolu}`).then((r) => r.json()).then((geojson) => katmanEklendiginde(L.geoJSON(geojson))).catch((err) => console.error('GeoJSON okunamadı:', err));
+        return;
+      }
+
+      const url = `/${dosyaKaydi.dosyaYolu}`;
       if (dosyaKaydi.formatTipi === 'geojson' || dosyaKaydi.formatTipi === 'json') {
         fetch(url).then((r) => r.json()).then((geojson) => katmanEklendiginde(L.geoJSON(geojson))).catch((err) => console.error('GeoJSON okunamadı:', err));
       } else if (dosyaKaydi.formatTipi === 'kml') {

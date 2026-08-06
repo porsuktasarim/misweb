@@ -78,6 +78,16 @@ const haritaDosyaSchema = new mongoose.Schema(
     versiyonNo: { type: Number, required: true },
     yuklemeTarihi: { type: Date, default: Date.now },
     yukleyenKullanici: { type: String, default: '' },
+    // ORIJINAL dosya (dosyaYolu) HER ZAMAN oldugu gibi (FORMAT
+    // DEGISTIRILMEDEN) saklanir - degismez. AYRICA, YUKLEME SIRASINDA
+    // OTOMATIK olarak GeoJSON'a CEVRILIP (KML/KMZ/GPX -> GeoJSON,
+    // GeoJSON/JSON zaten oyleyse OZELLIKLERI ZENGINLESTIRILEREK) BU
+    // ALANA yazilir - parsel bilgileri (ıslah durumu, egim, alan vb.)
+    // HER feature'in properties'ine GOMULUR, boylece indirilen GeoJSON
+    // TEK BASINA parselin GUNCEL verisini de tasir. Harita GORUNTULEME
+    // HER ZAMAN bu (garanti calisir/veri-zengin) dosyayi TERCIH EDER,
+    // yoksa orijinale (formatTipi'ne gore) doner.
+    geojsonYolu: { type: String, default: null },
   },
   { _id: false }
 );
