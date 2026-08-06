@@ -14,7 +14,7 @@ function logEkle(kayit, islem, detay, kullaniciAdi) {
   kayit.loglar.push({ islem, detay, kullaniciAdi: kullaniciAdi || '', tarih: new Date() });
 }
 
-async function listele({ il, ilce, koyMahalle, durum } = {}) {
+async function listele({ il, ilce, koyMahalle, durum, arama } = {}) {
   const filtre = {};
   if (il) filtre.il = il;
   if (ilce) filtre.ilce = ilce;
@@ -23,10 +23,32 @@ async function listele({ il, ilce, koyMahalle, durum } = {}) {
   // veritabaninda KALICI olarak durur) - durum ACIKCA istenirse
   // (orn. "Aktif"/"Pasif"/"Silindi") o filtre uygulanir, "Tumu"
   // istenirse HICBIR durum filtresi uygulanmaz (hepsi gorunur).
+  //
+  // ONEMLI DUZELTME (gercek bir hata): `durum` alani SONRADAN
+  // eklendigi icin ESKI kayitlarda bu alan HIC YOK (Mongoose
+  // varsayilanlari GERIYE DONUK olarak eski belgelere ISLENMEZ) - "Aktif"
+  // icin TAM ESLESME (`durum: 'Aktif'`) arandiginda bu ESKI kayitlar
+  // YAKALANMIYORDU (alan yok = 'Aktif'e esit degil), liste BOS
+  // gorunuyordu. `$in: ['Aktif', null]` KULLANIMI - MongoDB'de bu,
+  // hem durum='Aktif' OLAN HEM DE alanin HIC OLMADIGI belgeleri
+  // eslestirir (bilinen bir MongoDB davranisi) - ESKI kayitlar da
+  // "Aktif" sayilir (semanin varsayilaniyla TUTARLI).
   if (durum === 'Tümü') { /* filtre yok */ }
+  else if (durum === 'Aktif') filtre.durum = { $in: ['Aktif', null] };
   else if (durum) filtre.durum = durum;
   else filtre.durum = { $ne: 'Silindi' };
-  return MeraParseli.find(filtre).sort({ il: 1, ilce: 1, koyMahalle: 1, adaNo: 1, parselNo: 1 });
+
+  // Il/Ilce/Koy-Mahalle/Ada/Parsel BAZLI serbest metin arama - Turkce
+  // buyuk/kucuk harf donusumune GUVENILEMEDIGI (MongoDB regex bunu
+  // dogru yapmaz) icin JS tarafinda (bellek-ici) filtrelenir - projenin
+  // genelindeki desenle AYNI (bkz. diger modullerdeki Turkce arama notu).
+  let sonuclar = await MeraParseli.find(filtre).sort({ il: 1, ilce: 1, koyMahalle: 1, adaNo: 1, parselNo: 1 });
+  if (arama && arama.trim()) {
+    const aramaKucuk = arama.trim().toLocaleLowerCase('tr-TR');
+    sonuclar = sonuclar.filter((p) => [p.il, p.ilce, p.koyMahalle, p.adaNo, p.parselNo]
+      .some((deger) => String(deger || '').toLocaleLowerCase('tr-TR').includes(aramaKucuk)));
+  }
+  return sonuclar;
 }
 
 async function getir(id) {
@@ -104,21 +126,30 @@ async function guncelle(id, veri, kullaniciAdi) {
  * AYNI mekanizmayi (durum degisikligi) kullanir - SADECE hedef durum
  * farklidir. Gecerli degerler: 'Aktif' | 'Pasif' | 'Silindi'.
  */
-async function durumDegistir(id, yeniDurum, kullaniciAdi) {
+/**
+ * Parsel ASLA veritabanindan GERCEKTEN silinmez (sistemin genel
+ * felsefesi - notlar/harita versiyonlari gibi). "Sil" ve "Pasife Al"
+ * AYNI mekanizmayi (durum degisikligi) kullanir - SADECE hedef durum
+ * farklidir. Gecerli degerler: 'Aktif' | 'Pasif' | 'Silindi'.
+ * ACIKLAMA (aciklama) ZORUNLUDUR - HANGI GEREKCEYLE durumun degistigi
+ * HER ZAMAN log'a YAZILIR (denetlenebilirlik icin).
+ */
+async function durumDegistir(id, yeniDurum, aciklama, kullaniciAdi) {
   const kayit = await getir(id);
   const GECERLI_DURUMLAR = MeraParseli.PARSEL_DURUMLARI;
   if (!GECERLI_DURUMLAR.includes(yeniDurum)) throw new Error(`Geçersiz durum: ${yeniDurum}`);
+  if (!aciklama || !aciklama.trim()) throw new Error('Durum değişikliği için açıklama zorunludur.');
   const eskiDurum = kayit.durum;
   if (eskiDurum === yeniDurum) return kayit;
   kayit.durum = yeniDurum;
-  logEkle(kayit, 'durumDegistirildi', `Durum: ${eskiDurum} -> ${yeniDurum}`, kullaniciAdi);
+  logEkle(kayit, 'durumDegistirildi', `Durum: ${eskiDurum || 'Aktif'} -> ${yeniDurum} - Açıklama: ${aciklama.trim()}`, kullaniciAdi);
   await kayit.save();
   return kayit;
 }
 
 /** GERIYE DONUK UYUMLULUK icin - "Sil" ARTIK YUMUSAK (durum='Silindi'), gercekten SILMEZ. */
-async function sil(id, kullaniciAdi) {
-  return durumDegistir(id, 'Silindi', kullaniciAdi);
+async function sil(id, aciklama, kullaniciAdi) {
+  return durumDegistir(id, 'Silindi', aciklama, kullaniciAdi);
 }
 
 /** Not EKLER - notlar ASLA SILINEMEZ, sadece notDuzenle ile GUNCELLENEBILIR (versiyon gecmisiyle). */
@@ -296,9 +327,34 @@ async function dosyaYukle(id, dosya, dosyaTipiAnahtari, kullaniciAdi) {
   return kayit;
 }
 
+/**
+ * Genel amacli bir DOSYAYI SILER (harita/CBS dosyalari BU FONKSIYONUN
+ * KAPSAMI DISINDA - onlar versiyonlu/degismez kalmaya devam eder).
+ * ACIKLAMA ZORUNLUDUR ve log'a yazilir - dosyanin KENDISI listeden
+ * kalkar (fiziksel dosya diskte KALIR, kaza ile veri kaybi riskini
+ * azaltmak icin - sadece kayit referansi kaldirilir).
+ *
+ * ILERIDE (kullanicinin notu): bu ve digger TUM "sil" islemleri
+ * SADECE ADMIN yetkisine SAHIP kullanicilara ACILACAK - auth sistemi
+ * kuruldugunda buraya yetki kontrolu EKLENMELI (henuz sistemde
+ * gercek bir "kullanici girisi/rolu" olmadigi icin su an HERKES
+ * kullanabiliyor).
+ */
+async function dosyaSil(id, dosyaIndex, aciklama, kullaniciAdi) {
+  const kayit = await getir(id);
+  const dosya = kayit.dosyalar[dosyaIndex];
+  if (!dosya) throw new Error('Dosya bulunamadı.');
+  if (!aciklama || !aciklama.trim()) throw new Error('Dosya silme için açıklama zorunludur.');
+  const silinenAd = dosya.orijinalAd;
+  kayit.dosyalar.splice(dosyaIndex, 1);
+  logEkle(kayit, 'dosyaSilindi', `${silinenAd} - Açıklama: ${aciklama.trim()}`, kullaniciAdi);
+  await kayit.save();
+  return kayit;
+}
+
 module.exports = {
   listele, getir, olustur, guncelle, sil, durumDegistir, notEkle, notDuzenle, notDosyaEkle,
-  topluYukle, sablonIndir, raporIndir, haritaDosyaYukle, komsuParseller, dosyaYukle,
+  topluYukle, sablonIndir, raporIndir, haritaDosyaYukle, komsuParseller, dosyaYukle, dosyaSil,
   ARAZI_NITELIKLERI: MeraParseli.ARAZI_NITELIKLERI, ARAZI_KAYNAKLARI: MeraParseli.ARAZI_KAYNAKLARI,
   ARAZI_DURUM_SINIFLARI: MeraParseli.ARAZI_DURUM_SINIFLARI, TOPRAK_SINIFLARI: MeraParseli.TOPRAK_SINIFLARI,
   ISLAH_DURUMLARI: MeraParseli.ISLAH_DURUMLARI, PARSEL_DURUMLARI: MeraParseli.PARSEL_DURUMLARI,

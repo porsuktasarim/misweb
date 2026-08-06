@@ -323,24 +323,35 @@
       pasifBtn.dataset.hedefDurum = kayit.durum === 'Pasif' ? 'Aktif' : 'Pasif';
     }
 
-    async function parselDurumDegistir(yeniDurum) {
+    async function parselDurumDegistir(yeniDurum, aciklama) {
       const res = await fetch(`${API}/${id}/durum`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ durum: yeniDurum, kullaniciAdi: kullaniciAdiInput.value.trim() }),
+        body: JSON.stringify({ durum: yeniDurum, aciklama, kullaniciAdi: kullaniciAdiInput.value.trim() }),
       });
       const json = await res.json();
-      if (!json.success) { alert(json.message); return; }
+      if (!json.success) { alert(json.message); return false; }
       kayit = json.data;
       parselDurumunuGoster();
       logGoster();
+      return true;
     }
 
+    // Aktif Et/Pasife Al/Sil - HER BIRI icin ACIKLAMA ZORUNLUDUR
+    // (kullanicinin acik istegi - hangi gerekceyle durumun degistigi
+    // HER ZAMAN log'a yazilir, denetlenebilirlik icin).
     document.getElementById('pasifeAlBtn').addEventListener('click', () => {
-      parselDurumDegistir(document.getElementById('pasifeAlBtn').dataset.hedefDurum);
+      const hedefDurum = document.getElementById('pasifeAlBtn').dataset.hedefDurum;
+      const aciklama = prompt(LANG.mera.aciklamaIste);
+      if (aciklama === null) return; // vazgecildi
+      if (!aciklama.trim()) { alert(LANG.mera.aciklamaZorunlu); return; }
+      parselDurumDegistir(hedefDurum, aciklama.trim());
     });
     document.getElementById('silBtn').addEventListener('click', () => {
       if (!confirm(LANG.mera.silOnay)) return;
-      parselDurumDegistir('Silindi').then(() => { window.location.href = '/mera/'; });
+      const aciklama = prompt(LANG.mera.aciklamaIste);
+      if (aciklama === null) return;
+      if (!aciklama.trim()) { alert(LANG.mera.aciklamaZorunlu); return; }
+      parselDurumDegistir('Silindi', aciklama.trim()).then((basarili) => { if (basarili) window.location.href = '/mera/'; });
     });
 
     // ==================== DOSYALAR SEKMESİ ====================
@@ -377,27 +388,50 @@
       new bootstrap.Modal(document.getElementById('onizlemeModal')).show();
     };
 
-    function dosyaSatiriHtml({ url, ad, tip, uzanti, tarih, kaynak }) {
+    function dosyaSatiriHtml({ url, ad, tip, uzanti, tarih, kaynak, genelIndex }) {
       const onizlenebilir = dosyaOnizlenebilirMi(uzanti);
       const adHucresi = onizlenebilir
         ? `<a href="#" onclick="dosyaOnizle('${url}', '${guvenliMetin(ad).replace(/'/g, "\\'")}', '${uzanti}'); return false;">${guvenliMetin(ad)}</a>`
         : guvenliMetin(ad);
+      // "Sil" SADECE genel amacli dosyalar (Dosyalar sekmesinden
+      // yuklenenler) icin gosterilir - harita/CBS dosyalari VERSIYONLU
+      // ve DEGISMEZ kalmaya devam eder (kullanicinin onceki acik
+      // karari), buradan SILINEMEZ.
+      const silButonu = genelIndex !== undefined
+        ? `<button type="button" class="btn btn-sm btn-outline-danger ms-1" onclick="dosyaSil(${genelIndex})">${LANG.ortak.sil}</button>`
+        : '';
       return `
         <tr>
           <td>${adHucresi}</td>
           <td>${guvenliMetin(tip)}</td>
           <td>${guvenliMetin(kaynak)}</td>
           <td>${tarih ? new Date(tarih).toLocaleDateString('tr-TR') : '-'}</td>
-          <td><a class="btn btn-sm btn-outline-secondary" href="${url}" download>${LANG.mera.indir}</a></td>
+          <td><a class="btn btn-sm btn-outline-secondary" href="${url}" download>${LANG.mera.indir}</a>${silButonu}</td>
         </tr>`;
     }
+
+    window.dosyaSil = async (genelIndex) => {
+      const aciklama = prompt(LANG.mera.aciklamaIste);
+      if (aciklama === null) return;
+      if (!aciklama.trim()) { alert(LANG.mera.aciklamaZorunlu); return; }
+      if (!confirm(LANG.mera.dosyaSilOnay)) return;
+      const res = await fetch(`${API}/${id}/dosya/${genelIndex}`, {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aciklama: aciklama.trim(), kullaniciAdi: kullaniciAdiInput.value.trim() }),
+      });
+      const json = await res.json();
+      if (!json.success) { alert(json.message); return; }
+      kayit = json.data;
+      dosyaTablosunuGoster();
+      logGoster();
+    };
 
     function dosyaTablosunuGoster() {
       document.getElementById('dosyaTheadSatiri').innerHTML = `<th>${LANG.ortak.dosya}</th><th>${LANG.mera.dosyaTipi}</th><th>${LANG.mera.kaynak}</th><th>${LANG.ortak.tarih}</th><th></th>`;
 
-      const genelDosyalar = (kayit.dosyalar || []).map((d) => ({
+      const genelDosyalar = (kayit.dosyalar || []).map((d, i) => ({
         url: `/${d.dosyaYolu}`, ad: d.orijinalAd, tip: _mdtAdSozlugu[d.dosyaTipiAnahtari] || '-',
-        uzanti: d.formatUzantisi, tarih: d.yuklemeTarihi, kaynak: 'Dosyalar',
+        uzanti: d.formatUzantisi, tarih: d.yuklemeTarihi, kaynak: 'Dosyalar', genelIndex: i,
       }));
 
       const haritaDosyalari = [];

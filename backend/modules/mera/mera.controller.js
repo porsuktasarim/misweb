@@ -45,7 +45,7 @@ async function guncelleHandler(req, res) {
 
 async function silHandler(req, res) {
   try {
-    return basarili(res, await service.sil(req.params.id, req.body.kullaniciAdi), 'Parsel silindi (pasif duruma alındı, veri kaybolmadı)');
+    return basarili(res, await service.sil(req.params.id, req.body.aciklama, req.body.kullaniciAdi), 'Parsel silindi (pasif duruma alındı, veri kaybolmadı)');
   } catch (err) {
     return basarisiz(res, err.message);
   }
@@ -53,7 +53,7 @@ async function silHandler(req, res) {
 
 async function durumDegistirHandler(req, res) {
   try {
-    return basarili(res, await service.durumDegistir(req.params.id, req.body.durum, req.body.kullaniciAdi), 'Durum güncellendi');
+    return basarili(res, await service.durumDegistir(req.params.id, req.body.durum, req.body.aciklama, req.body.kullaniciAdi), 'Durum güncellendi');
   } catch (err) {
     return basarisiz(res, err.message);
   }
@@ -151,9 +151,17 @@ async function dosyaYukleHandler(req, res) {
   }
 }
 
+async function dosyaSilHandler(req, res) {
+  try {
+    return basarili(res, await service.dosyaSil(req.params.id, req.params.dosyaIndex, req.body.aciklama, req.body.kullaniciAdi), 'Dosya silindi');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 module.exports = {
   listeHandler, getirHandler, olusturHandler, guncelleHandler, silHandler, durumDegistirHandler,
   notEkleHandler, notDuzenleHandler, notDosyaEkleHandler, sabitlerHandler,
   topluYukleHandler, sablonIndirHandler, raporIndirHandler,
-  haritaDosyaYukleHandler, komsuParsellerHandler, dosyaYukleHandler,
+  haritaDosyaYukleHandler, komsuParsellerHandler, dosyaYukleHandler, dosyaSilHandler,
 };

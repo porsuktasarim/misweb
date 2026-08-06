@@ -216,6 +216,10 @@ module.exports = {
     pasifeAl: 'Pasife Al',
     aktifEt: 'Aktif Et',
     silOnay: 'Bu parseli silmek istediğinize emin misiniz? Kayıt kalıcı olarak kaybolmaz, "Silindi" durumuna alınır ve listede görünmez.',
+    aramaPlaceholder: 'Ara (İl/İlçe/Mahalle/Ada/Parsel)',
+    aciklamaIste: 'Bu işlem için açıklama girin:',
+    aciklamaZorunlu: 'Açıklama girilmeden işlem yapılamaz.',
+    dosyaSilOnay: 'Bu dosyayı silmek istediğinize emin misiniz?',
 
     verimPanelBaslik: 'Verim Bilgileri / Otlatma Kapasitesi',
     verimPanelAciklama: "İlin yağış kuşağı ve Genel Bilgiler'deki Arazi Durum Sınıfı'na göre, Ayarlar'daki Mera Verim Ayarları tablolarından otomatik hesaplanır.",

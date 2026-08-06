@@ -395,6 +395,56 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
+## Mera - Kritik Hata Düzeltmesi + Arama + Zorunlu Açıklama + Dosya Silme
+
+**1. KRİTİK HATA DÜZELTİLDİ: "Aktif" filtresi hiçbir parsel göstermiyordu.**
+Kök neden: `durum` alanı MeraParseli şemasına SONRADAN eklendiği için
+ESKİ (önceden oluşturulmuş) kayıtlarda bu alan veritabanında HİÇ YOK
+(Mongoose varsayılanları GERİYE DÖNÜK olarak eski belgelere işlenmez -
+proje genelinde tekrar eden bir hata sınıfı, `meraVerimAyarlari` için
+de daha önce aynı sorunu yaşamıştık). "Aktif" filtresi TAM EŞLEŞME
+(`durum: 'Aktif'`) aradığı için bu eski kayıtlar hiç yakalanmıyordu -
+"Pasif" filtresi çalışıyordu çünkü SADECE "Pasife Al" ile GERÇEKTEN
+işaretlenmiş kayıtlar vardı, "Tümü" filtresi HİÇBİR durum şartı
+koymadığı için doğru çalışıyordu. **Düzeltme:** "Aktif" filtresi artık
+`{ $in: ['Aktif', null] }` kullanıyor - bu, MongoDB'nin resmi/bilinen
+bir davranışı sayesinde hem `durum: 'Aktif'` olan HEM DE alanın HİÇ
+OLMADIĞI belgeleri eşleştiriyor (gerçek bir MongoDB instance
+indirilemediği için - ağ kısıtlaması - bu davranış izole test
+EDİLEMEDİ, ama MongoDB dokümantasyonunda net şekilde tanımlı bir
+semantik, yüksek güvenle uygulandı).
+
+**2. ARAMA EKLENDİ:** Mera liste sayfasında, "Yeni Parsel" butonu ile
+"Durum" filtresi ARASINA (kullanıcının istediği konum) bir arama
+kutusu eklendi - İl/İlçe/Köy-Mahalle/Ada/Parsel alanlarının HEPSİNDE
+serbest metin arar (debounce'lu, 300ms), Türkçe büyük/küçük harf
+kurallarına uygun (JS tarafında, MongoDB regex'e güvenilmeden -
+projenin genelindeki desenle aynı).
+
+**3. DURUM DEĞİŞİKLİKLERİNDE AÇIKLAMA ZORUNLU:** "Aktif Et"/"Pasife
+Al"/"Sil" artık `prompt()` ile açıklama İSTİYOR - boş bırakılırsa
+işlem YAPILMIYOR ("Açıklama girilmeden işlem yapılamaz." uyarısı).
+Açıklama, log kaydına "Durum: Aktif -> Pasif - Açıklama: ..." biçiminde
+yazılıyor - backend de (`durumDegistir()`) açıklamayı ZORUNLU kılıyor
+(boşsa hata fırlatıyor), sadece frontend kontrolüne güvenilmiyor.
+
+**4. DOSYALAR SEKMESİNDE SİL EKLENDİ:** Genel amaçlı dosyalar (Dosyalar
+sekmesinden yüklenenler) artık silinebiliyor - AÇIKLAMA ZORUNLU (aynı
+mekanizma). **Harita/CBS dosyaları BİLEREK bu kapsamın DIŞINDA
+BIRAKILDI** - onlar versiyonlu ve değişmez kalmaya devam ediyor
+(kullanıcının önceki açık kararıyla tutarlı). Fiziksel dosya diskte
+KALIYOR (sadece veritabanı referansı kaldırılıyor) - kaza ile veri
+kaybı riskini azaltmak için bilinçli bir tercih.
+
+**5. GELECEK NOT (kullanıcının kendi ifadesiyle): "bu sillerin tamamı
+sadece admin de olacak şekilde izinlendireceğiz sonra."** Şu an
+sistemde gerçek bir kullanıcı girişi/rolü olmadığı için TÜM silme/
+durum değiştirme işlemleri herkese açık - kod içinde bunu işaretleyen
+yorumlar bırakıldı (`mera.service.js`'deki `dosyaSil()` fonksiyonu
+üzerinde), auth sistemi kurulduğunda BURAYA yetki kontrolü eklenmesi
+gerekiyor. Bu turda İMPLEMENTE EDİLMEDİ (kullanıcının açık isteği:
+"sonra").
+
 ## Mera - Durum Yönetimi + Dosyalar Sekmesi + Sistem Ayarları (YENİ)
 
 **1. DURUM YÖNETİMİ (Aktif/Pasif/Silindi):** `MeraParseli` modeline

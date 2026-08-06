@@ -54,5 +54,6 @@ router.post('/:id/harita-dosyasi', haritaUpload.single('dosya'), controller.hari
 router.get('/:id/komsu-parseller', controller.komsuParsellerHandler);
 router.put('/:id/durum', controller.durumDegistirHandler);
 router.post('/:id/dosya', upload.single('dosya'), controller.dosyaYukleHandler);
+router.delete('/:id/dosya/:dosyaIndex', controller.dosyaSilHandler);
 
 module.exports = router;

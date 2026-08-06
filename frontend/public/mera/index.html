@@ -42,8 +42,9 @@
             <div class="col-md-3"><select id="filtreIl" class="form-select form-select-sm"></select></div>
             <div class="col-md-2"><select id="filtreIlce" class="form-select form-select-sm"></select></div>
             <div class="col-md-2"><select id="filtreMahalle" class="form-select form-select-sm"></select></div>
-            <div class="col-md-2"><select id="filtreDurum" class="form-select form-select-sm"></select></div>
-            <div class="col-md-3"><button class="btn btn-primary btn-sm w-100" id="yeniParselBtn"></button></div>
+            <div class="col-md-2"><button class="btn btn-primary btn-sm w-100" id="yeniParselBtn"></button></div>
+            <div class="col-md-2"><input type="text" class="form-control form-control-sm" id="filtreArama"></div>
+            <div class="col-md-1"><select id="filtreDurum" class="form-select form-select-sm"></select></div>
           </div>
 
           <div class="table-responsive">
@@ -96,7 +97,7 @@
     function guvenliMetin(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
 
     let LANG = null;
-    let _filtreIl = '', _filtreIlce = '', _filtreMahalle = '', _filtreDurum = 'Aktif';
+    let _filtreIl = '', _filtreIlce = '', _filtreMahalle = '', _filtreDurum = 'Aktif', _filtreArama = '';
 
     function durumRozeti(yapildiMi) {
       return yapildiMi
@@ -115,6 +116,7 @@
       if (_filtreIlce) params.set('ilce', _filtreIlce);
       if (_filtreMahalle) params.set('koyMahalle', _filtreMahalle);
       if (_filtreDurum) params.set('durum', _filtreDurum);
+      if (_filtreArama) params.set('arama', _filtreArama);
       const json = await fetch(`/api/mera?${params}`).then((r) => r.json());
       const govde = document.getElementById('parselTablosu');
       if (!json.success || !json.data.length) { govde.innerHTML = `<tr><td colspan="11" class="text-muted small">${LANG.ortak.kayitBulunamadi}</td></tr>`; return; }
@@ -156,6 +158,13 @@
 
       document.getElementById('filtreDurum').innerHTML = ['Aktif', 'Pasif', 'Tümü'].map((d) => `<option value="${d}" ${d === 'Aktif' ? 'selected' : ''}>${d}</option>`).join('');
       document.getElementById('filtreDurum').addEventListener('change', (e) => { _filtreDurum = e.target.value; parselleriYukle(); });
+
+      document.getElementById('filtreArama').placeholder = LANG.mera.aramaPlaceholder;
+      let _aramaZamanlayici = null;
+      document.getElementById('filtreArama').addEventListener('input', (e) => {
+        clearTimeout(_aramaZamanlayici);
+        _aramaZamanlayici = setTimeout(() => { _filtreArama = e.target.value.trim(); parselleriYukle(); }, 300);
+      });
 
       misYerSeciciKur({
         ilSelectId: 'filtreIl', ilceSelectId: 'filtreIlce', mahalleSelectId: 'filtreMahalle',
