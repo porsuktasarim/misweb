@@ -13,7 +13,7 @@
 const XLSX = require('xlsx');
 const path = require('path');
 const fs = require('fs/promises');
-const { ARAZI_NITELIKLERI, ARAZI_KAYNAKLARI, ARAZI_DURUM_SINIFLARI, TOPRAK_SINIFLARI } = require('./mera.model');
+const { ARAZI_NITELIKLERI, ARAZI_KAYNAKLARI, ARAZI_DURUM_SINIFLARI, TOPRAK_SINIFLARI, ISLAH_DURUMLARI } = require('./mera.model');
 
 const BASLIK_ANAHTARLARI = {
   il: ['il'],
@@ -102,7 +102,7 @@ function satirdanParselOlustur(satir, eslesme, satirNo) {
     tahditTarihi: tarihAyristir(deger('tahditTarihi')),
     tahsisYapildiMi: EVET_DEGERLERI.includes(normalizeTr(deger('tahsisYapildiMi'))),
     tahsisTarihi: tarihAyristir(deger('tahsisTarihi')),
-    islahDurumu: deger('islahDurumu'),
+    islahDurumu: deger('islahDurumu') ? enumDogrula(deger('islahDurumu'), ISLAH_DURUMLARI, 'Islah Durumu', satirNo) : 'Islah Edilmedi',
     egimi: deger('egimi'),
     topraksinifi: enumDogrula(deger('topraksinifi'), TOPRAK_SINIFLARI, 'Toprak Sınıfı', satirNo),
     tapuKimlikNo: deger('tapuKimlikNo'),

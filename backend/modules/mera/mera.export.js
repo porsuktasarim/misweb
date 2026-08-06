@@ -55,7 +55,7 @@ async function sablonOlustur() {
     meraAlaniM2: 15000, tapuAlaniM2: 15200, araziNiteligi: 'Mera', araziDurumSinifi: 'İyi',
     araziKaynagi: '5-a', tespitYapildiMi: 'Evet', tespitTarihi: '01.03.2026',
     tahditYapildiMi: 'Hayır', tahditTarihi: '', tahsisYapildiMi: 'Hayır', tahsisTarihi: '',
-    islahDurumu: 'Islah çalışması planlanıyor', egimi: '%5', topraksinifi: 'IV. Sınıf', tapuKimlikNo: '1234567890',
+    islahDurumu: 'Islah Ediliyor', egimi: '%5', topraksinifi: 'IV. Sınıf', tapuKimlikNo: '1234567890',
   });
   ornekSatir.eachCell((cell) => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: RENK_ORNEK_SATIR } }; cell.font = { name: 'Times New Roman', italic: true }; });
 

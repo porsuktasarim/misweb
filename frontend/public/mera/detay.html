@@ -75,7 +75,7 @@
                 </div>
               </div>
               <div class="row g-2 mb-2">
-                <div class="col-md-3"><label class="form-label small fw-semibold" id="lblIslahDurumu"></label><input class="form-control form-control-sm" id="gIslahDurumu"></div>
+                <div class="col-md-3"><label class="form-label small fw-semibold" id="lblIslahDurumu"></label><select class="form-select form-select-sm" id="gIslahDurumu"></select></div>
                 <div class="col-md-3"><label class="form-label small fw-semibold" id="lblEgimi"></label><input class="form-control form-control-sm" id="gEgimi"></div>
                 <div class="col-md-6"><label class="form-label small fw-semibold" id="lblTapuKimlikNo"></label><input class="form-control form-control-sm" id="gTapuKimlikNo"></div>
               </div>
@@ -164,6 +164,7 @@
       ekle('gAraziKaynagi', json.data.araziKaynaklari, true);
       ekle('gTopraksinifi', json.data.topraksiniflari, true);
       ekle('gAraziDurumSinifi', json.data.araziDurumSiniflari, false);
+      ekle('gIslahDurumu', json.data.islahDurumlari, false);
     }
 
     async function kaydiYukle() {
@@ -188,7 +189,7 @@
       document.getElementById('gAraziDurumSinifi').value = kayit.araziDurumSinifi || 'Belirlenmemiş';
       document.getElementById('gAraziKaynagi').value = kayit.araziKaynagi || '';
       document.getElementById('gTopraksinifi').value = kayit.topraksinifi || '';
-      document.getElementById('gIslahDurumu').value = kayit.islahDurumu || '';
+      document.getElementById('gIslahDurumu').value = kayit.islahDurumu || 'Islah Edilmedi';
       document.getElementById('gEgimi').value = kayit.egimi || '';
       document.getElementById('gTapuKimlikNo').value = kayit.tapuKimlikNo || '';
       document.getElementById('gTespitYapildi').checked = !!kayit.tespitYapildiMi;
@@ -287,10 +288,13 @@
     // biçimi" - yani KAPASITE TEKTIR, digerleri sadece VERIM KARSILASTIRMASI.
     async function verimBilgisiHesapla() {
       const alan = document.getElementById('verimBilgisiAlani');
-      if (!kayit.meraAlaniM2) { alan.innerHTML = `<p class="text-muted small">${LANG.mera.verimAlanGerekli}</p>`; return; }
+      // Tapu Alani ONCELIKLIDIR (daha kesin/resmi kabul edilir) - BOS ise
+      // Mera Alani'na DUSULUR (kullanicinin acik istegi).
+      const hesaplamaAlaniM2 = kayit.tapuAlaniM2 || kayit.meraAlaniM2;
+      if (!hesaplamaAlaniM2) { alan.innerHTML = `<p class="text-muted small">${LANG.mera.verimAlanGerekli}</p>`; return; }
 
       try {
-        const params = new URLSearchParams({ il: kayit.il, araziDurumSinifi: kayit.araziDurumSinifi || '', alanM2: kayit.meraAlaniM2 });
+        const params = new URLSearchParams({ il: kayit.il, araziDurumSinifi: kayit.araziDurumSinifi || '', alanM2: hesaplamaAlaniM2 });
         const json = await fetch(`/api/mera-verim-ayarlari/hesapla?${params}`).then((r) => r.json());
         if (!json.success) { alan.innerHTML = `<p class="text-danger small">${json.message}</p>`; return; }
         const v = json.data;
@@ -308,9 +312,9 @@
 
         alan.innerHTML = `
           <div class="small mb-2">
-            <strong>${LANG.mera.yagisKusagi}:</strong> ${guvenliMetin(v.yagisKusagi)} mm &nbsp;·&nbsp;
-            <strong>${LANG.mera.alan}:</strong> ${v.dekar} da &nbsp;·&nbsp;
-            <strong>${LANG.mera.donem}:</strong> ${v.donemGunSayisi} gün
+            <div><strong>${LANG.mera.yagisKusagi}:</strong> ${guvenliMetin(v.yagisKusagi)} mm</div>
+            <div><strong>${LANG.mera.donem}:</strong> ${v.donemGunSayisi} gün</div>
+            <div><strong>${LANG.mera.meraAlaniKisa}:</strong> ${v.dekar} da</div>
           </div>
           <div class="row row-cols-1 g-2">
             ${verimKutusu(LANG.mera.tablo1Ad, v.tablo1YararlanilabilirYesil)}
@@ -390,7 +394,7 @@
           araziDurumSinifi: document.getElementById('gAraziDurumSinifi').value,
           araziKaynagi: document.getElementById('gAraziKaynagi').value || null,
           topraksinifi: document.getElementById('gTopraksinifi').value || null,
-          islahDurumu: document.getElementById('gIslahDurumu').value.trim(),
+          islahDurumu: document.getElementById('gIslahDurumu').value,
           egimi: document.getElementById('gEgimi').value.trim(),
           tapuKimlikNo: document.getElementById('gTapuKimlikNo').value.trim(),
           tespitYapildiMi: document.getElementById('gTespitYapildi').checked,

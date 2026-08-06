@@ -395,6 +395,22 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
+## Mera Parseli - Ek Düzeltmeler
+
+**Islah Durumu artık enum** (serbest metin değil): "Islah Edilmedi"
+(varsayılan), "Islah Ediliyor", "Islah Edildi" - hem detay sayfasında
+dropdown, hem toplu Excel yüklemede doğrulanıyor (geçersiz değer
+hata verir), hem rapor/şablon örnek satırında geçerli bir değer
+kullanılıyor. **Otlatma kapasitesi hesabında ALAN ÖNCELİĞİ
+DEĞİŞTİRİLDİ:** artık Tapu Alanı ÖNCELİKLİDİR (daha kesin/resmi kabul
+edilir), BOŞ ise Mera Alanı'na düşülür (`kayit.tapuAlaniM2 ||
+kayit.meraAlaniM2`) - önceden SADECE Mera Alanı kullanılıyordu.
+**Verim Bilgileri panelindeki üst bilgi satırı** (Yağış Kuşağı/
+Dönem/Alan) tek satır yerine AYRI AYRI satırlara bölündü, "Alan"
+etiketi "Mera Alanı" olarak netleştirildi (yeni `meraAlaniKisa` lang
+anahtarı, birim çakışmasını önlemek için `meraAlani` - "(m²)" içeren
+- anahtarından ayrı tutuldu).
+
 ## Mera Verim Ayarları - Versiyonlu Veri + Yeniden Tasarlanan Hesaplama
 
 **BÜYÜK YENİDEN YAPILANDIRMA (kullanıcı geri bildirimiyle).**

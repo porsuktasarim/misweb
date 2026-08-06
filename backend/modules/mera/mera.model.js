@@ -27,6 +27,7 @@ const ARAZI_DURUM_SINIFLARI = ['Çok İyi', 'İyi', 'Orta', 'Zayıf', 'Belirlenm
 // Standart Arazi Kullanim Kabiliyet Siniflandirmasi (Tarim Arazilerinin
 // Korunmasi mevzuatinda kullanilan I-VIII sinif sistemi).
 const TOPRAK_SINIFLARI = ['I. Sınıf', 'II. Sınıf', 'III. Sınıf', 'IV. Sınıf', 'V. Sınıf', 'VI. Sınıf', 'VII. Sınıf', 'VIII. Sınıf'];
+const ISLAH_DURUMLARI = ['Islah Edilmedi', 'Islah Ediliyor', 'Islah Edildi'];
 
 const notVersiyonSchema = new mongoose.Schema(
   { metin: { type: String, required: true }, degistirmeTarihi: { type: Date, default: Date.now }, degistirenKullanici: { type: String, default: '' } },
@@ -80,7 +81,7 @@ const meraParseliSchema = new mongoose.Schema(
     tahditTarihi: { type: Date },
     tahsisYapildiMi: { type: Boolean, default: false },
     tahsisTarihi: { type: Date },
-    islahDurumu: { type: String, default: '' },
+    islahDurumu: { type: String, enum: ISLAH_DURUMLARI, default: 'Islah Edilmedi' },
     egimi: { type: String, default: '' },
     topraksinifi: { type: String, enum: TOPRAK_SINIFLARI },
     tapuKimlikNo: { type: String, default: '' },
@@ -97,3 +98,4 @@ module.exports.ARAZI_NITELIKLERI = ARAZI_NITELIKLERI;
 module.exports.ARAZI_KAYNAKLARI = ARAZI_KAYNAKLARI;
 module.exports.ARAZI_DURUM_SINIFLARI = ARAZI_DURUM_SINIFLARI;
 module.exports.TOPRAK_SINIFLARI = TOPRAK_SINIFLARI;
+module.exports.ISLAH_DURUMLARI = ISLAH_DURUMLARI;
