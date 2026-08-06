@@ -126,6 +126,18 @@ async function ek3aAraziVerileriKaydetHandler(req, res) {
   }
 }
 
+async function madde10KimlikPdfHandler(req, res) {
+  try {
+    const { anaAdimIndex, altAdimIndex } = req.query;
+    const buffer = await service.madde10KimlikPdfIndir(req.params.id, anaAdimIndex, altAdimIndex);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="mera-kimlikleri.pdf"');
+    return res.send(buffer);
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 async function birlestirVeDevamEtHandler(req, res) {
   try {
     const { anaAdimIndex, altAdimIndex } = req.body;
@@ -220,6 +232,6 @@ async function adimDisaAktarHandler(req, res) {
 module.exports = {
   listeHandler, getirHandler, olusturHandler, silHandler,
   adimGuncelleHandler, ek4abSecHandler, ek4abAdaylariHandler,
-  bbhbAdaylariHandler, cksAdaylariHandler, ek4aVeriCekHandler, ek4bVeriCekHandler, ek3aHayvanVarligiCekHandler, ek3aAraziVerileriKaydetHandler, birlestirVeDevamEtHandler,
+  bbhbAdaylariHandler, cksAdaylariHandler, ek4aVeriCekHandler, ek4bVeriCekHandler, ek3aHayvanVarligiCekHandler, ek3aAraziVerileriKaydetHandler, madde10KimlikPdfHandler, birlestirVeDevamEtHandler,
   komisyonAdaylariHandler, karar1KaydetHandler, adimPdfGetirHandler, adimVeriKaydetHandler, adimDisaAktarHandler, adimDosyaYukleHandler,
 };

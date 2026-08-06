@@ -1047,7 +1047,8 @@
         </div>
 
         <div class="mb-3">
-          <label class="form-label small fw-semibold d-block">10. Harita, Kroki, Pafta ve Ellerinde Mevcut Diğer Bilgiler <span class="text-muted fw-normal">(Mera Modülünden gelecek, henüz kurulmadı - şimdilik boş)</span></label>
+          <label class="form-label small fw-semibold d-block">10. Harita, Kroki, Pafta ve Ellerinde Mevcut Diğer Bilgiler</label>
+          <div id="e3aMadde10Alani" class="small"></div>
         </div>
 
         <div class="mb-3">
@@ -1106,6 +1107,20 @@
         : '<option value="">Kayıt bulunamadı</option>';
 
       if (v.hayvanVarligiTablosu) ek3aBbhbOnizlemeGoster(v);
+      ek3aMadde10Goster(v);
+    }
+
+    /** Madde 10 alanini DOLDURUR - Madde 7'de secilen parseller VARSA "Mera Kimlikleri (PDF)" indirme linki, YOKSA uyari. */
+    function ek3aMadde10Goster(v) {
+      const alan = document.getElementById('e3aMadde10Alani');
+      if (v.secilenParselIdleri && v.secilenParselIdleri.length) {
+        alan.innerHTML = `
+          <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/madde10-kimlik-pdf?anaAdimIndex=${seciliAna}&altAdimIndex=${seciliAlt}" target="_blank">
+            <i class="bi bi-file-earmark-pdf me-1"></i>Mera Kimlikleri (PDF) - ${v.secilenParselIdleri.length} parsel
+          </a>`;
+      } else {
+        alan.innerHTML = '<span class="text-muted">Madde 7\'de "Parsel Seç" ile parsel seçip kaydettiğinizde, o parsellerin Mera Kimlikleri buradan PDF olarak indirilebilir hale gelecek.</span>';
+      }
     }
 
     /** "X adet (Y BBHB)" formatinda hucre metni. */
@@ -1185,6 +1200,7 @@
         document.getElementById('e3aMadde7Tablosu').innerHTML = guncelAlt.veri.madde7Satirlari
           .map((satir) => `<tr><th class="table-light">${guvenliMetin(satir[0])}</th><td>${guvenliMetin(satir[1])}</td><td>${guvenliMetin(satir[2])}</td><td>${guvenliMetin(satir[3])}</td><td>${guvenliMetin(satir[4])}</td></tr>`).join('');
         document.getElementById('e3aMadde7Sonuc').innerHTML = `<span class="text-success">${parselIdleri.length} parsel seçilerek hesaplandı ve kaydedildi.</span>`;
+        ek3aMadde10Goster(guncelAlt.veri);
 
         bootstrap.Modal.getInstance(document.getElementById('ek3aParselSecModal')).hide();
         renderSurec();

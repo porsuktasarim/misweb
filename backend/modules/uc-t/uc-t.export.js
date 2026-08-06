@@ -191,7 +191,7 @@ async function ek3aVerileriniOlustur(kayit, veri) {
     { tip: 'paragraf', metin: `8. Mevcut Hayvan Varlığı: Hayvan sayıları ayrıntılı olarak belirtilecek` },
     { tip: 'tablo', ...madde8Tablosu },
     { tip: 'paragraf', metin: `9. Kullanılan Alanlardan Yararlanma Şekli: ${yararlanma}` },
-    { tip: 'paragraf', metin: `10. Harita, Kroki, Pafta ve Ellerinde Mevcut Diğer Bilgiler: (Mera Modülünden alınacak)` },
+    { tip: 'paragraf', metin: `10. Harita, Kroki, Pafta ve Ellerinde Mevcut Diğer Bilgiler: ${veri.secilenParselIdleri && veri.secilenParselIdleri.length ? `Ekte sunulan ${veri.secilenParselIdleri.length} adet Mera Kimliği belgesinde yer almaktadır.` : '……………………………'}` },
     { tip: 'paragraf', metin: `11. 5 inci Maddedeki Şartları Taşıyıp Taşımadığı ile İlgili Belgeler: ${veri.madde11Notu || '……'}` },
     { tip: 'paragraf', metin: `12. Kullanılan Alanlardan Yararlanma Miktar ve Şekli: ${veri.madde12Metni || '……'}` },
   ];

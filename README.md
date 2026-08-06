@@ -395,6 +395,54 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
+## Ek-3/a Madde 10 - GERÇEKTEN Entegre Edildi (Önceki Turdan Kalan Eksik)
+
+**Kullanıcının haklı uyarısı:** "10 adımda düzelmemiş yalnız."
+Kontrol edilince doğrulandı: bir önceki turda "Mera Kimliği" PDF
+üreticisini (`mera.kimlik.js`) yazıp TEST ETMİŞTİM, ama SADECE Mera
+Modülü'nün kendi detay sayfasına (tek parsel indirme butonu olarak)
+BAĞLAMIŞTIM - Ek-3/a formunun Madde 10 alanı HALA "(Mera Modülünden
+gelecek, henüz kurulmadı - şimdilik boş)" placeholder'ını
+gösteriyordu, HİÇ DEĞİŞMEMİŞTİ. README'de bunu "sonraki adım" olarak
+AÇIKÇA not düşmüştüm ama sonra GÖZDEN KAÇMIŞ - kullanıcı haklı
+olarak fark etti.
+
+**Şimdi gerçekten tamamlandı:**
+1. **YENİ `coklulKimlikPdfOlustur()`** (`mera.kimlik.js`) - Madde
+   7'de SEÇİLEN (`secilenParselIdleri`) BİRDEN FAZLA parselin Mera
+   Kimliği PDF'lerini ART ARDA TEK bir PDF'de birleştirir - **test
+   edildi**: 2 farklı parselle (İstanbul/Silivri/Bekirli 123/45 Mera
+   ve 124/46 Yaylak) çağrıldı, sonuç 2 sayfalık PDF, HER SAYFA PyPDF2
+   ile doğrulandı - Sayfa 1 GERÇEKTEN parsel 1'in bilgilerini, Sayfa
+   2 GERÇEKTEN parsel 2'nin bilgilerini gösterdi.
+2. **YENİ `uc-t.service.js` → `madde10KimlikPdfIndir()`** - 3T
+   kaydının Madde 7'de seçilen parsel ID'lerini bulup yukarıdaki
+   fonksiyonu çağırır. Parsel SEÇİLMEMİŞSE (`secilenParselIdleri`
+   boşsa) AÇIKÇA "Önce Madde 7'de 'Parsel Seç' ile en az bir parsel
+   seçip kaydetmelisiniz." hatası fırlatır - test edildi (boş liste
+   ile çağrıldı, doğru hata mesajı döndü).
+3. **YENİ endpoint**: `GET /api/uc-t/:id/madde10-kimlik-pdf`.
+4. **Frontend**: Madde 10'un placeholder'ı KALDIRILDI - artık
+   GERÇEK durumu gösteriyor: parsel seçilmişse "Mera Kimlikleri
+   (PDF) - N parsel" indirme linki (yeni sekmede açılır), seçilmemişse
+   "Madde 7'de 'Parsel Seç' ile parsel seçip kaydettiğinizde..."
+   yönlendirici notu. Bu alan HEM panel ilk açıldığında HEM "Parsel
+   Seç" popup'ından kaydedildiğinde ANINDA güncellenir (sayfa
+   yenilemeden).
+5. **`uc-t.export.js`'in madde 10 paragraf metni** de güncellendi -
+   artık "(Mera Modülünden alınacak)" yerine, parsel seçiliyse
+   "Ekte sunulan N adet Mera Kimliği belgesinde yer almaktadır."
+   yazıyor.
+
+**Mühendislik notu (dürüstçe belirtilmeli):** Ek-3/a'nın Word/PDF
+export'u (adim-disa-aktar) ile Madde 10'un Mera Kimlikleri PDF'i
+(madde10-kimlik-pdf) İKİ AYRI İNDİRME olarak kalıyor - TEK bir
+BİRLEŞİK belge (Ek-3/a formu + ardından kimlikler) OLUŞTURULMADI, bu
+kapsam dışı bırakıldı (kullanıcı "10 uncu maddesine gelelim...
+burada mera kimliği çıkaracağız" derken muhtemelen AYRI bir çıktı
+kastetmişti, ama netleştirilmesi gerekirse ileride Ek-3/a'nın PDF
+export'una da pdf-lib ile birleştirilebilir).
+
 ## Ek-3/a Madde 7 - "Hiçbir Şey Olmuyor" Şikayeti Sonrası Teşhis Turu
 
 **Kullanıcının bildirdiği hata:** önceki düzeltmeye rağmen "formu

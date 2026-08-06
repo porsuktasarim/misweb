@@ -10,6 +10,8 @@ const CksSonuc = require('../cks/cks.model');
 const ek4abService = require('../ek4ab/ek4ab.service');
 const ilMeraKomisyonuService = require('../personel/ilMeraKomisyonu.service');
 const MeraParseli = require('../mera/mera.model');
+const meraKimlik = require('../mera/mera.kimlik');
+const BelgeAyarlari = require('../belge-ayarlari/belgeAyarlari.model');
 const fs = require('fs/promises');
 
 async function listele() {
@@ -380,6 +382,30 @@ async function ek3aAraziVerileriKaydet(id, anaAdimIndex, altAdimIndex, { parselI
 }
 
 /**
+ * EK-3/A MADDE 10 - "Harita, Kroki, Pafta ve Ellerinde Mevcut Diger
+ * Bilgiler": Madde 7'de SECILEN (secilenParselIdleri) parsellerin
+ * HEPSININ "Mera Kimligi" PDF'lerini (harita + alanlar + ekleri) TEK
+ * bir PDF'de BIRLESTIRIR. Once Madde 7'de parsel SECILMEMISSE
+ * ACIKCA HATA firlatir (frontend bunu YAKALAYIP kullaniciya "once
+ * Madde 7'de parsel secin" seklinde gosterir).
+ */
+async function madde10KimlikPdfIndir(id, anaAdimIndex, altAdimIndex) {
+  const kayit = await UcT.findById(id);
+  if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
+  const altAdim = kayit.surec[anaAdimIndex].altAdimlar[altAdimIndex];
+  const parselIdleri = (altAdim.veri && altAdim.veri.secilenParselIdleri) || [];
+  if (!parselIdleri.length) throw new Error('Önce Madde 7\'de "Parsel Seç" ile en az bir parsel seçip kaydetmelisiniz.');
+
+  const parseller = await MeraParseli.find({ _id: { $in: parselIdleri } });
+  if (!parseller.length) throw new Error('Seçilen parseller Mera Modülü\'nde bulunamadı (silinmiş olabilirler).');
+
+  const ayarlar = await BelgeAyarlari.findOne();
+  const dosyaTipiAdSozlugu = Object.fromEntries(((ayarlar && ayarlar.meraDosyaTipleri) || []).map((t) => [t.anahtar, t.ad]));
+
+  return meraKimlik.coklulKimlikPdfOlustur(parseller, dosyaTipiAdSozlugu);
+}
+
+/**
  * BİRLEŞTİRME: Ek-4/b'de secilen BBHB + Ek-4/a'da secilen ÇKS (varsa)
  * ile, MEVCUT Ek-4ab modulunun AYNI mantigini (onizlemeOlustur ->
  * sonucuKaydet) kullanarak GERCEK bir Ek-4ab (Birlesik Cetvel) kaydi
@@ -428,5 +454,5 @@ async function komisyonAdaylari(il) {
 module.exports = {
   listele, getir, olustur, sil, adimGuncelle, adimVeriKaydet, adimDosyaYukle, ek4abSec, koyIcinEk4abAdaylari,
   koyIcinBbhbAdaylari, koyIcinCksAdaylari, ek4aVeriCek, ek4bVeriCek, ek3aHayvanVarligiCek, ek3aAraziVerileriKaydet,
-  birlestirVeDevamEt, karar1Kaydet, komisyonAdaylari,
+  madde10KimlikPdfIndir, birlestirVeDevamEt, karar1Kaydet, komisyonAdaylari,
 };

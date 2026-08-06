@@ -222,4 +222,27 @@ async function kimlikPdfOlustur(kayit, dosyaTipiAdSozlugu) {
   return Buffer.from(sonBuffer);
 }
 
-module.exports = { kimlikPdfOlustur, parselHaritasiUret, eklerListesiOlustur };
+/**
+ * BIRDEN FAZLA parselin "Mera Kimliği" PDF'lerini ARKA ARKAYA (her
+ * biri kendi ekleriyle birlikte) TEK bir PDF'de birlestirir - Ek-3/a
+ * Madde 10 ("Harita, Kroki, Pafta ve Ellerinde Mevcut Diger Bilgiler")
+ * icin: Madde 7'de SECILEN parsellerin HEPSININ kimlik+ekleri TEK
+ * PDF halinde indirilebilir olur.
+ */
+async function coklulKimlikPdfOlustur(parselListesi, dosyaTipiAdSozlugu) {
+  if (!parselListesi.length) throw new Error('En az bir parsel gereklidir.');
+  const ilkPdfBuffer = await kimlikPdfOlustur(parselListesi[0], dosyaTipiAdSozlugu);
+  const birlesikPdf = await PDFLibDocument.load(ilkPdfBuffer);
+
+  for (let i = 1; i < parselListesi.length; i++) {
+    const sonrakiBuffer = await kimlikPdfOlustur(parselListesi[i], dosyaTipiAdSozlugu);
+    const sonrakiPdf = await PDFLibDocument.load(sonrakiBuffer);
+    const sayfalar = await birlesikPdf.copyPages(sonrakiPdf, sonrakiPdf.getPageIndices());
+    sayfalar.forEach((s) => birlesikPdf.addPage(s));
+  }
+
+  const sonBuffer = await birlesikPdf.save();
+  return Buffer.from(sonBuffer);
+}
+
+module.exports = { kimlikPdfOlustur, coklulKimlikPdfOlustur, parselHaritasiUret, eklerListesiOlustur };
