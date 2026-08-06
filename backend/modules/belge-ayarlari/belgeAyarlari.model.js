@@ -74,6 +74,14 @@ const VARSAYILAN_MERA_DOSYA_TIPLERI = [
   { anahtar: 'diger', ad: 'Diğer Belge', otomatikAdlandirma: false },
 ];
 
+// Mera parselinin MULKIYET DURUMU secenekleri - Ek-3/a madde 7'deki
+// "Diger Bilgiler (Kime Ait Oldugu...)" sutununu DOLDURMAK icin de
+// KULLANILIR. Sabit ENUM DEGIL - Sistem Ayarlari'ndan EKLENIP
+// CIKARILABILEN duz bir liste (kullanicinin acik istegi).
+const VARSAYILAN_MERA_MULKIYET_DURUMLARI = [
+  'Kamu Orta Malı', 'Maliye Hazinesi', 'Davalı', 'İlçe Belediyesi', 'Büyükşehir Belediyesi', 'Köy/Mahalle Muhtarlığı',
+];
+
 const belgeAyarlariSchema = new mongoose.Schema(
   {
     // Acik gri varsayilan - imza cizgisi/etiketleri VE "İMZA" yazisi
@@ -96,6 +104,7 @@ const belgeAyarlariSchema = new mongoose.Schema(
     },
     // Mera parseli "Dosyalar" sekmesindeki YONETILEBILIR belge tipleri.
     meraDosyaTipleri: { type: [meraDosyaTipiSchema], default: VARSAYILAN_MERA_DOSYA_TIPLERI },
+    meraMulkiyetDurumlari: { type: [String], default: VARSAYILAN_MERA_MULKIYET_DURUMLARI },
   },
   { timestamps: true }
 );
@@ -104,3 +113,4 @@ module.exports = mongoose.model('BelgeAyarlari', belgeAyarlariSchema);
 module.exports.VARSAYILAN_TEMA_BOLUMLERI = VARSAYILAN_TEMA_BOLUMLERI;
 module.exports.VARSAYILAN_HARITA_STILI = VARSAYILAN_HARITA_STILI;
 module.exports.VARSAYILAN_MERA_DOSYA_TIPLERI = VARSAYILAN_MERA_DOSYA_TIPLERI;
+module.exports.VARSAYILAN_MERA_MULKIYET_DURUMLARI = VARSAYILAN_MERA_MULKIYET_DURUMLARI;

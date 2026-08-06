@@ -117,6 +117,15 @@ async function ek3aHayvanVarligiCekHandler(req, res) {
   }
 }
 
+async function ek3aAraziVerileriKaydetHandler(req, res) {
+  try {
+    const { anaAdimIndex, altAdimIndex, parselIdleri } = req.body;
+    return basarili(res, await service.ek3aAraziVerileriKaydet(req.params.id, anaAdimIndex, altAdimIndex, { parselIdleri }), 'Arazi verileri Mera Modülü\'nden hesaplanarak eklendi');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 async function birlestirVeDevamEtHandler(req, res) {
   try {
     const { anaAdimIndex, altAdimIndex } = req.body;
@@ -211,6 +220,6 @@ async function adimDisaAktarHandler(req, res) {
 module.exports = {
   listeHandler, getirHandler, olusturHandler, silHandler,
   adimGuncelleHandler, ek4abSecHandler, ek4abAdaylariHandler,
-  bbhbAdaylariHandler, cksAdaylariHandler, ek4aVeriCekHandler, ek4bVeriCekHandler, ek3aHayvanVarligiCekHandler, birlestirVeDevamEtHandler,
+  bbhbAdaylariHandler, cksAdaylariHandler, ek4aVeriCekHandler, ek4bVeriCekHandler, ek3aHayvanVarligiCekHandler, ek3aAraziVerileriKaydetHandler, birlestirVeDevamEtHandler,
   komisyonAdaylariHandler, karar1KaydetHandler, adimPdfGetirHandler, adimVeriKaydetHandler, adimDisaAktarHandler, adimDosyaYukleHandler,
 };

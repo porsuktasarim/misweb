@@ -72,6 +72,7 @@ const ALAN_ETIKETLERI = {
   tahditYapildiMi: 'Tahdit', tahditTarihi: 'Tahdit Tarihi',
   tahsisYapildiMi: 'Tahsis', tahsisTarihi: 'Tahsis Tarihi',
   islahDurumu: 'Islah Durumu', egimi: 'Eğimi', topraksinifi: 'Toprak Sınıfı', tapuKimlikNo: 'Tapu Kimlik No',
+  mulkiyetDurumu: 'Mülkiyet Durumu',
 };
 
 /** Bir alan degerini LOG'da GORUNTULENECEK bicimde formatlar (birim/tarih/evet-hayir). */
@@ -96,7 +97,7 @@ async function guncelle(id, veri, kullaniciAdi) {
     'il', 'ilce', 'koyMahalle', 'adaNo', 'parselNo', 'meraAlaniM2', 'tapuAlaniM2',
     'araziNiteligi', 'araziDurumSinifi', 'araziKaynagi',
     'tespitYapildiMi', 'tespitTarihi', 'tahditYapildiMi', 'tahditTarihi', 'tahsisYapildiMi', 'tahsisTarihi',
-    'islahDurumu', 'egimi', 'topraksinifi', 'tapuKimlikNo',
+    'islahDurumu', 'egimi', 'topraksinifi', 'tapuKimlikNo', 'mulkiyetDurumu',
   ];
   // HER ALAN icin ESKI/YENI degeri KARSILASTIRIP sadece GERCEKTEN
   // degisenleri "Etiket: eski -> yeni" bicimindeki AYRINTILI log'a
@@ -302,6 +303,12 @@ async function komsuParseller(il, ilce, koyMahalle, haricId) {
  * dosyalariyla AYNI mantik); false ise (veya tip belirtilmezse)
  * kullanicinin YUKLEDIGI ORIJINAL dosya adi KORUNUR.
  */
+/** Sistem Ayarlari'ndaki (BelgeAyarlari) YONETILEBILIR mulkiyet durumu listesini getirir. */
+async function mulkiyetDurumlariGetir() {
+  const ayarlar = await BelgeAyarlari.findOne();
+  return (ayarlar && ayarlar.meraMulkiyetDurumlari) || [];
+}
+
 async function dosyaYukle(id, dosya, dosyaTipiAnahtari, kullaniciAdi) {
   const kayit = await getir(id);
   if (!dosya) throw new Error(lang.mera.dosyaSecilmedi);
@@ -354,7 +361,7 @@ async function dosyaSil(id, dosyaIndex, aciklama, kullaniciAdi) {
 
 module.exports = {
   listele, getir, olustur, guncelle, sil, durumDegistir, notEkle, notDuzenle, notDosyaEkle,
-  topluYukle, sablonIndir, raporIndir, haritaDosyaYukle, komsuParseller, dosyaYukle, dosyaSil,
+  topluYukle, sablonIndir, raporIndir, haritaDosyaYukle, komsuParseller, dosyaYukle, dosyaSil, mulkiyetDurumlariGetir,
   ARAZI_NITELIKLERI: MeraParseli.ARAZI_NITELIKLERI, ARAZI_KAYNAKLARI: MeraParseli.ARAZI_KAYNAKLARI,
   ARAZI_DURUM_SINIFLARI: MeraParseli.ARAZI_DURUM_SINIFLARI, TOPRAK_SINIFLARI: MeraParseli.TOPRAK_SINIFLARI,
   ISLAH_DURUMLARI: MeraParseli.ISLAH_DURUMLARI, PARSEL_DURUMLARI: MeraParseli.PARSEL_DURUMLARI,

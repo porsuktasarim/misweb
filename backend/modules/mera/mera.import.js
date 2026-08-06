@@ -36,6 +36,7 @@ const BASLIK_ANAHTARLARI = {
   egimi: ['eğimi', 'egimi'],
   topraksinifi: ['toprak sınıfı', 'toprak sinifi'],
   tapuKimlikNo: ['tapu kimlik no'],
+  mulkiyetDurumu: ['mülkiyet durumu', 'mulkiyet durumu'],
 };
 
 const EVET_DEGERLERI = ['evet', 'e', 'yes', 'true', '1', 'x'];
@@ -106,6 +107,7 @@ function satirdanParselOlustur(satir, eslesme, satirNo) {
     egimi: deger('egimi'),
     topraksinifi: enumDogrula(deger('topraksinifi'), TOPRAK_SINIFLARI, 'Toprak Sınıfı', satirNo),
     tapuKimlikNo: deger('tapuKimlikNo'),
+    mulkiyetDurumu: deger('mulkiyetDurumu'),
   };
 }
 

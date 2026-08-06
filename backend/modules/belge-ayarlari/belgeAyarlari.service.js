@@ -11,7 +11,7 @@ async function ayarlariGetir() {
   return kayit;
 }
 
-async function ayarlariGuncelle({ imzaRengi, wordYaziTipi, temaBolumleri, haritaStili, meraDosyaTipleri }) {
+async function ayarlariGuncelle({ imzaRengi, wordYaziTipi, temaBolumleri, haritaStili, meraDosyaTipleri, meraMulkiyetDurumlari }) {
   let kayit = await BelgeAyarlari.findOne();
   if (!kayit) kayit = new BelgeAyarlari({});
   if (imzaRengi) kayit.imzaRengi = imzaRengi;
@@ -22,6 +22,7 @@ async function ayarlariGuncelle({ imzaRengi, wordYaziTipi, temaBolumleri, harita
     if (haritaStili.altKatmanlar) kayit.haritaStili.altKatmanlar = haritaStili.altKatmanlar;
   }
   if (meraDosyaTipleri) kayit.meraDosyaTipleri = meraDosyaTipleri;
+  if (meraMulkiyetDurumlari) kayit.meraMulkiyetDurumlari = meraMulkiyetDurumlari;
   await kayit.save();
   return kayit;
 }

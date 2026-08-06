@@ -138,6 +138,11 @@ const meraParseliSchema = new mongoose.Schema(
     egimi: { type: String, default: '' },
     topraksinifi: { type: String, enum: TOPRAK_SINIFLARI },
     tapuKimlikNo: { type: String, default: '' },
+    // Sabit ENUM DEGIL - Sistem Ayarlari'ndaki (BelgeAyarlari.
+    // meraMulkiyetDurumlari) YONETILEBILIR listeden gelir. 3T'nin
+    // Ek-3/a madde 7'sindeki "Diger Bilgiler (Kime Ait Oldugu...)"
+    // sutununu doldurmak icin KULLANILIR.
+    mulkiyetDurumu: { type: String, default: '' },
     // Parsel ASLA gercekten silinmez - "Sil" butonu bu alani
     // 'Silindi' yapar, veri KALICI olarak durur (bkz. yukaridaki not).
     durum: { type: String, enum: PARSEL_DURUMLARI, default: 'Aktif' },

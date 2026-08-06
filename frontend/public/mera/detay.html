@@ -105,7 +105,8 @@
                   <div class="row g-2 mb-2">
                     <div class="col-md-3"><label class="form-label small fw-semibold" id="lblIslahDurumu"></label><select class="form-select form-select-sm" id="gIslahDurumu"></select></div>
                     <div class="col-md-3"><label class="form-label small fw-semibold" id="lblEgimi"></label><input class="form-control form-control-sm" id="gEgimi"></div>
-                    <div class="col-md-6"><label class="form-label small fw-semibold" id="lblTapuKimlikNo"></label><input class="form-control form-control-sm" id="gTapuKimlikNo"></div>
+                    <div class="col-md-3"><label class="form-label small fw-semibold" id="lblTapuKimlikNo"></label><input class="form-control form-control-sm" id="gTapuKimlikNo"></div>
+                    <div class="col-md-3"><label class="form-label small fw-semibold" id="lblMulkiyetDurumu"></label><select class="form-select form-select-sm" id="gMulkiyetDurumu"></select></div>
                   </div>
 
                   <div class="row g-2 mb-3">
@@ -272,6 +273,7 @@
       ekle('gTopraksinifi', json.data.topraksiniflari, true);
       ekle('gAraziDurumSinifi', json.data.araziDurumSiniflari, false);
       ekle('gIslahDurumu', json.data.islahDurumlari, false);
+      ekle('gMulkiyetDurumu', json.data.mulkiyetDurumlari, true);
     }
 
     async function kaydiYukle() {
@@ -297,6 +299,7 @@
       document.getElementById('gAraziKaynagi').value = kayit.araziKaynagi || '';
       document.getElementById('gTopraksinifi').value = kayit.topraksinifi || '';
       document.getElementById('gIslahDurumu').value = kayit.islahDurumu || 'Islah Edilmedi';
+      document.getElementById('gMulkiyetDurumu').value = kayit.mulkiyetDurumu || '';
       document.getElementById('gEgimi').value = kayit.egimi || '';
       document.getElementById('gTapuKimlikNo').value = kayit.tapuKimlikNo || '';
       document.getElementById('gTespitYapildi').checked = !!kayit.tespitYapildiMi;
@@ -902,6 +905,7 @@
       document.getElementById('lblEgimi').textContent = LANG.mera.egimi;
       document.getElementById('gEgimi').placeholder = LANG.mera.egimiPlaceholder;
       document.getElementById('lblTapuKimlikNo').textContent = LANG.mera.tapuKimlikNo;
+      document.getElementById('lblMulkiyetDurumu').textContent = LANG.mera.mulkiyetDurumu;
       document.getElementById('lblTespitYapildi').textContent = LANG.mera.tespitYapildi;
       document.getElementById('lblTahditYapildi').textContent = LANG.mera.tahditYapildi;
       document.getElementById('lblTahsisYapildi').textContent = LANG.mera.tahsisYapildi;
@@ -953,6 +957,7 @@
           islahDurumu: document.getElementById('gIslahDurumu').value,
           egimi: document.getElementById('gEgimi').value.trim(),
           tapuKimlikNo: document.getElementById('gTapuKimlikNo').value.trim(),
+          mulkiyetDurumu: document.getElementById('gMulkiyetDurumu').value,
           tespitYapildiMi: document.getElementById('gTespitYapildi').checked,
           tespitTarihi: document.getElementById('gTespitTarihi').value || null,
           tahditYapildiMi: document.getElementById('gTahditYapildi').checked,

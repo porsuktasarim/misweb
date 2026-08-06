@@ -294,6 +294,15 @@
             </div>
             <button type="button" class="btn btn-sm btn-outline-secondary mb-3" id="mdtEkleBtn">+ Belge Tipi Ekle</button>
 
+            <hr>
+            <h6 id="txtMmdBaslik"></h6>
+            <p class="text-muted small" id="txtMmdAciklama"></p>
+            <div class="d-flex flex-wrap gap-2 mb-2" id="mmdListesi"></div>
+            <div class="input-group mb-3" style="max-width:320px;">
+              <input type="text" class="form-control form-control-sm" id="mmdYeniInput" placeholder="Yeni mülkiyet durumu">
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="mmdEkleBtn">+ Ekle</button>
+            </div>
+
             <button class="btn btn-sm btn-primary" id="baKaydetBtn">Kaydet</button>
             <span id="baSonuc" class="small ms-2"></span>
           </div>
@@ -1329,6 +1338,8 @@
       document.getElementById('txtMeraDosyaTipleriAciklama').textContent = LANG.mera.meraDosyaTipleriAciklama;
       document.getElementById('thMdtAd').textContent = LANG.mera.dosyaTipiAdi;
       document.getElementById('thMdtOtomatikAd').textContent = LANG.mera.otomatikAdlandirma;
+      document.getElementById('txtMmdBaslik').textContent = LANG.mera.mmdBaslik;
+      document.getElementById('txtMmdAciklama').textContent = LANG.mera.mmdAciklama;
 
       const json = await apiGet('/api/belge-ayarlari');
       if (!json.success) return;
@@ -1337,6 +1348,7 @@
       document.getElementById('baYaziTipi').value = json.data.wordYaziTipi;
 
       mdtTablodanCiz(json.data.meraDosyaTipleri || []);
+      mmdListesindenCiz(json.data.meraMulkiyetDurumlari || []);
 
       const govde = document.getElementById('baTemaBolumleriTablosu');
       govde.innerHTML = (json.data.temaBolumleri || []).map((b, i) => `
@@ -1392,6 +1404,32 @@
       govde.lastElementChild.querySelector('.mdt-sil-btn').addEventListener('click', (e) => e.target.closest('tr').remove());
     });
 
+    /** Mera Mülkiyet Durumları - kaldırılabilir "etiket" (chip) listesi olarak CIZER. */
+    function mmdListesindenCiz(degerler) {
+      const govde = document.getElementById('mmdListesi');
+      govde.innerHTML = degerler.map((d) => `
+        <span class="badge bg-secondary-subtle text-dark border d-inline-flex align-items-center gap-1 py-2 px-2 mmd-etiket" data-deger="${guvenliMetin(d)}">
+          ${guvenliMetin(d)}
+          <button type="button" class="btn-close btn-close-sm" style="font-size:9px;" aria-label="Kaldır"></button>
+        </span>`).join('');
+      govde.querySelectorAll('.mmd-etiket .btn-close').forEach((btn) => btn.addEventListener('click', (e) => e.target.closest('.mmd-etiket').remove()));
+    }
+
+    document.getElementById('mmdEkleBtn').addEventListener('click', () => {
+      const input = document.getElementById('mmdYeniInput');
+      const deger = input.value.trim();
+      if (!deger) return;
+      const mevcutDegerler = Array.from(document.querySelectorAll('#mmdListesi .mmd-etiket')).map((e) => e.dataset.deger);
+      if (mevcutDegerler.includes(deger)) { input.value = ''; return; }
+      document.getElementById('mmdListesi').insertAdjacentHTML('beforeend', `
+        <span class="badge bg-secondary-subtle text-dark border d-inline-flex align-items-center gap-1 py-2 px-2 mmd-etiket" data-deger="${guvenliMetin(deger)}">
+          ${guvenliMetin(deger)}
+          <button type="button" class="btn-close btn-close-sm" style="font-size:9px;" aria-label="Kaldır"></button>
+        </span>`);
+      document.querySelector('#mmdListesi .mmd-etiket:last-child .btn-close').addEventListener('click', (e) => e.target.closest('.mmd-etiket').remove());
+      input.value = '';
+    });
+
     document.getElementById('baKaydetBtn').addEventListener('click', async () => {
       const sonucAlan = document.getElementById('baSonuc');
       const imzaRengi = document.getElementById('baImzaRengiHex').value;
@@ -1421,10 +1459,11 @@
         ad: tr.querySelector('.mdt-ad').value.trim(),
         otomatikAdlandirma: tr.querySelector('.mdt-otomatik').checked,
       })).filter((t) => t.ad);
+      const meraMulkiyetDurumlari = Array.from(document.querySelectorAll('#mmdListesi .mmd-etiket')).map((e) => e.dataset.deger);
       sonucAlan.textContent = 'Kaydediliyor...';
       const res = await fetch('/api/belge-ayarlari', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imzaRengi, wordYaziTipi, temaBolumleri, haritaStili, meraDosyaTipleri }),
+        body: JSON.stringify({ imzaRengi, wordYaziTipi, temaBolumleri, haritaStili, meraDosyaTipleri, meraMulkiyetDurumlari }),
       });
       const json = await res.json();
       sonucAlan.innerHTML = json.success ? '<span class="text-success">Kaydedildi.</span>' : `<span class="text-danger">${json.message}</span>`;

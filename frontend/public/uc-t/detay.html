@@ -1015,15 +1015,19 @@
         </div>
 
         <div class="mb-3">
-          <label class="form-label small fw-semibold d-block">7. Arazinin <span class="text-muted fw-normal">(Mera Modülünden gelecek, henüz kurulmadı - şimdilik boş)</span></label>
+          <label class="form-label small fw-semibold d-block">7. Arazinin <span class="text-muted fw-normal">(Mera Modülü'ndeki parseller seçilerek hesaplanır)</span></label>
+          <button type="button" class="btn btn-sm btn-outline-primary mb-2" onclick="ek3aParselSecPopupAc()">
+            <i class="bi bi-geo-alt me-1"></i>Parsel Seç
+          </button>
           <div class="table-responsive">
             <table class="table table-sm table-bordered mb-0">
               <thead><tr><th>Cinsi</th><th>Miktarı<br>Dekar</th><th>Parça<br>Adedi</th><th>Mevki</th><th>Diğer Bilgiler<br>(Kime Ait Olduğu, Nizalılık Durumu)</th></tr></thead>
-              <tbody>
-                ${['Mera', 'Yaylak', 'Kışlak', 'Otlak', 'Çayır'].map((c) => `<tr><th class="table-light">${c}</th><td></td><td></td><td></td><td></td></tr>`).join('')}
+              <tbody id="e3aMadde7Tablosu">
+                ${(v.madde7Satirlari || ['Mera', 'Yaylak', 'Kışlak', 'Otlak', 'Çayır'].map((c) => [c, '', '', '', ''])).map((satir) => `<tr><th class="table-light">${guvenliMetin(satir[0])}</th><td>${guvenliMetin(satir[1])}</td><td>${guvenliMetin(satir[2])}</td><td>${guvenliMetin(satir[3])}</td><td>${guvenliMetin(satir[4])}</td></tr>`).join('')}
               </tbody>
             </table>
           </div>
+          <div id="e3aMadde7Sonuc" class="small mt-1"></div>
         </div>
 
         <div class="mb-3">
@@ -1122,6 +1126,61 @@
         </table>
         <div class="small text-muted">Toplam BBHB: ${v.bbhbToplam.toFixed(2)} · Manda ve Boğa/Öküz "Yerli" sütununa, Küçükbaş ve Diğerleri (tek tırnaklı) tamamı "Yerli" sütununa eklendi (BBHB kuralında bunların ırk ayrımı yok).</div>`;
     }
+
+    let _ek3aSeciliParselIdleri = new Set();
+
+    /** "Parsel Seç" popup'ini acar - bu koy/mahalledeki TUM Mera parsellerini (dekar bilgisiyle) listeler. */
+    window.ek3aParselSecPopupAc = async () => {
+      const modal = new bootstrap.Modal(document.getElementById('ek3aParselSecModal'));
+      modal.show();
+      document.getElementById('ek3aParselSecSonuc').textContent = '';
+
+      // Onceki secimden (varsa) kaldigi yerden devam - altAdim.veri.secilenParselIdleri.
+      const altAdim = kayit.surec[seciliAna].altAdimlar[seciliAlt];
+      _ek3aSeciliParselIdleri = new Set((altAdim.veri && altAdim.veri.secilenParselIdleri) || []);
+
+      const params = new URLSearchParams({ il: kayit.il, ilce: kayit.ilce, koyMahalle: kayit.koyMahalle, durum: 'Aktif' });
+      const json = await fetch(`/api/mera?${params}`).then((r) => r.json());
+      const govde = document.getElementById('ek3aParselListesi');
+      if (!json.success || !json.data.length) { govde.innerHTML = '<tr><td colspan="6" class="text-muted small">Bu köy/mahallede kayıtlı Mera parseli bulunamadı.</td></tr>'; return; }
+
+      govde.innerHTML = json.data.map((p) => {
+        const alanM2 = p.tapuAlaniM2 || p.meraAlaniM2 || 0;
+        const dekar = (alanM2 / 1000).toLocaleString('tr-TR', { maximumFractionDigits: 2 });
+        return `
+          <tr>
+            <td><input type="checkbox" class="form-check-input ek3a-parsel-check" value="${p._id}" ${_ek3aSeciliParselIdleri.has(p._id) ? 'checked' : ''}></td>
+            <td>${guvenliMetin(p.adaNo || '-')}</td>
+            <td>${guvenliMetin(p.parselNo || '-')}</td>
+            <td>${guvenliMetin(p.araziNiteligi || '-')}</td>
+            <td>${dekar}</td>
+            <td>${guvenliMetin(p.mulkiyetDurumu || '-')}</td>
+          </tr>`;
+      }).join('');
+    };
+
+    window.ek3aParselSecKaydet = async () => {
+      const sonucAlan = document.getElementById('ek3aParselSecSonuc');
+      const parselIdleri = Array.from(document.querySelectorAll('.ek3a-parsel-check:checked')).map((c) => c.value);
+      if (!parselIdleri.length) { sonucAlan.innerHTML = '<span class="text-danger">En az bir parsel seçin.</span>'; return; }
+
+      sonucAlan.innerHTML = '<span class="text-muted">Hesaplanıyor...</span>';
+      const res = await fetch(`${API}/${id}/ek3a-arazi-verileri-kaydet`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, parselIdleri }),
+      });
+      const json = await res.json();
+      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
+      kayit = json.data;
+
+      const guncelAlt = kayit.surec[seciliAna].altAdimlar[seciliAlt];
+      document.getElementById('e3aMadde7Tablosu').innerHTML = guncelAlt.veri.madde7Satirlari
+        .map((satir) => `<tr><th class="table-light">${guvenliMetin(satir[0])}</th><td>${guvenliMetin(satir[1])}</td><td>${guvenliMetin(satir[2])}</td><td>${guvenliMetin(satir[3])}</td><td>${guvenliMetin(satir[4])}</td></tr>`).join('');
+      document.getElementById('e3aMadde7Sonuc').innerHTML = `<span class="text-success">${parselIdleri.length} parsel seçilerek hesaplandı ve eklendi.</span>`;
+
+      bootstrap.Modal.getInstance(document.getElementById('ek3aParselSecModal')).hide();
+      renderSurec();
+    };
 
     window.ek3aKaydet = async () => {
       const sonucAlan = document.getElementById('e3aSonuc');
@@ -1440,5 +1499,31 @@
     }
     yukle();
   </script>
+
+  <!-- Ek-3/a Madde 7 - "Parsel Seç" Popup'ı (Mera Modulu entegrasyonu) -->
+  <div class="modal fade" id="ek3aParselSecModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header py-2">
+          <h6 class="modal-title">Parsel Seç - Mera Modülü</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small">Bu köy/mahalledeki Mera Modülü parselleri aşağıda listelenmiştir - işaretleyerek seçin, "Kaydet" ile Madde 7 tablosuna hesaplanarak eklenir.</p>
+          <div class="table-responsive">
+            <table class="table table-sm">
+              <thead><tr><th style="width:30px;"></th><th>Ada</th><th>Parsel</th><th>Cinsi</th><th>Dekar</th><th>Mülkiyet Durumu</th></tr></thead>
+              <tbody id="ek3aParselListesi"><tr><td colspan="6" class="text-muted small">Yükleniyor...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer py-2">
+          <span id="ek3aParselSecSonuc" class="small me-auto"></span>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Vazgeç</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="ek3aParselSecKaydet()">Kaydet</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

@@ -9,6 +9,7 @@ const BbhbSonuc = require('../bbhb/bbhb.model');
 const CksSonuc = require('../cks/cks.model');
 const ek4abService = require('../ek4ab/ek4ab.service');
 const ilMeraKomisyonuService = require('../personel/ilMeraKomisyonu.service');
+const MeraParseli = require('../mera/mera.model');
 const fs = require('fs/promises');
 
 async function listele() {
@@ -319,6 +320,61 @@ async function ek3aHayvanVarligiCek(id, anaAdimIndex, altAdimIndex, { bbhbSonucI
   altAdim.tamamlandiMi = true;
   altAdim.tamamlanmaTarihi = new Date();
 
+    await kayit.save();
+  return kayit;
+}
+
+/**
+ * EK-3/A MADDE 7 - Mera Modulu ENTEGRASYONU: kullanicinin secip
+ * "Parsel Sec" popup'indan onayladigi Mera parselleri, CINSI'ne
+ * (araziNiteligi - Mera/Yaylak/Kislak/Otlak/Cayir) gore GRUPLANIR:
+ * Miktari Dekar (tapuAlaniM2 VARSA ONCELIKLI, yoksa meraAlaniM2 -
+ * m2'den DEKARA /1000 CEVRILEREK TOPLANIR), Parca Adedi (o cinsteki
+ * SECILEN parsel SAYISI), Diger Bilgiler (Kime Ait Oldugu) sutunu o
+ * cinsteki parsellerin mulkiyetDurumu degerlerinin BENZERSIZ
+ * BIRLESIMI. "Mevki" sutunu Mera modelinde HENUZ IZLENMEDIGI icin
+ * BOS birakilir (elle doldurulabilir). Madde 7 tablosu SADECE 5
+ * SABIT satir icerdigi icin (Mera/Yaylak/Kislak/Otlak/Cayir),
+ * BUNLARIN DISINDAKI arazi nitelikleri (Eyrek Yeri vb.) bu tabloya
+ * DAHIL EDILMEZ (sessizce atlanir).
+ *
+ * ONEMLI: `altAdim.veri` diger alanlari (aileSayisi, hayvanVarligiTablosu
+ * vb.) EZMEDEN, SADECE ilgili iki alani (secilenParselIdleri,
+ * madde7Satirlari) EKLER/GUNCELLER - boylece bu popup BAGIMSIZ olarak
+ * (ana formu tekrar kaydetmeden) kullanilabilir.
+ */
+async function ek3aAraziVerileriKaydet(id, anaAdimIndex, altAdimIndex, { parselIdleri }) {
+  const kayit = await UcT.findById(id);
+  if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
+  if (!parselIdleri || !parselIdleri.length) throw new Error('En az bir parsel seçilmelidir.');
+
+  const parseller = await MeraParseli.find({ _id: { $in: parselIdleri } });
+
+  const CINS_SATIRLARI = ['Mera', 'Yaylak', 'Kışlak', 'Otlak', 'Çayır'];
+  const gruplar = {};
+  CINS_SATIRLARI.forEach((c) => { gruplar[c] = { miktarDekar: 0, parcaAdedi: 0, mulkiyetDurumlari: new Set() }; });
+
+  parseller.forEach((p) => {
+    if (!CINS_SATIRLARI.includes(p.araziNiteligi)) return; // Madde 7 tablosunda OLMAYAN cinsler (Eyrek Yeri vb.) sessizce atlanir
+    const alanM2 = p.tapuAlaniM2 || p.meraAlaniM2 || 0;
+    gruplar[p.araziNiteligi].miktarDekar += alanM2 / 1000;
+    gruplar[p.araziNiteligi].parcaAdedi += 1;
+    if (p.mulkiyetDurumu) gruplar[p.araziNiteligi].mulkiyetDurumlari.add(p.mulkiyetDurumu);
+  });
+
+  const madde7Satirlari = CINS_SATIRLARI.map((c) => [
+    c,
+    gruplar[c].miktarDekar > 0 ? gruplar[c].miktarDekar.toLocaleString('tr-TR', { maximumFractionDigits: 2 }) : '',
+    gruplar[c].parcaAdedi > 0 ? String(gruplar[c].parcaAdedi) : '',
+    '',
+    Array.from(gruplar[c].mulkiyetDurumlari).join(', '),
+  ]);
+
+  const altAdim = kayit.surec[anaAdimIndex].altAdimlar[altAdimIndex];
+  altAdim.veri = { ...(altAdim.veri || {}), secilenParselIdleri: parselIdleri, madde7Satirlari };
+  altAdim.tamamlandiMi = true;
+  altAdim.tamamlanmaTarihi = new Date();
+
   await kayit.save();
   return kayit;
 }
@@ -371,6 +427,6 @@ async function komisyonAdaylari(il) {
 
 module.exports = {
   listele, getir, olustur, sil, adimGuncelle, adimVeriKaydet, adimDosyaYukle, ek4abSec, koyIcinEk4abAdaylari,
-  koyIcinBbhbAdaylari, koyIcinCksAdaylari, ek4aVeriCek, ek4bVeriCek, ek3aHayvanVarligiCek, birlestirVeDevamEt,
-  karar1Kaydet, komisyonAdaylari,
+  koyIcinBbhbAdaylari, koyIcinCksAdaylari, ek4aVeriCek, ek4bVeriCek, ek3aHayvanVarligiCek, ek3aAraziVerileriKaydet,
+  birlestirVeDevamEt, karar1Kaydet, komisyonAdaylari,
 };

@@ -89,6 +89,7 @@ async function sabitlerHandler(req, res) {
       araziNitelikleri: service.ARAZI_NITELIKLERI, araziKaynaklari: service.ARAZI_KAYNAKLARI,
       araziDurumSiniflari: service.ARAZI_DURUM_SINIFLARI, topraksiniflari: service.TOPRAK_SINIFLARI,
       islahDurumlari: service.ISLAH_DURUMLARI, parselDurumlari: service.PARSEL_DURUMLARI,
+      mulkiyetDurumlari: await service.mulkiyetDurumlariGetir(),
     });
   } catch (err) {
     return basarisiz(res, err.message);

@@ -395,6 +395,66 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
+## 3T'nin Ek-3/a Madde 7'si - Mera Modülü Entegrasyonu (YENİ)
+
+**ÖNEMLİ NOT:** `uc-t.model.js` bu ortamda YOK (hiç değişmediği için
+hiçbir önceki pakete dahil edilmemişti) - bu dosyaya HİÇ dokunulmadı,
+mevcut `altAdim.veri` yapısının Ek-4/b (BBHB) desenindeki gibi
+esnek/tip-serbest olduğu, MEVCUT KOD İNCELENEREK doğrulandı, model
+dosyasına GEREK KALMADAN entegre edildi.
+
+Madde 7 tablosu ("Cinsi, Miktarı Dekar, Parça Adedi, Mevki, Diğer
+Bilgiler") şimdiye kadar HER ZAMAN BOŞ satırlar üretiyordu (kod
+içinde "Mera Modülünden alınacak" notuyla İŞARETLENMİŞTİ). Artık:
+
+1. **"Parsel Seç" butonu** - Ek-3/a adımının Madde 7 bölümüne eklendi,
+   tıklanınca bir POPUP (Bootstrap modal) açılıyor.
+2. **Popup**, o 3T kaydının köy/mahallesindeki (`kayit.il/ilce/
+   koyMahalle`) TÜM Aktif Mera parsellerini `/api/mera` endpoint'i
+   ÜZERİNDEN (YENİ bir endpoint GEREKMEDİ, mevcut liste API'si
+   yeniden kullanıldı) çekip listeliyor - her satırda checkbox,
+   Ada/Parsel, Cinsi (araziNiteligi), **Dekar** (Tapu Alanı varsa
+   ONCELIKLI, yoksa Mera Alanı, m²'den /1000 çevrilerek), Mülkiyet
+   Durumu.
+3. **"Kaydet"** - seçilen parsel ID'lerini YENİ backend fonksiyonuna
+   (`uc-t.service.js` → `ek3aAraziVerileriKaydet`) gönderiyor - bu
+   fonksiyon parselleri Cinsi'ne (Mera/Yaylak/Kışlak/Otlak/Çayır) göre
+   GRUPLAYIP: Miktarı Dekar (TOPLAM), Parça Adedi (SAYI), Diğer
+   Bilgiler sütununa o cinsteki parsellerin Mülkiyet Durumu
+   değerlerinin BENZERSİZ birleşimini HESAPLAYIP `altAdim.veri.
+   madde7Satirlari`'a YAZIYOR - test edildi (mock veriyle): "Mera:
+   37 dekar, 2 parça, Maliye Hazinesi+Kamu Orta Malı" gibi doğru
+   sonuçlar üretti. Madde 7 tablosunda OLMAYAN arazi nitelikleri
+   (Eyrek Yeri, Harman Yeri vb.) SESSİZCE ATLANIYOR (test edildi).
+4. **"Mevki" sütunu** Mera modelinde HENÜZ İZLENMEDİĞİ için BOŞ
+   bırakılıyor (elle doldurulabilir) - dürüstçe belirtilmeli bir
+   sınırlama.
+5. `uc-t.export.js`'in `ek3aVerileriniOlustur` fonksiyonu artık
+   kayıtlı `madde7Satirlari`'ı KULLANIYOR (varsa), yoksa eski boş
+   satırlara geri dönüyor (geriye dönük uyumlu) - Word/PDF çıktısına
+   ARTIK GERÇEK VERİ YANSIYOR.
+6. Popup'ta ÖNCEDEN seçilmiş parseller (varsa) checkbox'ları
+   İŞARETLİ olarak açılıyor - tekrar düzenlenebilir.
+
+## Mera - Mülkiyet Durumu (YENİ, Ek-3/a Entegrasyonu için Gerekli)
+
+3T entegrasyonu sırasında ortaya çıkan ihtiyaç: Ek-3/a madde 7'nin
+"Diğer Bilgiler (Kime Ait Olduğu, Nizalılık Durumu)" sütunu, parsel
+BAZINDA bir "mülkiyet durumu" bilgisi GEREKTİRİYORDU - bu bilgi Mera
+Modülü'nde HİÇ YOKTU. Eklendi:
+
+- `BelgeAyarlari.meraMulkiyetDurumlari` - YÖNETİLEBİLİR liste
+  (varsayılan: Kamu Orta Malı, Maliye Hazinesi, Davalı, İlçe
+  Belediyesi, Büyükşehir Belediyesi, Köy/Mahalle Muhtarlığı) -
+  Sistem Ayarları'nda "etiket" (chip) arayüzüyle eklenip
+  çıkarılabiliyor (Mera Dosya Tipleri'nin YANINA eklendi).
+- `MeraParseli.mulkiyetDurumu` - SABİT enum DEĞİL, yukarıdaki listeye
+  bağlı serbest metin alanı.
+- Mera detay sayfasının Genel Bilgiler sekmesine dropdown eklendi.
+- Toplu Excel yükleme/rapor/şablonuna "Mülkiyet Durumu" sütunu
+  eklendi - GERÇEK bir şablon üretilip içeriği doğrulandı (sütun
+  başlığı + örnek "Maliye Hazinesi" değeri doğru çıktı).
+
 ## Mera - Kritik Hata Düzeltmesi + Arama + Zorunlu Açıklama + Dosya Silme
 
 **1. KRİTİK HATA DÜZELTİLDİ: "Aktif" filtresi hiçbir parsel göstermiyordu.**

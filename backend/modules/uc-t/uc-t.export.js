@@ -159,7 +159,10 @@ async function ek3aVerileriniOlustur(kayit, veri) {
 
   const madde7Tablosu = {
     basliklar: ['Cinsi', 'Miktarı Dekar', 'Parça Adedi', 'Mevki', 'Diğer Bilgiler (Kime Ait Olduğu, Nizalılık Durumu)'],
-    satirlar: ['Mera', 'Yaylak', 'Kışlak', 'Otlak', 'Çayır'].map((c) => [c, '', '', '', '']),
+    // Mera Modulu'nde SECILEN parseller uzerinden HESAPLANMIS satirlar
+    // VARSA (uc-t.service.js -> ek3aAraziVerileriKaydet) ONLAR
+    // KULLANILIR - YOKSA (henuz parsel secilmemisse) BOS satirlar.
+    satirlar: veri.madde7Satirlari || ['Mera', 'Yaylak', 'Kışlak', 'Otlak', 'Çayır'].map((c) => [c, '', '', '', '']),
   };
   const madde8Tablosu = {
     basliklar: ['', 'Kültür', 'Kültür Melezi', 'Yerli'],
@@ -183,7 +186,7 @@ async function ek3aVerileriniOlustur(kayit, veri) {
     { tip: 'paragraf', metin: `4. Köyü: ${kayit.koyMahalle}` },
     { tip: 'paragraf', metin: `5. Aile Sayısı: ${veri.aileSayisi ?? '……'}` },
     { tip: 'paragraf', metin: `6. Çiftçi Aile Sayısı: ${veri.ciftciAileSayisi ?? '……'}` },
-    { tip: 'paragraf', metin: `7. Arazinin: (Mera Modülünden alınacak - aşağıdaki tablo)` },
+    { tip: 'paragraf', metin: `7. Arazinin:` },
     { tip: 'tablo', ...madde7Tablosu },
     { tip: 'paragraf', metin: `8. Mevcut Hayvan Varlığı: Hayvan sayıları ayrıntılı olarak belirtilecek` },
     { tip: 'tablo', ...madde8Tablosu },

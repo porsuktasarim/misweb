@@ -30,6 +30,7 @@ const SUTUNLAR = [
   { baslik: 'Eğimi', anahtar: 'egimi', genislik: 10 },
   { baslik: 'Toprak Sınıfı', anahtar: 'topraksinifi', genislik: 12 },
   { baslik: 'Tapu Kimlik No', anahtar: 'tapuKimlikNo', genislik: 16 },
+  { baslik: 'Mülkiyet Durumu', anahtar: 'mulkiyetDurumu', genislik: 18 },
 ];
 
 const RENK_BASLIK = 'FF3F3F3C';
@@ -55,7 +56,7 @@ async function sablonOlustur() {
     meraAlaniM2: 15000, tapuAlaniM2: 15200, araziNiteligi: 'Mera', araziDurumSinifi: 'İyi',
     araziKaynagi: '5-a', tespitYapildiMi: 'Evet', tespitTarihi: '01.03.2026',
     tahditYapildiMi: 'Hayır', tahditTarihi: '', tahsisYapildiMi: 'Hayır', tahsisTarihi: '',
-    islahDurumu: 'Islah Ediliyor', egimi: '%5', topraksinifi: 'IV. Sınıf', tapuKimlikNo: '1234567890',
+    islahDurumu: 'Islah Ediliyor', egimi: '%5', topraksinifi: 'IV. Sınıf', tapuKimlikNo: '1234567890', mulkiyetDurumu: 'Maliye Hazinesi',
   });
   ornekSatir.eachCell((cell) => { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: RENK_ORNEK_SATIR } }; cell.font = { name: 'Times New Roman', italic: true }; });
 
@@ -90,7 +91,7 @@ async function raporOlustur(parseller) {
       tespitYapildiMi: evetHayir(p.tespitYapildiMi), tespitTarihi: tarihStr(p.tespitTarihi),
       tahditYapildiMi: evetHayir(p.tahditYapildiMi), tahditTarihi: tarihStr(p.tahditTarihi),
       tahsisYapildiMi: evetHayir(p.tahsisYapildiMi), tahsisTarihi: tarihStr(p.tahsisTarihi),
-      islahDurumu: p.islahDurumu, egimi: p.egimi, topraksinifi: p.topraksinifi, tapuKimlikNo: p.tapuKimlikNo,
+      islahDurumu: p.islahDurumu, egimi: p.egimi, topraksinifi: p.topraksinifi, tapuKimlikNo: p.tapuKimlikNo, mulkiyetDurumu: p.mulkiyetDurumu,
     });
   });
 
