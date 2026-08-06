@@ -16,9 +16,6 @@
     .not-karti { border: 1px solid #e5e5e5; border-radius: 6px; padding: 10px; margin-bottom: 10px; }
     .not-versiyon { background: #f8f9fa; border-left: 3px solid #d8d8d8; padding: 6px 10px; margin-top: 6px; font-size: 12px; color: #666; }
     #haritaKonteyner { height: 420px; border-radius: 6px; overflow: hidden; border: 1px solid var(--renk-kenarlik, #e0e0e0); }
-    #haritaKonteyner.harita-tam-ekran {
-      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2000; border-radius: 0;
-    }
     /* Katman kontrol paneli - Leaflet'in KENDI control mekanizmasiyla
        eklenir, bu yuzden hem normal HEM tam ekran gorunumde OTOMATIK
        calisir (harita konteynerinin ICINDEKI DOM agacinda yasar).
@@ -55,85 +52,122 @@
             </div>
           </div>
 
-          <ul class="nav nav-tabs mb-3">
-            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#genel-tab" id="txtSekmeGenel"></button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#notlar-tab" id="txtSekmeNotlar"></button></li>
-            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#log-tab" id="txtSekmeLog"></button></li>
-          </ul>
+          <div class="row g-3">
+            <div class="col-lg-7">
+              <ul class="nav nav-tabs mb-3">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#genel-tab" id="txtSekmeGenel"></button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#notlar-tab" id="txtSekmeNotlar"></button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#log-tab" id="txtSekmeLog"></button></li>
+              </ul>
 
-          <div class="tab-content">
-            <div class="tab-pane fade show active" id="genel-tab">
-              <div class="row g-2 mb-2">
-                <div class="col-md-4"><label class="form-label small fw-semibold" id="lblIl"></label><select id="gIl" class="form-select form-select-sm"></select></div>
-                <div class="col-md-4"><label class="form-label small fw-semibold" id="lblIlce"></label><select id="gIlce" class="form-select form-select-sm"></select></div>
-                <div class="col-md-4"><label class="form-label small fw-semibold" id="lblMahalle"></label><select id="gMahalle" class="form-select form-select-sm"></select></div>
-              </div>
-              <div class="row g-2 mb-2">
-                <div class="col-md-3"><label class="form-label small fw-semibold" id="lblAdaNo"></label><input class="form-control form-control-sm" id="gAdaNo"></div>
-                <div class="col-md-3"><label class="form-label small fw-semibold" id="lblParselNo"></label><input class="form-control form-control-sm" id="gParselNo"></div>
-                <div class="col-md-3"><label class="form-label small fw-semibold" id="lblMeraAlani"></label><input type="number" class="form-control form-control-sm" id="gMeraAlani"></div>
-                <div class="col-md-3"><label class="form-label small fw-semibold" id="lblTapuAlani"></label><input type="number" class="form-control form-control-sm" id="gTapuAlani"></div>
-              </div>
-              <div class="row g-2 mb-2">
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold" id="lblAraziNiteligi"></label>
-                  <select class="form-select form-select-sm" id="gAraziNiteligi"></select>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold" id="lblAraziDurumSinifi"></label>
-                  <select class="form-select form-select-sm" id="gAraziDurumSinifi"></select>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold" id="lblAraziKaynagi"></label>
-                  <select class="form-select form-select-sm" id="gAraziKaynagi"></select>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold" id="lblTopraksinifi"></label>
-                  <select class="form-select form-select-sm" id="gTopraksinifi"></select>
-                </div>
-              </div>
-              <div class="row g-2 mb-2">
-                <div class="col-md-3"><label class="form-label small fw-semibold" id="lblIslahDurumu"></label><select class="form-select form-select-sm" id="gIslahDurumu"></select></div>
-                <div class="col-md-3"><label class="form-label small fw-semibold" id="lblEgimi"></label><input class="form-control form-control-sm" id="gEgimi"></div>
-                <div class="col-md-6"><label class="form-label small fw-semibold" id="lblTapuKimlikNo"></label><input class="form-control form-control-sm" id="gTapuKimlikNo"></div>
-              </div>
+              <div class="tab-content">
+                <div class="tab-pane fade show active" id="genel-tab">
+                  <div class="row g-2 mb-2">
+                    <div class="col-md-4"><label class="form-label small fw-semibold" id="lblIl"></label><select id="gIl" class="form-select form-select-sm"></select></div>
+                    <div class="col-md-4"><label class="form-label small fw-semibold" id="lblIlce"></label><select id="gIlce" class="form-select form-select-sm"></select></div>
+                    <div class="col-md-4"><label class="form-label small fw-semibold" id="lblMahalle"></label><select id="gMahalle" class="form-select form-select-sm"></select></div>
+                  </div>
+                  <div class="row g-2 mb-2">
+                    <div class="col-md-3"><label class="form-label small fw-semibold" id="lblAdaNo"></label><input class="form-control form-control-sm" id="gAdaNo"></div>
+                    <div class="col-md-3"><label class="form-label small fw-semibold" id="lblParselNo"></label><input class="form-control form-control-sm" id="gParselNo"></div>
+                    <div class="col-md-3"><label class="form-label small fw-semibold" id="lblMeraAlani"></label><input type="number" class="form-control form-control-sm" id="gMeraAlani"></div>
+                    <div class="col-md-3"><label class="form-label small fw-semibold" id="lblTapuAlani"></label><input type="number" class="form-control form-control-sm" id="gTapuAlani"></div>
+                  </div>
+                  <div class="row g-2 mb-2">
+                    <div class="col-md-3">
+                      <label class="form-label small fw-semibold" id="lblAraziNiteligi"></label>
+                      <select class="form-select form-select-sm" id="gAraziNiteligi"></select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label small fw-semibold" id="lblAraziDurumSinifi"></label>
+                      <select class="form-select form-select-sm" id="gAraziDurumSinifi"></select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label small fw-semibold" id="lblAraziKaynagi"></label>
+                      <select class="form-select form-select-sm" id="gAraziKaynagi"></select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="form-label small fw-semibold" id="lblTopraksinifi"></label>
+                      <select class="form-select form-select-sm" id="gTopraksinifi"></select>
+                    </div>
+                  </div>
+                  <div class="row g-2 mb-2">
+                    <div class="col-md-3"><label class="form-label small fw-semibold" id="lblIslahDurumu"></label><select class="form-select form-select-sm" id="gIslahDurumu"></select></div>
+                    <div class="col-md-3"><label class="form-label small fw-semibold" id="lblEgimi"></label><input class="form-control form-control-sm" id="gEgimi"></div>
+                    <div class="col-md-6"><label class="form-label small fw-semibold" id="lblTapuKimlikNo"></label><input class="form-control form-control-sm" id="gTapuKimlikNo"></div>
+                  </div>
 
-              <div class="row g-2 mb-3">
-                <div class="col-md-4 p-2 border rounded me-2">
-                  <div class="form-check"><input type="checkbox" class="form-check-input" id="gTespitYapildi"><label class="form-check-label small fw-semibold" for="gTespitYapildi" id="lblTespitYapildi"></label></div>
-                  <input type="date" class="form-control form-control-sm mt-1" id="gTespitTarihi">
+                  <div class="row g-2 mb-3">
+                    <div class="col-md-4 p-2 border rounded me-2">
+                      <div class="form-check"><input type="checkbox" class="form-check-input" id="gTespitYapildi"><label class="form-check-label small fw-semibold" for="gTespitYapildi" id="lblTespitYapildi"></label></div>
+                      <input type="date" class="form-control form-control-sm mt-1" id="gTespitTarihi">
+                    </div>
+                    <div class="col-md-4 p-2 border rounded me-2">
+                      <div class="form-check"><input type="checkbox" class="form-check-input" id="gTahditYapildi"><label class="form-check-label small fw-semibold" for="gTahditYapildi" id="lblTahditYapildi"></label></div>
+                      <input type="date" class="form-control form-control-sm mt-1" id="gTahditTarihi">
+                    </div>
+                    <div class="col-md-3 p-2 border rounded">
+                      <div class="form-check"><input type="checkbox" class="form-check-input" id="gTahsisYapildi"><label class="form-check-label small fw-semibold" for="gTahsisYapildi" id="lblTahsisYapildi"></label></div>
+                      <input type="date" class="form-control form-control-sm mt-1" id="gTahsisTarihi">
+                    </div>
+                  </div>
+
+                  <button class="btn btn-primary btn-sm" id="genelKaydetBtn"></button>
+                  <span id="genelSonuc" class="small ms-2"></span>
                 </div>
-                <div class="col-md-4 p-2 border rounded me-2">
-                  <div class="form-check"><input type="checkbox" class="form-check-input" id="gTahditYapildi"><label class="form-check-label small fw-semibold" for="gTahditYapildi" id="lblTahditYapildi"></label></div>
-                  <input type="date" class="form-control form-control-sm mt-1" id="gTahditTarihi">
+
+                <div class="tab-pane fade" id="notlar-tab">
+                  <div class="mb-3">
+                    <label class="form-label small fw-semibold" id="lblYeniNot"></label>
+                    <textarea class="form-control form-control-sm" id="yeniNotMetni" rows="2"></textarea>
+                    <button class="btn btn-primary btn-sm mt-2" id="notEkleBtn"></button>
+                    <span id="notEkleSonuc" class="small ms-2"></span>
+                  </div>
+                  <hr>
+                  <div id="notlarListesi"></div>
                 </div>
-                <div class="col-md-3 p-2 border rounded">
-                  <div class="form-check"><input type="checkbox" class="form-check-input" id="gTahsisYapildi"><label class="form-check-label small fw-semibold" for="gTahsisYapildi" id="lblTahsisYapildi"></label></div>
-                  <input type="date" class="form-control form-control-sm mt-1" id="gTahsisTarihi">
+
+                <div class="tab-pane fade" id="log-tab">
+                  <div class="table-responsive">
+                    <table class="table table-sm">
+                      <thead><tr id="logTheadSatiri"></tr></thead>
+                      <tbody id="logTablosu"></tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-
-              <button class="btn btn-primary btn-sm" id="genelKaydetBtn"></button>
-              <span id="genelSonuc" class="small ms-2"></span>
             </div>
 
-            <div class="tab-pane fade" id="notlar-tab">
-              <div class="mb-3">
-                <label class="form-label small fw-semibold" id="lblYeniNot"></label>
-                <textarea class="form-control form-control-sm" id="yeniNotMetni" rows="2"></textarea>
-                <button class="btn btn-primary btn-sm mt-2" id="notEkleBtn"></button>
-                <span id="notEkleSonuc" class="small ms-2"></span>
+            <div class="col-lg-5">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0" id="txtHaritaBaslik"></h5>
+                <div class="btn-group btn-group-sm">
+                  <button type="button" class="btn btn-outline-secondary" id="haritaKatmanBtn"></button>
+                  <button type="button" class="btn btn-outline-secondary" id="haritaTamEkranBtn" title="Genişlet"><i class="bi bi-arrows-fullscreen"></i></button>
+                </div>
               </div>
-              <hr>
-              <div id="notlarListesi"></div>
-            </div>
 
-            <div class="tab-pane fade" id="log-tab">
-              <div class="table-responsive">
-                <table class="table table-sm">
-                  <thead><tr id="logTheadSatiri"></tr></thead>
-                  <tbody id="logTablosu"></tbody>
-                </table>
+              <div id="haritaKonteyner"></div>
+
+              <div class="row g-2 mt-2">
+                <div class="col-md-7">
+                  <label class="form-label small" id="lblHaritaVersiyon"></label>
+                  <select id="haritaVersiyonSecici" class="form-select form-select-sm"></select>
+                </div>
+                <div class="col-md-5 d-flex align-items-end">
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="cevreParselGosterCheck">
+                    <label class="form-check-label small" for="cevreParselGosterCheck" id="lblCevreParselGoster"></label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-2">
+                <label class="btn btn-sm btn-outline-secondary mb-0">
+                  <span id="lblHaritaDosyaYukle"></span>
+                  <input type="file" class="d-none" id="haritaDosyaInput" accept=".geojson,.json,.kml,.gpx,.kmz">
+                </label>
+                <span id="haritaYukleSonuc" class="small ms-2"></span>
               </div>
             </div>
           </div>
@@ -141,39 +175,6 @@
       </div>
 
       <div class="mis-icerik-ikincil">
-        <div class="mis-panel">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="mb-0" id="txtHaritaBaslik"></h5>
-            <div class="btn-group btn-group-sm">
-              <button type="button" class="btn btn-outline-secondary" id="haritaKatmanBtn"></button>
-              <button type="button" class="btn btn-outline-secondary" id="haritaTamEkranBtn" title="Tam Ekran"><i class="bi bi-arrows-fullscreen"></i></button>
-            </div>
-          </div>
-
-          <div id="haritaKonteyner"></div>
-
-          <div class="row g-2 mt-2">
-            <div class="col-md-7">
-              <label class="form-label small" id="lblHaritaVersiyon"></label>
-              <select id="haritaVersiyonSecici" class="form-select form-select-sm"></select>
-            </div>
-            <div class="col-md-5 d-flex align-items-end">
-              <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="cevreParselGosterCheck">
-                <label class="form-check-label small" for="cevreParselGosterCheck" id="lblCevreParselGoster"></label>
-              </div>
-            </div>
-          </div>
-
-          <div class="mt-2">
-            <label class="btn btn-sm btn-outline-secondary mb-0">
-              <span id="lblHaritaDosyaYukle"></span>
-              <input type="file" class="d-none" id="haritaDosyaInput" accept=".geojson,.json,.kml,.gpx,.kmz">
-            </label>
-            <span id="haritaYukleSonuc" class="small ms-2"></span>
-          </div>
-        </div>
-
         <div class="mis-panel">
           <h5 id="txtVerimPanelBaslik"></h5>
           <p class="text-muted small" id="txtVerimPanelAciklama"></p>
@@ -327,12 +328,13 @@
     };
 
     window.haritaTamEkranToggle = () => {
-      const konteyner = document.getElementById('haritaKonteyner');
-      konteyner.classList.toggle('harita-tam-ekran');
-      // Leaflet, KONTEYNER BOYUTU DEGISTIGINDE otomatik yeniden
-      // olcum yapmaz - invalidateSize() ZORUNLUDUR, yoksa harita
-      // bos/bozuk gorunur.
-      setTimeout(() => _harita && _harita.invalidateSize(), 150);
+      // Genisletme, AYNI SAYFADA CSS ile buyutmek YERINE YENI BIR
+      // SEKMEDE/PENCEREDE ozel bir tam-sayfa harita gorunumu ACAR
+      // (kullanicinin acik tercihi: "pop-up ya da yeni sayfa"). Bu,
+      // Leaflet haritasini DOM agaci icinde tasima KARMASIKLIGINDAN
+      // (yeniden konumlandirma sonrasi olculerin BOZULMASI riskinden)
+      // kacinir - AYRI, sade bir sayfa.
+      window.open(`/mera/harita.html?id=${id}`, '_blank');
     };
 
     function haritaVersiyonlariniDoldur() {

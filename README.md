@@ -395,6 +395,42 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
+## Mera Parsel Detay Sayfası - Layout Düzeltmesi
+
+**YANLIŞ KONUMLANDIRMA DÜZELTİLDİ:** Harita paneli ÖNCEKİ turda
+YANLIŞLIKLA sağ bölmeye (`mis-icerik-ikincil`) eklenmişti - kullanıcı
+bunun SOL bölmenin (`mis-icerik-birincil`) İÇİNDE olmasını istiyordu.
+Düzeltme: sol bölme artık İL/İLÇE/MAHALLE/ADA/PARSEL başlığından
+SONRA kendi içinde ikiye bölünüyor (`col-lg-7` sekmeler/form + `col-lg-
+5` harita) - sağ bölmeye (Verim Bilgileri) HİÇ DOKUNULMADI, orada
+kaldı. **Genişletme artık YENİ SEKME/PENCEREDE:** eski CSS `position:
+fixed` hilesi KALDIRILDI (Leaflet'i aynı sayfada CSS ile büyütmek
+yerine, kullanıcının önerdiği "pop-up ya da yeni sayfa" seçeneklerinden
+İKİNCİSİ tercih edildi - Leaflet'i DOM içinde taşımanın risklerinden
+kaçınmak için). YENİ `mera/harita.html`: parsel ID'sini URL'den alıp
+TAM SAYFA bir harita görünümü sunan bağımsız sayfa - aynı özellikler
+(katman değiştirme, versiyon seçici, çevre parsel gösterimi, dosya
+yükleme, tıklamalı katman stil kontrolü) `window.open()` ile yeni
+sekmede açılıyor. **Mühendislik notu (dürüstçe belirtilmeli):** Bu
+sayfanın harita mantığı `detay.html`'deki ile BÜYÜK ÖLÇÜDE AYNI ama
+KOD OLARAK AYRI (paylaşılan bir modüle çıkarılmadı) - zaman kısıtı
+nedeniyle DUPLICATE edildi, mevcut çalışan panel koduna dokunma riski
+alınmadı. İleride ortak bir `mis-harita.js`'e taşınması önerilir.
+
+## Mera - Versiyon ve Log Ayrıntısı
+
+`package.json` versiyonu `0.9.0` → `0.10.0` güncellendi. **Log
+kayıtları artık AYRINTILI:** `mera.service.js`'in `guncelle()`
+fonksiyonu artık HER ALAN için ESKİ/YENİ değeri KARŞILAŞTIRIP SADECE
+GERÇEKTEN DEĞİŞENLERİ "Etiket: eski -> yeni" biçiminde log'a yazıyor
+(kullanıcının örneği: "Mera Alanı: 20.000 m² -> 22.222 m²") - genel
+"Parsel bilgileri güncellendi" mesajı YETERSİZ bulunmuştu. Sayılar
+(m²), tarihler, Evet/Hayır (checkbox) alanları uygun biçimde
+formatlanıyor, boş değer "(boş)" olarak gösteriliyor. Test edildi:
+"Mera Alanı: 20.000 m² -> 22.222 m² | Tapu Alanı: 100 m² -> 0 m²".
+Değişiklik YOKSA log kaydı EKLENMİYOR (gereksiz "güncellendi" kaydı
+BİRİKMİYOR).
+
 ## Mera - Harita Katman Stilleri (YENİ)
 
 **ÖNEMLİ - BU TURDA YAŞANAN DURUM:** Çalışma alanım (sanal makine)

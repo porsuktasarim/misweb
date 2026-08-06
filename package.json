@@ -1,6 +1,6 @@
 {
   "name": "mera-izleme-sistemi",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Mera İzleme Sistemi (MİS) - 4342 sayılı Mera Kanunu kapsamında BBHB/ÇKS hesaplama ve raporlama sistemi",
   "main": "app.js",
   "scripts": {

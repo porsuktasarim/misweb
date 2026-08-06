@@ -33,6 +33,32 @@ async function olustur(veri, kullaniciAdi) {
   return kayit;
 }
 
+const ALAN_ETIKETLERI = {
+  il: 'İl', ilce: 'İlçe', koyMahalle: 'Köy/Mahalle', adaNo: 'Ada No', parselNo: 'Parsel No',
+  meraAlaniM2: 'Mera Alanı', tapuAlaniM2: 'Tapu Alanı',
+  araziNiteligi: 'Arazi Niteliği', araziDurumSinifi: 'Arazi Durum Sınıfı', araziKaynagi: 'Arazi Kaynağı',
+  tespitYapildiMi: 'Tespit', tespitTarihi: 'Tespit Tarihi',
+  tahditYapildiMi: 'Tahdit', tahditTarihi: 'Tahdit Tarihi',
+  tahsisYapildiMi: 'Tahsis', tahsisTarihi: 'Tahsis Tarihi',
+  islahDurumu: 'Islah Durumu', egimi: 'Eğimi', topraksinifi: 'Toprak Sınıfı', tapuKimlikNo: 'Tapu Kimlik No',
+};
+
+/** Bir alan degerini LOG'da GORUNTULENECEK bicimde formatlar (birim/tarih/evet-hayir). */
+function alanDegeriGoster(alan, deger) {
+  if (deger === null || deger === undefined || deger === '') return '(boş)';
+  if (alan === 'meraAlaniM2' || alan === 'tapuAlaniM2') return `${Number(deger).toLocaleString('tr-TR')} m²`;
+  if (alan.endsWith('Tarihi')) return new Date(deger).toLocaleDateString('tr-TR');
+  if (alan.endsWith('YapildiMi')) return deger ? 'Evet' : 'Hayır';
+  return String(deger);
+}
+
+/** Karsilastirma icin degeri NORMALLESTIRIR (tarih/bos deger farklarindan yanlis "degisti" sonucunu ONLER). */
+function alanKarsilastirmaDegeri(alan, deger) {
+  if (deger === null || deger === undefined || deger === '') return '';
+  if (alan.endsWith('Tarihi')) return new Date(deger).toISOString().slice(0, 10);
+  return String(deger);
+}
+
 async function guncelle(id, veri, kullaniciAdi) {
   const kayit = await getir(id);
   const ALAN_LISTESI = [
@@ -41,8 +67,24 @@ async function guncelle(id, veri, kullaniciAdi) {
     'tespitYapildiMi', 'tespitTarihi', 'tahditYapildiMi', 'tahditTarihi', 'tahsisYapildiMi', 'tahsisTarihi',
     'islahDurumu', 'egimi', 'topraksinifi', 'tapuKimlikNo',
   ];
-  ALAN_LISTESI.forEach((alan) => { if (veri[alan] !== undefined) kayit[alan] = veri[alan]; });
-  logEkle(kayit, 'guncellendi', 'Parsel bilgileri güncellendi', kullaniciAdi);
+  // HER ALAN icin ESKI/YENI degeri KARSILASTIRIP sadece GERCEKTEN
+  // degisenleri "Etiket: eski -> yeni" bicimindeki AYRINTILI log'a
+  // ekliyoruz (kullanicinin ornegi: "Mera Alanı: 20.000 m² -> 22.222
+  // m²") - genel "guncellendi" mesaji YETERSIZ bulundu.
+  const degisiklikler = [];
+  ALAN_LISTESI.forEach((alan) => {
+    if (veri[alan] === undefined) return;
+    const eskiKarsilastirma = alanKarsilastirmaDegeri(alan, kayit[alan]);
+    const yeniKarsilastirma = alanKarsilastirmaDegeri(alan, veri[alan]);
+    if (eskiKarsilastirma !== yeniKarsilastirma) {
+      degisiklikler.push(`${ALAN_ETIKETLERI[alan] || alan}: ${alanDegeriGoster(alan, kayit[alan])} -> ${alanDegeriGoster(alan, veri[alan])}`);
+    }
+    kayit[alan] = veri[alan];
+  });
+
+  if (degisiklikler.length) {
+    logEkle(kayit, 'guncellendi', degisiklikler.join(' | '), kullaniciAdi);
+  }
   await kayit.save();
   return kayit;
 }
