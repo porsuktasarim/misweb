@@ -55,5 +55,6 @@ router.get('/:id/komsu-parseller', controller.komsuParsellerHandler);
 router.put('/:id/durum', controller.durumDegistirHandler);
 router.post('/:id/dosya', upload.single('dosya'), controller.dosyaYukleHandler);
 router.delete('/:id/dosya/:dosyaIndex', controller.dosyaSilHandler);
+router.get('/:id/kimlik-pdf', controller.kimlikPdfHandler);
 
 module.exports = router;

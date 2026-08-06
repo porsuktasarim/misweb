@@ -169,6 +169,7 @@ module.exports = {
     egimiPlaceholder: 'Örn. %5, Düz, Dik',
     tapuKimlikNo: 'Tapu Kimlik No',
     mulkiyetDurumu: 'Mülkiyet Durumu',
+    kimlikPdfBtn: 'Mera Kimliği (PDF)',
     tespitYapildi: 'Tespit Yapıldı',
     tahditYapildi: 'Tahdit Yapıldı',
     tahsisYapildi: 'Tahsis Yapıldı',

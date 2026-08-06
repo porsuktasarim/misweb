@@ -48,6 +48,7 @@
               <span id="parselDurumRozeti" class="ms-2"></span>
             </div>
             <div class="d-flex align-items-end gap-2">
+              <a class="btn btn-outline-secondary btn-sm" id="kimlikPdfBtn" target="_blank"><i class="bi bi-file-earmark-pdf me-1"></i><span id="txtKimlikPdfBtn"></span></a>
               <div class="btn-group btn-group-sm">
                 <button type="button" class="btn btn-outline-warning" id="pasifeAlBtn"></button>
                 <button type="button" class="btn btn-outline-danger" id="silBtn"></button>
@@ -319,6 +320,7 @@
 
     // ==================== DURUM YÖNETİMİ (Aktif/Pasif/Silindi) ====================
     function parselDurumunuGoster() {
+      document.getElementById('kimlikPdfBtn').href = `${API}/${id}/kimlik-pdf`;
       const renkler = { Aktif: 'bg-success-subtle text-success-emphasis', Pasif: 'bg-warning-subtle text-warning-emphasis', Silindi: 'bg-danger-subtle text-danger-emphasis' };
       document.getElementById('parselDurumRozeti').innerHTML = `<span class="badge ${renkler[kayit.durum] || 'bg-secondary-subtle'}">${guvenliMetin(kayit.durum)}</span>`;
       const pasifBtn = document.getElementById('pasifeAlBtn');
@@ -884,6 +886,7 @@
       document.getElementById('txtSekmeNotlar').textContent = LANG.mera.sekmeNotlar;
       document.getElementById('txtSekmeLog').textContent = LANG.mera.sekmeLog;
       document.getElementById('silBtn').textContent = LANG.ortak.sil;
+      document.getElementById('txtKimlikPdfBtn').textContent = LANG.mera.kimlikPdfBtn;
       document.getElementById('txtDosyaYukleBaslik').textContent = LANG.mera.dosyaYukleBtn;
       document.getElementById('lblDosyaTipi').textContent = LANG.mera.dosyaTipi;
       document.getElementById('lblDosyaSec').textContent = LANG.mera.dosyaSec;

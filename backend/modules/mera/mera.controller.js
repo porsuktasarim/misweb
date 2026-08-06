@@ -160,9 +160,20 @@ async function dosyaSilHandler(req, res) {
   }
 }
 
+async function kimlikPdfHandler(req, res) {
+  try {
+    const buffer = await service.kimlikPdfIndir(req.params.id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="mera-kimligi.pdf"');
+    return res.send(buffer);
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 module.exports = {
   listeHandler, getirHandler, olusturHandler, guncelleHandler, silHandler, durumDegistirHandler,
   notEkleHandler, notDuzenleHandler, notDosyaEkleHandler, sabitlerHandler,
   topluYukleHandler, sablonIndirHandler, raporIndirHandler,
-  haritaDosyaYukleHandler, komsuParsellerHandler, dosyaYukleHandler, dosyaSilHandler,
+  haritaDosyaYukleHandler, komsuParsellerHandler, dosyaYukleHandler, dosyaSilHandler, kimlikPdfHandler,
 };

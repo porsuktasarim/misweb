@@ -9,6 +9,7 @@ const meraImport = require('./mera.import');
 const meraExport = require('./mera.export');
 const haritaDonustur = require('./mera.harita-donustur');
 const BelgeAyarlari = require('../belge-ayarlari/belgeAyarlari.model');
+const meraKimlik = require('./mera.kimlik');
 
 function logEkle(kayit, islem, detay, kullaniciAdi) {
   kayit.loglar.push({ islem, detay, kullaniciAdi: kullaniciAdi || '', tarih: new Date() });
@@ -309,6 +310,14 @@ async function mulkiyetDurumlariGetir() {
   return (ayarlar && ayarlar.meraMulkiyetDurumlari) || [];
 }
 
+/** "Mera Kimliği" PDF'sini uretir (kimlik sayfasi + Dosyalar sekmesindeki TUM belgeler birlestirilmis). */
+async function kimlikPdfIndir(id) {
+  const kayit = await getir(id);
+  const ayarlar = await BelgeAyarlari.findOne();
+  const dosyaTipiAdSozlugu = Object.fromEntries(((ayarlar && ayarlar.meraDosyaTipleri) || []).map((t) => [t.anahtar, t.ad]));
+  return meraKimlik.kimlikPdfOlustur(kayit, dosyaTipiAdSozlugu);
+}
+
 async function dosyaYukle(id, dosya, dosyaTipiAnahtari, kullaniciAdi) {
   const kayit = await getir(id);
   if (!dosya) throw new Error(lang.mera.dosyaSecilmedi);
@@ -361,7 +370,7 @@ async function dosyaSil(id, dosyaIndex, aciklama, kullaniciAdi) {
 
 module.exports = {
   listele, getir, olustur, guncelle, sil, durumDegistir, notEkle, notDuzenle, notDosyaEkle,
-  topluYukle, sablonIndir, raporIndir, haritaDosyaYukle, komsuParseller, dosyaYukle, dosyaSil, mulkiyetDurumlariGetir,
+  topluYukle, sablonIndir, raporIndir, haritaDosyaYukle, komsuParseller, dosyaYukle, dosyaSil, mulkiyetDurumlariGetir, kimlikPdfIndir,
   ARAZI_NITELIKLERI: MeraParseli.ARAZI_NITELIKLERI, ARAZI_KAYNAKLARI: MeraParseli.ARAZI_KAYNAKLARI,
   ARAZI_DURUM_SINIFLARI: MeraParseli.ARAZI_DURUM_SINIFLARI, TOPRAK_SINIFLARI: MeraParseli.TOPRAK_SINIFLARI,
   ISLAH_DURUMLARI: MeraParseli.ISLAH_DURUMLARI, PARSEL_DURUMLARI: MeraParseli.PARSEL_DURUMLARI,

@@ -395,6 +395,92 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
+## KRİTİK HATA DÜZELTMESİ: Madde 7 (Parsel Seç) Verisi Kayboluyordu
+
+**Kullanıcının bildirdiği hata:** "parselleri seçip kaydetmeme rağmen
+kaydolmuyor ve çıktıda görünmüyor."
+
+**Kök neden bulundu ve doğrulandı:** `uc-t.service.js`'deki
+`adimVeriKaydet()` (Ek-3/a'nın ana "Kaydet" butonunun kullandığı
+GENEL endpoint) `altAdim.veri = veri;` şeklinde **TAM ÜZERİNE
+YAZMA** yapıyor (kod okunarak doğrulandı, satır 110). Frontend'deki
+`ek3aKaydet()` (ana Kaydet butonu), Madde 8'in (BBHB) verisini
+KAYBOLMASIN diye `...hayvanVerisi` ile `veri` objesine BİLEREK GERİ
+EKLİYORDU - AMA Madde 7'nin (`madde7Satirlari`, `secilenParselIdleri`)
+AYNI KORUMASI UNUTULMUŞTU. Sonuç: kullanıcı "Parsel Seç" popup'ında
+parselleri seçip kaydettikten SONRA (çok doğal bir kullanım akışıyla)
+ana formu da (Kaydet butonuyla) kaydederse, madde 7 verisi SESSİZCE
+SİLİNİYORDU - hem arayüzde hem Word/PDF çıktısında KAYBOLUYORDU.
+
+**Düzeltme:** `ek3aKaydet()`'in `veri` objesi artık `hayvanVerisi`
+ile AYNI DESENDE, mevcut `kayit.surec[...].veri.madde7Satirlari` ve
+`secilenParselIdleri`'ni de KORUYARAK EKLİYOR - test edildi (mock
+veriyle): madde7Satirlari artık ana Kaydet sonrası da KORUNUYOR.
+Backend'e DOKUNULMADI (zaten doğru çalışıyordu - frontend'in eksik
+veri GÖNDERMESİ sorunun kaynağıydı).
+
+## Mera Kimliği PDF (YENİ) - Ek-3/a Madde 10 için
+
+**GEREKLİ YENİ NPM PAKETLERİ (zaten `package.json`'a eklendi,
+`npm install` yeterli):**
+```bash
+npm install staticmaps pdf-lib
+```
+- **`staticmaps`**: OpenStreetMap tile'larından (ÜCRETSİZ, KEY
+  GEREKTİRMEZ) statik harita PNG'si üretir - kod varsayılan olarak
+  `https://tile.openstreetmap.org/{z}/{x}/{y}.png` kullanıyor
+  (doğrulandı - kütüphanenin kendi kaynak kodunda okundu).
+- **`pdf-lib`**: Birden fazla PDF'i/görseli TEK bir PDF'de birleştirmek
+  için (pdfkit SADECE yeni PDF ÜRETİR, MEVCUT PDF'leri birleştiremez -
+  bu ayrı bir kütüphane gerektirdi).
+
+**YENİ `backend/modules/mera/mera.kimlik.js`:** "Mera Kimliği" PDF'sini
+üretir - **UÇTAN UCA GERÇEK VERİYLE TEST EDİLDİ** (dummy bir GeoJSON
+parsel, 2 adet dummy "tapu senedi" PDF'i, 1 adet dummy fotoğraf ile):
+
+- **Başlık** (kalın, `İl İlçe Köy/Mahalle Ada/Parsel Nitelik` formatında,
+  örnek: "İstanbul Silivri Bekirli 123/45 Mera") - PDF'in görsel
+  çıktısı üretilip GÖZLE kontrol edildi, Türkçe karakterler (İ, ğ, ş,
+  ı, ö, ü) DOĞRU göründü.
+- **Sol sütun**: Tapu Kimlik No, Mera Alanı, Tapu Alanı, Mülkiyet
+  Durumu, Arazi Kaynağı, Arazi Durum Sınıfı, Toprak Sınıfı, Eğimi -
+  TAM istenen sırada.
+- **Sağ sütun**: parselin AKTİF harita dosyasının GeoJSON türevinden
+  OKUNAN sınır koordinatlarıyla OpenStreetMap arka planlı statik
+  harita - test edildi, POLİGON DOĞRU çizildi (arka plan tile'ları BU
+  SANDBOX'TA gelmedi - `tile.openstreetmap.org` ağ erişim listemde
+  YOK, `host_not_allowed` hatası ALINDI - ama kod GERÇEK sunucuda
+  ÇALIŞACAK, kütüphanenin varsayılan URL'i zaten doğru OSM adresi).
+  Harita verisi olmayan parsellerde "harita verisi henüz yüklenmemiş"
+  notu gösteriliyor.
+- **"Ekler" listesi**: `MeraParseli.dosyalar`'daki (Dosyalar sekmesi)
+  TÜM belgeler, Sistem Ayarları'ndaki dosya tipi ADLARIYLA gruplanıp
+  numaralandırılıyor - AYNI TİPTEN birden fazla varsa "Tapu Senedi
+  #01", "Tapu Senedi #02" (test edildi, DOĞRU numaralandı), TEK
+  taneyse numarasız ("Fotoğraf").
+- **Belgelerin GERÇEK içeriği kimlik sayfasının ARKASINA ekleniyor**:
+  PDF'ler `pdf-lib` ile SAYFA SAYFA birleştiriliyor, görseller (.jpg/
+  .png) birer PDF sayfasına DÖNÜŞTÜRÜLÜP ekleniyor - **test edildi**:
+  4 sayfalık BİRLEŞİK PDF üretildi (1 kimlik + 2 tapu senedi + 1
+  fotoğraf), her sayfa PyPDF2 ile metin/görsel olarak DOĞRULANDI
+  (2. sayfada gerçekten "Bu bir test tapu senedi belgesidir." yazısı,
+  4. sayfada gerçekten mavi test görseli çıktı). Diğer formatlar
+  (.docx, .xlsx vb.) sayfa olarak EKLENEMEZ ama Ekler listesinde
+  ADI görünür, dosyanın kendisi ayrıca indirilebilir kalır.
+
+**Mera detay sayfasına "Mera Kimliği (PDF)" indirme butonu eklendi**
+(başlık satırının yanında, yeni sekmede açılır).
+
+**3T entegrasyonu (bir SONRAKİ adım olarak bırakıldı, kapsam dışı):**
+Bu turda Mera Kimliği üretici TEK PARSEL için çalışıyor ve Mera
+Modülü'nden bağımsız test edilebilir durumda. Ek-3/a Madde 7'de
+SEÇİLEN (muhtemelen BİRDEN FAZLA) parselin kimliklerini Madde 10'un
+İÇİNE OTOMATİK BİRLEŞTİRME (concatenation) işi HENÜZ YAPILMADI - bu
+turda üretilen `kimlikPdfOlustur()` fonksiyonu BUNUN İÇİN HAZIR
+(tek parsel alıyor, birden fazlası için bu fonksiyon DÖNGÜYLE
+çağrılıp sonuçlar `pdf-lib` ile ART ARDA birleştirilebilir) ama
+BAĞLAMA İŞİ henüz yapılmadı.
+
 ## 3T'nin Ek-3/a Madde 7'si - Mera Modülü Entegrasyonu (YENİ)
 
 **ÖNEMLİ NOT:** `uc-t.model.js` bu ortamda YOK (hiç değişmediği için
