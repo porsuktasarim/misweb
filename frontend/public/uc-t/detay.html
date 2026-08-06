@@ -1161,89 +1161,109 @@
 
     window.ek3aParselSecKaydet = async () => {
       const sonucAlan = document.getElementById('ek3aParselSecSonuc');
-      const parselIdleri = Array.from(document.querySelectorAll('.ek3a-parsel-check:checked')).map((c) => c.value);
-      if (!parselIdleri.length) { sonucAlan.innerHTML = '<span class="text-danger">En az bir parsel seçin.</span>'; return; }
+      try {
+        const parselIdleri = Array.from(document.querySelectorAll('.ek3a-parsel-check:checked')).map((c) => c.value);
+        if (!parselIdleri.length) { sonucAlan.innerHTML = '<span class="text-danger">En az bir parsel seçin.</span>'; return; }
 
-      sonucAlan.innerHTML = '<span class="text-muted">Hesaplanıyor...</span>';
-      const res = await fetch(`${API}/${id}/ek3a-arazi-verileri-kaydet`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, parselIdleri }),
-      });
-      const json = await res.json();
-      if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
-      kayit = json.data;
+        sonucAlan.innerHTML = '<span class="text-muted">Hesaplanıyor...</span>';
+        const res = await fetch(`${API}/${id}/ek3a-arazi-verileri-kaydet`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, parselIdleri }),
+        });
+        const json = await res.json();
+        if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger">${json.message}</span>`; return; }
+        kayit = json.data;
 
-      const guncelAlt = kayit.surec[seciliAna].altAdimlar[seciliAlt];
-      document.getElementById('e3aMadde7Tablosu').innerHTML = guncelAlt.veri.madde7Satirlari
-        .map((satir) => `<tr><th class="table-light">${guvenliMetin(satir[0])}</th><td>${guvenliMetin(satir[1])}</td><td>${guvenliMetin(satir[2])}</td><td>${guvenliMetin(satir[3])}</td><td>${guvenliMetin(satir[4])}</td></tr>`).join('');
-      document.getElementById('e3aMadde7Sonuc').innerHTML = `<span class="text-success">${parselIdleri.length} parsel seçilerek hesaplandı ve eklendi.</span>`;
+        const guncelAlt = kayit.surec[seciliAna].altAdimlar[seciliAlt];
+        if (!guncelAlt.veri || !guncelAlt.veri.madde7Satirlari) {
+          // Backend BASARILI dondu ama beklenen veri sekli GELMEDI -
+          // bu durumu SESSIZCE GECMEK YERINE GORUNUR hale getiriyoruz.
+          sonucAlan.innerHTML = '<span class="text-danger">Kayıt başarılı görünüyor ama tablo verisi beklenen biçimde dönmedi - lütfen sayfayı yenileyip tekrar deneyin ve bu durumu bildirin.</span>';
+          console.error('ek3aParselSecKaydet: beklenmeyen yanıt biçimi', guncelAlt);
+          return;
+        }
+        document.getElementById('e3aMadde7Tablosu').innerHTML = guncelAlt.veri.madde7Satirlari
+          .map((satir) => `<tr><th class="table-light">${guvenliMetin(satir[0])}</th><td>${guvenliMetin(satir[1])}</td><td>${guvenliMetin(satir[2])}</td><td>${guvenliMetin(satir[3])}</td><td>${guvenliMetin(satir[4])}</td></tr>`).join('');
+        document.getElementById('e3aMadde7Sonuc').innerHTML = `<span class="text-success">${parselIdleri.length} parsel seçilerek hesaplandı ve kaydedildi.</span>`;
 
-      bootstrap.Modal.getInstance(document.getElementById('ek3aParselSecModal')).hide();
-      renderSurec();
+        bootstrap.Modal.getInstance(document.getElementById('ek3aParselSecModal')).hide();
+        renderSurec();
+      } catch (hata) {
+        console.error('Parsel seçimi kaydedilirken hata:', hata);
+        sonucAlan.innerHTML = `<span class="text-danger">Beklenmeyen bir hata oluştu: ${guvenliMetin(hata.message)}</span>`;
+      }
     };
 
     window.ek3aKaydet = async () => {
       const sonucAlan = document.getElementById('e3aSonuc');
-      const aileSayisi = document.getElementById('e3aAileSayisi').value;
-      const bbhbSonucId = document.getElementById('e3aBbhbSelect').value;
+      try {
+        const aileSayisi = document.getElementById('e3aAileSayisi').value;
+        const bbhbSonucId = document.getElementById('e3aBbhbSelect').value;
 
-      sonucAlan.innerHTML = '<span class="text-muted small">Kaydediliyor...</span>';
+        sonucAlan.innerHTML = '<span class="text-muted small">Kaydediliyor...</span>';
 
-      // Madde 8 (Buyukbas/Kucukbas/Digerleri x Kultur/Melez/Yerli) -
-      // AYRI backend fonksiyonu (ek4bVeriCek'ten FARKLI format).
-      let hayvanVerisi = {};
-      if (bbhbSonucId) {
-        const res = await fetch(`${API}/${id}/ek3a-hayvan-varligi-cek`, {
+        // Madde 8 (Buyukbas/Kucukbas/Digerleri x Kultur/Melez/Yerli) -
+        // AYRI backend fonksiyonu (ek4bVeriCek'ten FARKLI format).
+        let hayvanVerisi = {};
+        if (bbhbSonucId) {
+          const res = await fetch(`${API}/${id}/ek3a-hayvan-varligi-cek`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, bbhbSonucId }),
+          });
+          const json = await res.json();
+          if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json.message}</span>`; return; }
+          kayit = json.data;
+          const guncelAlt = kayit.surec[seciliAna].altAdimlar[seciliAlt];
+          hayvanVerisi = { bbhbSonucId, bbhbBolumIndex: guncelAlt.veri.bbhbBolumIndex, hayvanVarligiTablosu: guncelAlt.veri.hayvanVarligiTablosu, bbhbToplam: guncelAlt.veri.bbhbToplam };
+        }
+
+        // Madde 7 (Mera Modulu'nden secilen parseller) - AYRI bir popup'ta
+        // ("Parsel Sec") KAYDEDILIYOR, AMA BU FONKSIYON (genel "Kaydet")
+        // altAdim.veri'yi TAMAMEN UZERINE YAZDIGI icin (backend'deki
+        // adimVeriKaydet TAM OVERWRITE yapiyor) - madde7Satirlari BURAYA
+        // ACIKCA GERI EKLENMEZSE, kullanici Parsel Sec'ten SONRA ana
+        // Kaydet'e bastiginda madde 7 verisi SESSIZCE SILINIR.
+        const oncekiAltAdim = kayit.surec[seciliAna].altAdimlar[seciliAlt];
+        const oncekiVeri = (oncekiAltAdim && oncekiAltAdim.veri) || {};
+        const madde7Verisi = {};
+        if (oncekiVeri.madde7Satirlari) madde7Verisi.madde7Satirlari = oncekiVeri.madde7Satirlari;
+        if (oncekiVeri.secilenParselIdleri) madde7Verisi.secilenParselIdleri = oncekiVeri.secilenParselIdleri;
+
+        const veri = {
+          aileSayisi: aileSayisi ? Number(aileSayisi) : null,
+          cksSonucId: document.getElementById('e3aCksSelect').value || null,
+          ciftciAileSayisi: _ek3aSeciliCks ? _ek3aSeciliCks.ciftciler.length : null,
+          araziModulundenGelecek: true,
+          ...hayvanVerisi,
+          ...madde7Verisi,
+          yararlanmaSekilleri: Array.from(document.querySelectorAll('.e3a-yararlanma-check:checked')).map((c) => c.value),
+          digerYararlanmaSekli: document.getElementById('e3aDigerYararlanma').value.trim(),
+          haritaModulundenGelecek: true,
+          madde11Notu: document.getElementById('e3aMadde11').value.trim(),
+          madde12Metni: document.getElementById('e3aMadde12').value.trim(),
+        };
+
+        const res2 = await fetch(`${API}/${id}/adim-veri`, {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, bbhbSonucId }),
+          body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, veri }),
         });
-        const json = await res.json();
-        if (!json.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json.message}</span>`; return; }
-        kayit = json.data;
-        const guncelAlt = kayit.surec[seciliAna].altAdimlar[seciliAlt];
-        hayvanVerisi = { bbhbSonucId, bbhbBolumIndex: guncelAlt.veri.bbhbBolumIndex, hayvanVarligiTablosu: guncelAlt.veri.hayvanVarligiTablosu, bbhbToplam: guncelAlt.veri.bbhbToplam };
-      }
-
-      // Madde 7 (Mera Modulu'nden secilen parseller) - AYRI bir popup'ta
-      // ("Parsel Sec") KAYDEDILIYOR, AMA BU FONKSIYON (genel "Kaydet")
-      // altAdim.veri'yi TAMAMEN UZERINE YAZDIGI icin (backend'deki
-      // adimVeriKaydet TAM OVERWRITE yapiyor) - madde7Satirlari BURAYA
-      // ACIKCA GERI EKLENMEZSE, kullanici Parsel Sec'ten SONRA ana
-      // Kaydet'e bastiginda madde 7 verisi SESSIZCE SILINIR (GERCEK
-      // BIR HATA olarak bulunup DUZELTILDI - hayvanVerisi icin zaten
-      // yapilan AYNI korumanin madde 7'ye de UYGULANMASI gerekiyordu).
-      const oncekiVeri = (kayit.surec[seciliAna].altAdimlar[seciliAlt].veri) || {};
-      const madde7Verisi = {};
-      if (oncekiVeri.madde7Satirlari) madde7Verisi.madde7Satirlari = oncekiVeri.madde7Satirlari;
-      if (oncekiVeri.secilenParselIdleri) madde7Verisi.secilenParselIdleri = oncekiVeri.secilenParselIdleri;
-
-      const veri = {
-        aileSayisi: aileSayisi ? Number(aileSayisi) : null,
-        cksSonucId: document.getElementById('e3aCksSelect').value || null,
-        ciftciAileSayisi: _ek3aSeciliCks ? _ek3aSeciliCks.ciftciler.length : null,
-        araziModulundenGelecek: true,
-        ...hayvanVerisi,
-        ...madde7Verisi,
-        yararlanmaSekilleri: Array.from(document.querySelectorAll('.e3a-yararlanma-check:checked')).map((c) => c.value),
-        digerYararlanmaSekli: document.getElementById('e3aDigerYararlanma').value.trim(),
-        haritaModulundenGelecek: true,
-        madde11Notu: document.getElementById('e3aMadde11').value.trim(),
-        madde12Metni: document.getElementById('e3aMadde12').value.trim(),
-      };
-
-      const res2 = await fetch(`${API}/${id}/adim-veri`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ anaAdimIndex: seciliAna, altAdimIndex: seciliAlt, veri }),
-      });
-      const json2 = await res2.json();
-      if (!json2.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json2.message}</span>`; return; }
-      kayit = json2.data;
-      renderSurec();
-      sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
-      if (hayvanVerisi.hayvanVarligiTablosu) ek3aBbhbOnizlemeGoster(hayvanVerisi);
-      document.getElementById('e3aDisaAktarAlani').innerHTML = `
-        <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/word"><i class="bi bi-file-earmark-word me-1"></i>Word</a>
+        const json2 = await res2.json();
+        if (!json2.success) { sonucAlan.innerHTML = `<span class="text-danger small">${json2.message}</span>`; return; }
+        kayit = json2.data;
+        renderSurec();
+        sonucAlan.innerHTML = '<span class="text-success small"><i class="bi bi-check-circle me-1"></i>Kaydedildi.</span>';
+        if (hayvanVerisi.hayvanVarligiTablosu) ek3aBbhbOnizlemeGoster(hayvanVerisi);
+        document.getElementById('e3aDisaAktarAlani').innerHTML = `
+          <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/word"><i class="bi bi-file-earmark-word me-1"></i>Word</a>
         <a class="btn btn-sm btn-outline-secondary" href="${API}/${id}/adim-disa-aktar/${seciliAna}/${seciliAlt}/pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</a>`;
+      } catch (hata) {
+        // Beklenmeyen bir hata olursa "Kaydediliyor..." da SONSUZA
+        // KADAR TAKILI KALMAZ - GORUNUR bir hata mesaji gosterilir
+        // (kullanicinin "hiçbir şey olmuyor" seklindeki bildirimlerini
+        // TESHIS EDILEBILIR hale getirmek icin eklendi).
+        console.error('Ek-3/a kaydedilirken hata:', hata);
+        sonucAlan.innerHTML = `<span class="text-danger small">Beklenmeyen bir hata oluştu: ${guvenliMetin(hata.message)}</span>`;
+      }
     };
 
     // "Formu doldurmadan tamamla" - genel (Duyuru/Duyuru Tutanağı gibi

@@ -395,6 +395,40 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
+## Ek-3/a Madde 7 - "Hiçbir Şey Olmuyor" Şikayeti Sonrası Teşhis Turu
+
+**Kullanıcının bildirdiği hata:** önceki düzeltmeye rağmen "formu
+doldurmadan tamamlandı işaretle nin yanındaki kaydete basıyorum ama
+ne pdf'te oluyor, ne de parseller kaydediliyor."
+
+**Yapılan kapsamlı yeniden inceleme:** `ek3aKaydet()`, `ek3aParselSecKaydet()`,
+`renderSurec()` (yeniden okundu - SADECE sidebar'ı günceller, veri
+paneline DOKUNMADIĞI doğrulandı), `uc-t.routes.js` (route sırası/
+çakışma kontrolü), `adimVeriKaydetHandler`, `uc-t.export.js`'in
+`madde7Satirlari` kullanımı, `adimDisaAktarHandler`'ın export
+zinciri - HEPSİ TEK TEK yeniden okunup DOĞRU olduğu doğrulandı. Ek
+bir MANTIK HATASI statik analizle BULUNAMADI.
+
+**Bu, projenin GEÇMİŞİNDE DEFALARCA karşılaşılan bilinen bir kalıba
+işaret ediyor olabilir: Coolify'ın ESKİ Docker image'ı CACHE'LEMESİ**
+(README'nin "Deployment Sorunu" bölümünde zaten belgeli). Kullanıcıya
+ÖNERİLEN kontrol: sunucuda `git log -1 --oneline` ile son commit'in
+gerçekten deploy edildiğini doğrulamak, gerekirse Coolify'da "Force
+Rebuild" yapmak.
+
+**Kod GENELİNE savunmacı hale getirme (test edilebilirlik için):**
+`ek3aKaydet()` ve `ek3aParselSecKaydet()` artık TAM `try/catch` ile
+sarmalandı - HERHANGİ bir beklenmeyen JS hatası artık SESSİZCE
+YUTULMUYOR, kullanıcıya GÖRÜNÜR bir hata mesajı gösteriliyor
+(`console.error` ile tarayıcı konsoluna da yazılıyor). Bu, "hiçbir
+şey olmuyor" tarzı şikayetlerin ARTIK somut bir hata mesajıyla
+GERİ BİLDİRİLEBİLİR olmasını sağlıyor - sorun DEVAM EDERSE, kullanıcının
+tarayıcı konsolundaki (F12 → Console) KIRMIZI hata metnini paylaşması
+KÖK NEDENİ KESİN olarak bulmamıza yardımcı olacak. Ayrıca
+`ek3aParselSecKaydet()`, backend BAŞARILI dönüp de beklenen veri
+şekli (madde7Satirlari) GELMEZSE bunu da ARTIK SESSİZCE GEÇMİYOR,
+görünür bir uyarı gösteriyor.
+
 ## KRİTİK HATA DÜZELTMESİ: Madde 7 (Parsel Seç) Verisi Kayboluyordu
 
 **Kullanıcının bildirdiği hata:** "parselleri seçip kaydetmeme rağmen
