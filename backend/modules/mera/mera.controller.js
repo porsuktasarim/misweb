@@ -114,8 +114,26 @@ async function raporIndirHandler(req, res) {
   }
 }
 
+async function haritaDosyaYukleHandler(req, res) {
+  try {
+    return basarili(res, await service.haritaDosyaYukle(req.params.id, req.file, req.body.kullaniciAdi), 'Harita dosyası yüklendi');
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
+async function komsuParsellerHandler(req, res) {
+  try {
+    const { il, ilce, koyMahalle } = req.query;
+    return basarili(res, await service.komsuParseller(il, ilce, koyMahalle, req.params.id));
+  } catch (err) {
+    return basarisiz(res, err.message);
+  }
+}
+
 module.exports = {
   listeHandler, getirHandler, olusturHandler, guncelleHandler, silHandler,
   notEkleHandler, notDuzenleHandler, notDosyaEkleHandler, sabitlerHandler,
   topluYukleHandler, sablonIndirHandler, raporIndirHandler,
+  haritaDosyaYukleHandler, komsuParsellerHandler,
 };

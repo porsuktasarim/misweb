@@ -395,6 +395,70 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
+## Mera - Harita Alt-Modülü (YENİ)
+
+Parsel detay sayfasına eklendi. **GEREKLİ HİÇBİR NPM PAKETİ YOK** -
+tüm harita kütüphaneleri TARAYICIDA CDN üzerinden yükleniyor (`npm
+install` gerekmiyor):
+- **Leaflet 1.9.4** (`unpkg.com/leaflet@1.9.4`) - harita motoru, ücretsiz,
+  API KEY GEREKTİRMEZ.
+- **OpenStreetMap** tile katmanı (varsayılan) - ücretsiz, key yok.
+- **Esri World Imagery** tile katmanı (uydu görünümü, tek tık geçiş) -
+  ücretsiz (makul/kurumsal kullanım için), key yok.
+- **leaflet-omnivore 0.3.4** (`unpkg.com/@mapbox/leaflet-omnivore`) -
+  KML/GPX dosyalarını Leaflet katmanına çevirir (SADECE GÖRÜNTÜLEME
+  için - kaydedilen dosyanın kendi FORMATI DEĞİŞMEZ).
+
+Backend tarafında dosya yükleme zaten mevcut olan `multer` ile
+yapılıyor (proje zaten kullanıyordu) - YENİ bir backend paketi
+GEREKMEDİ, çünkü format dönüştürme YAPILMIYOR (ham dosya, olduğu gibi
+diskte saklanıyor).
+
+**ÖNEMLİ - AYRICA BULUNAN VE DÜZELTİLEN HATA:** `uploads/` klasörü
+şimdiye kadar HİÇ statik olarak servis edilmiyordu (`app.js`'te
+`express.static` sadece `frontend/public`'i kapsıyordu) - bu, Notlar
+bölümüne eklenen belgelerin indirme linklerinin de (muhtemelen fark
+edilmeden) 404 verdiği anlamına geliyordu. `app.use('/uploads',
+express.static(...))` eklendi, düzeltildi.
+
+**Özellikler:**
+1. **Yerleşim:** İl/İlçe/Köy-Mahalle/Ada/Parsel zaten sayfa başlığında
+   tek satırda (`baslikAlani`); bu satırdan sonra sayfa `mis-icerik-
+   birincil` (sol, mevcut form/sekmeler) ve `mis-icerik-ikincil` (sağ)
+   olarak ikiye bölünüyor - Harita paneli sağ sütunun EN ÜSTÜNE,
+   Verim Bilgileri paneli hemen altına eklendi.
+2. **Katman değiştirme:** "Uydu Görünümü" butonu tek tıkla OSM↔Esri
+   arasında geçiş yapıyor.
+3. **Dosya yükleme:** `.geojson/.json/.kml/.gpx/.kmz` kabul edilir,
+   FORMAT DÖNÜŞTÜRÜLMEDEN (multer fileFilter ile sınırlı) olduğu gibi
+   saklanır.
+4. **Otomatik adlandırma:** `IL-ILCE-MAHALLE-ADA-PARSEL-vN.uzanti`
+   formatında (Türkçe karakterler ASCII'ye çevrilir, dosya sisteminde
+   sorun çıkmasın diye) - test edildi: `Istanbul-Silivri-Bekirli-123-
+   45-v1.kml`.
+5. **Versiyonlama:** `MeraParseli.haritaDosyalari` dizisi - AYNI
+   NOTLAR/Mera Verim Ayarları desenindeki gibi, yeni yükleme ESKİ
+   VERSİYONU SİLMEZ, yeni versiyon EKLENİR (versiyonNo artarak) ve
+   versiyon seçiciden istenilen versiyon görüntülenebilir. Test
+   edildi: 2 ardışık yükleme sonrası 2 versiyon de KORUNDU.
+6. **Çevre parsel gösterimi:** "Çevre Parselleri Göster" checkbox'ı -
+   açıldığında `/api/mera/:id/komsu-parseller` ile aynı köy/mahalledeki
+   DİĞER parseller (harita dosyası olanlar) SOLUK/KESİKLİ ÇİZGİYLE
+   overlay olarak eklenir, aktif parsel YEŞİL/BELİRGİN kalır.
+7. **Tam ekran:** "Büyüt" butonu, harita konteynerine `position:fixed`
+   CSS sınıfı ekleyip tüm ekranı kaplıyor, `map.invalidateSize()`
+   çağrısıyla Leaflet'in yeniden ölçüm yapması sağlanıyor (bu çağrı
+   olmadan Leaflet boyut değişikliğini fark etmez, harita bozuk
+   görünür - bilinen bir Leaflet davranışı).
+
+**DÜRÜST SINIRLAMA:** Bu ortamda gerçek bir tarayıcı/harita render
+testi YAPILAMADI (headless browser yok) - kod SENTAKS olarak
+doğrulandı, backend mantığı (adlandırma/versiyonlama) izole test
+edildi, ama GERÇEK harita görüntüleme/KML çizimi CANLI ortamda
+doğrulanmalı. `.kmz` dosyaları KAYDEDİLİR/İNDİRİLEBİLİR ama
+leaflet-omnivore doğrudan kmz (zip içindeki kml) render edemediği
+için haritada ÇİZİLEMEZ - kullanıcıya bir bilgi notu gösterilir.
+
 ## Mera Parseli - Ek Düzeltmeler
 
 **Islah Durumu artık enum** (serbest metin değil): "Islah Edilmedi"

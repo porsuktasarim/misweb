@@ -3,6 +3,7 @@
  */
 
 const MeraParseli = require('./mera.model');
+const path = require('path');
 const lang = require('../../../config/lang/tr');
 const meraImport = require('./mera.import');
 const meraExport = require('./mera.export');
@@ -124,9 +125,60 @@ async function raporIndir(filtre) {
   return meraExport.raporOlustur(parseller);
 }
 
+const HARITA_FORMAT_UZANTILARI = { '.geojson': 'geojson', '.json': 'json', '.kml': 'kml', '.gpx': 'gpx', '.kmz': 'kmz' };
+
+/** Dosya adinda GUVENLI OLMAYAN karakterleri (bosluk, Turkce ozel karakter vb.) temizler - SADECE dosya adi icin, orijinal VERI/format DEGISMEZ. */
+function dosyaAdiTemizle(metin) {
+  const harfDonusumleri = { ç: 'c', Ç: 'C', ğ: 'g', Ğ: 'G', ı: 'i', İ: 'I', ö: 'o', Ö: 'O', ş: 's', Ş: 'S', ü: 'u', Ü: 'U' };
+  return String(metin || '')
+    .split('').map((h) => harfDonusumleri[h] ?? h).join('')
+    .replace(/[^a-zA-Z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+}
+
+/**
+ * Parsele YENI bir harita (CBS) dosyasi EKLER - FORMAT DONUSTURULMEZ
+ * (kullanici hangi formatta yuklerse O FORMATTA saklanir). ESKI
+ * VERSIYONLAR SILINMEZ - yeni versiyon EKLENIR (versiyonNo artarak),
+ * otomatik olarak "IL-ILCE-MAHALLE-ADA-PARSEL-vN" adiyla adlandirilir.
+ */
+async function haritaDosyaYukle(id, dosya, kullaniciAdi) {
+  const kayit = await getir(id);
+  if (!dosya) throw new Error(lang.mera.dosyaSecilmedi);
+
+  const uzanti = path.extname(dosya.originalname).toLowerCase();
+  const formatTipi = HARITA_FORMAT_UZANTILARI[uzanti] || 'diger';
+  const versiyonNo = kayit.haritaDosyalari.length + 1;
+  const parcalar = [kayit.il, kayit.ilce, kayit.koyMahalle, kayit.adaNo, kayit.parselNo].map(dosyaAdiTemizle).filter(Boolean);
+  const orijinalAd = `${parcalar.join('-')}-v${versiyonNo}${uzanti}`;
+
+  kayit.haritaDosyalari.push({
+    dosyaYolu: dosya.path, orijinalAd, formatTipi, versiyonNo,
+    yuklemeTarihi: new Date(), yukleyenKullanici: kullaniciAdi || '',
+  });
+  logEkle(kayit, 'haritaDosyasiEklendi', `${orijinalAd} (v${versiyonNo})`, kullaniciAdi);
+  await kayit.save();
+  return kayit;
+}
+
+/**
+ * Ayni koy/mahalledeki DIGER parselleri (haricId HARIC), HER BIRININ
+ * varsa EN SON harita dosyasi bilgisiyle birlikte dondurur - "Cevre
+ * Parselleri Goster" secenegi icin.
+ */
+async function komsuParseller(il, ilce, koyMahalle, haricId) {
+  const parseller = await MeraParseli.find({ il, ilce, koyMahalle, _id: { $ne: haricId } })
+    .select('adaNo parselNo haritaDosyalari');
+  return parseller
+    .map((p) => ({
+      _id: p._id, adaNo: p.adaNo, parselNo: p.parselNo,
+      sonHaritaDosyasi: p.haritaDosyalari.length ? p.haritaDosyalari[p.haritaDosyalari.length - 1] : null,
+    }))
+    .filter((p) => p.sonHaritaDosyasi);
+}
+
 module.exports = {
   listele, getir, olustur, guncelle, sil, notEkle, notDuzenle, notDosyaEkle,
-  topluYukle, sablonIndir, raporIndir,
+  topluYukle, sablonIndir, raporIndir, haritaDosyaYukle, komsuParseller,
   ARAZI_NITELIKLERI: MeraParseli.ARAZI_NITELIKLERI, ARAZI_KAYNAKLARI: MeraParseli.ARAZI_KAYNAKLARI,
   ARAZI_DURUM_SINIFLARI: MeraParseli.ARAZI_DURUM_SINIFLARI, TOPRAK_SINIFLARI: MeraParseli.TOPRAK_SINIFLARI,
   ISLAH_DURUMLARI: MeraParseli.ISLAH_DURUMLARI,

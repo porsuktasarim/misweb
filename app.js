@@ -29,6 +29,10 @@ const app = express();
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'frontend/public')));
+// Not/harita dosyalari (uploads/) STATIK OLARAK SERVIS EDILMIYORDU -
+// bu yuzden not/harita eklerinin indirme/goruntuleme linkleri (orn.
+// /uploads/mera/xxx.kml) 404 VERIYORDU. Duzeltildi.
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/api/bbhb', bbhbRoutes);
 app.use('/api/raporlar', reportRoutes);

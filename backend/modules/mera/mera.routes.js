@@ -29,6 +29,14 @@ const tabloFiltresi = (req, file, cb) => {
   cb(null, true);
 };
 const tabloUpload = multer({ storage, fileFilter: tabloFiltresi, limits: { fileSize: 50 * 1024 * 1024 } });
+// Harita (CBS/GIS) dosyalari - GeoJSON/JSON/KML/GPX/KMZ kabul edilir,
+// FORMAT DONUSTURULMEZ (oldugu gibi saklanir).
+const haritaFiltresi = (req, file, cb) => {
+  const izinliUzantilar = ['.geojson', '.json', '.kml', '.gpx', '.kmz'];
+  if (!izinliUzantilar.includes(path.extname(file.originalname).toLowerCase())) return cb(new Error('Sadece .geojson, .json, .kml, .gpx veya .kmz dosyası yüklenebilir.'));
+  cb(null, true);
+};
+const haritaUpload = multer({ storage, fileFilter: haritaFiltresi, limits: { fileSize: 50 * 1024 * 1024 } });
 
 router.get('/sabitler', controller.sabitlerHandler);
 router.get('/sablon-indir', controller.sablonIndirHandler);
@@ -42,5 +50,7 @@ router.delete('/:id', controller.silHandler);
 router.post('/:id/notlar', controller.notEkleHandler);
 router.put('/:id/notlar/:notIndex', controller.notDuzenleHandler);
 router.post('/:id/notlar/:notIndex/dosya', upload.single('dosya'), controller.notDosyaEkleHandler);
+router.post('/:id/harita-dosyasi', haritaUpload.single('dosya'), controller.haritaDosyaYukleHandler);
+router.get('/:id/komsu-parseller', controller.komsuParsellerHandler);
 
 module.exports = router;

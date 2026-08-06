@@ -55,10 +55,29 @@ const notSchema = new mongoose.Schema(
 
 const logSchema = new mongoose.Schema(
   {
-    islem: { type: String, required: true }, // 'olusturuldu' | 'guncellendi' | 'notEklendi' | 'notDuzenlendi' | 'dosyaEklendi'
+    islem: { type: String, required: true }, // 'olusturuldu' | 'guncellendi' | 'notEklendi' | 'notDuzenlendi' | 'dosyaEklendi' | 'haritaDosyasiEklendi'
     detay: { type: String, default: '' },
     kullaniciAdi: { type: String, default: '' },
     tarih: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
+// Harita alt-modulu: parsele YUKLENEN CBS (GIS) dosyalari (GeoJSON/
+// JSON/KML/GPX). FORMAT DONUSTURULMEZ - kullanici hangi formatta
+// yuklerse O FORMATTA saklanir (dosyaYolu orijinal uzantisiyla).
+// VERSIYONLUDUR: ayni parsele TEKRAR dosya yuklendiginde ESKI
+// VERSIYON SILINMEZ, yeni bir versiyon EKLENIR (versiyonNo artarak).
+const haritaDosyaSchema = new mongoose.Schema(
+  {
+    dosyaYolu: { type: String, required: true },
+    // Kullaniciya gosterilen/indirilen AD - IL-ILCE-MAHALLE-ADA-PARSEL-vN
+    // formatinda OTOMATIK uretilir (orijinal dosya adi DEGIL).
+    orijinalAd: { type: String, required: true },
+    formatTipi: { type: String, required: true }, // 'geojson' | 'json' | 'kml' | 'gpx' | 'kmz' | 'diger'
+    versiyonNo: { type: Number, required: true },
+    yuklemeTarihi: { type: Date, default: Date.now },
+    yukleyenKullanici: { type: String, default: '' },
   },
   { _id: false }
 );
@@ -86,6 +105,7 @@ const meraParseliSchema = new mongoose.Schema(
     topraksinifi: { type: String, enum: TOPRAK_SINIFLARI },
     tapuKimlikNo: { type: String, default: '' },
     notlar: { type: [notSchema], default: [] },
+    haritaDosyalari: { type: [haritaDosyaSchema], default: [] },
     loglar: { type: [logSchema], default: [] },
   },
   { timestamps: true }
