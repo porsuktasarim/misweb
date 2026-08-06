@@ -395,6 +395,48 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
+## Mera - Harita Katman Stilleri (YENİ)
+
+**ÖNEMLİ - BU TURDA YAŞANAN DURUM:** Çalışma alanım (sanal makine)
+sıfırlanmış olarak bulundu - `/home/claude/mis` boştu. Kurtarma:
+`/mnt/user-data/outputs/`'da duran TÜM önceki paketler
+(`misweb proje 054`'ten `069`'a kadar) SIRAYLA üst üste açılarak proje
+yeniden inşa edildi - bu, GERÇEK kaynağın HER ZAMAN kullanıcının kendi
+git deposu olduğunu (ben sadece artımlı değişiklik ÜRETİYORUM)
+doğruladı. 054 ÖNCESİNDEKİ temel dosyalar (3T, BBHB, ÇKS, EKGB,
+Mevzuat, Personel vb. - hiç değişmediği için hiçbir pakette YOK) bu
+ortamda YOK ama bu SORUN DEĞİL - kullanıcının deposunda zaten mevcut,
+bu turda İHTİYAÇ DUYULMADI (SADECE Mera/Görünüm Ayarları dosyalarına
+dokunuldu).
+
+**Çoklu katman + tıklamalı stil kontrolü:** Artık BİRDEN FAZLA KML/
+GeoJSON katmanı (aktif parselin dosyası + gösterilen TÜM çevre
+parsellerin dosyaları) AYNI ANDA haritada görünebiliyor, HER BİRİNİN
+KENDİ stili var. "Katmanlar" paneli - Leaflet'in KENDİ control
+mekanizmasıyla (`L.control`) haritanın SAĞ ÜST köşesine eklendi, bu
+sayede hem NORMAL hem TAM EKRAN görünümde OTOMATİK çalışıyor (ayrı
+kod gerekmedi). Her katmanın yanında RENKLİ, TIKLANABİLİR bir nokta
+var - tıklanınca MİNİMAL bir mini-panel açılıyor: Çizgi Rengi, Çizgi
+Kalınlığı, İçi Dolu (checkbox), Doluluk Rengi - hepsi CANLI olarak
+(`katman.setStyle()`) uygulanıyor. Bu değişiklikler OTURUM İÇİDİR,
+DB'ye KAYDEDİLMEZ (sayfa yenilenince varsayılana döner) - kalıcı olan
+SADECE Ayarlar'daki VARSAYILAN değerlerdir.
+
+**Varsayılan renkler artık Görünüm Ayarları'ndan yönetiliyor:**
+`BelgeAyarlari` modeline `haritaStili: {ustKatman, altKatmanlar}`
+eklendi - her biri `{cizgiRengi, cizgiKalinligi, doluMu, doluRengi}`.
+Üst Katman = aktif parselin dosyası (varsayılan: koyu yeşil, 3px,
+dolu), Alt Katmanlar = çevre parsellerin dosyaları (varsayılan: gri,
+1,5px, dolu değil). Ayarlar sayfasının Görünüm Ayarları sekmesinde
+renk seçici (native `<input type="color">`) + sayısal kalınlık +
+dolu checkbox ile düzenlenip kaydedilebiliyor.
+
+**Kapsam notu (kullanıcının açık isteği):** Bu özellik SADECE Mera
+detay sayfasındaki harita paneline (normal + tam ekran) uygulandı,
+Ayarlar sayfasının kendisi hariç tutuldu (orada sadece VARSAYILAN
+DEĞER GİRİŞ FORMU var, interaktif "tıklamalı katman" kontrolü yok -
+zaten mantıklı değil, orada gerçek bir harita/katman YOK).
+
 ## Mera - Harita Alt-Modülü (YENİ)
 
 **ÖNEMLİ DÜZELTME (teslimden hemen sonra bulundu):** `leaflet-omnivore`

@@ -227,6 +227,62 @@
               </table>
             </div>
 
+            <hr>
+            <h6 id="txtHaritaStiliBaslik"></h6>
+            <p class="text-muted small" id="txtHaritaStiliAciklama"></p>
+            <div class="row g-3 mb-3" style="max-width:640px;">
+              <div class="col-md-6">
+                <div class="border rounded p-2">
+                  <div class="small fw-semibold mb-2" id="txtHaritaUstKatman"></div>
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <label class="form-label small" id="lblHsUstCizgiRengi"></label>
+                      <input type="color" class="form-control form-control-sm form-control-color w-100" id="hsUstCizgiRengi">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small" id="lblHsUstCizgiKalinligi"></label>
+                      <input type="number" step="0.5" class="form-control form-control-sm" id="hsUstCizgiKalinligi">
+                    </div>
+                    <div class="col-6">
+                      <div class="form-check mt-1">
+                        <input type="checkbox" class="form-check-input" id="hsUstDoluMu">
+                        <label class="form-check-label small" id="lblHsUstDoluMu"></label>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small" id="lblHsUstDoluRengi"></label>
+                      <input type="color" class="form-control form-control-sm form-control-color w-100" id="hsUstDoluRengi">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="border rounded p-2">
+                  <div class="small fw-semibold mb-2" id="txtHaritaAltKatmanlar"></div>
+                  <div class="row g-2">
+                    <div class="col-6">
+                      <label class="form-label small" id="lblHsAltCizgiRengi"></label>
+                      <input type="color" class="form-control form-control-sm form-control-color w-100" id="hsAltCizgiRengi">
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small" id="lblHsAltCizgiKalinligi"></label>
+                      <input type="number" step="0.5" class="form-control form-control-sm" id="hsAltCizgiKalinligi">
+                    </div>
+                    <div class="col-6">
+                      <div class="form-check mt-1">
+                        <input type="checkbox" class="form-check-input" id="hsAltDoluMu">
+                        <label class="form-check-label small" id="lblHsAltDoluMu"></label>
+                      </div>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label small" id="lblHsAltDoluRengi"></label>
+                      <input type="color" class="form-control form-control-sm form-control-color w-100" id="hsAltDoluRengi">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <button class="btn btn-sm btn-primary" id="baKaydetBtn">Kaydet</button>
             <span id="baSonuc" class="small ms-2"></span>
           </div>
@@ -1245,6 +1301,20 @@
 
     // ================= BELGE GÖRÜNÜM AYARLARI =================
     async function belgeAyarlariniYukle() {
+      const LANG = await misLangYukle();
+      document.getElementById('txtHaritaStiliBaslik').textContent = LANG.mera.haritaStiliBaslik;
+      document.getElementById('txtHaritaStiliAciklama').textContent = LANG.mera.haritaStiliAciklama;
+      document.getElementById('txtHaritaUstKatman').textContent = LANG.mera.haritaUstKatman;
+      document.getElementById('txtHaritaAltKatmanlar').textContent = LANG.mera.haritaAltKatmanlar;
+      document.getElementById('lblHsUstCizgiRengi').textContent = LANG.mera.haritaCizgiRengi;
+      document.getElementById('lblHsUstCizgiKalinligi').textContent = LANG.mera.haritaCizgiKalinligi;
+      document.getElementById('lblHsUstDoluMu').textContent = LANG.mera.haritaDoluMu;
+      document.getElementById('lblHsUstDoluRengi').textContent = LANG.mera.haritaDoluluqRengi;
+      document.getElementById('lblHsAltCizgiRengi').textContent = LANG.mera.haritaCizgiRengi;
+      document.getElementById('lblHsAltCizgiKalinligi').textContent = LANG.mera.haritaCizgiKalinligi;
+      document.getElementById('lblHsAltDoluMu').textContent = LANG.mera.haritaDoluMu;
+      document.getElementById('lblHsAltDoluRengi').textContent = LANG.mera.haritaDoluluqRengi;
+
       const json = await apiGet('/api/belge-ayarlari');
       if (!json.success) return;
       document.getElementById('baImzaRengi').value = json.data.imzaRengi;
@@ -1258,6 +1328,20 @@
           <td><input type="number" class="form-control form-control-sm ba-baslik-boyutu" value="${b.baslikBoyutuPx}"></td>
           <td><input type="number" class="form-control form-control-sm ba-metin-boyutu" value="${b.metinBoyutuPx}"></td>
         </tr>`).join('');
+
+      const hs = json.data.haritaStili || {};
+      if (hs.ustKatman) {
+        document.getElementById('hsUstCizgiRengi').value = hs.ustKatman.cizgiRengi;
+        document.getElementById('hsUstCizgiKalinligi').value = hs.ustKatman.cizgiKalinligi;
+        document.getElementById('hsUstDoluMu').checked = hs.ustKatman.doluMu;
+        document.getElementById('hsUstDoluRengi').value = hs.ustKatman.doluRengi;
+      }
+      if (hs.altKatmanlar) {
+        document.getElementById('hsAltCizgiRengi').value = hs.altKatmanlar.cizgiRengi;
+        document.getElementById('hsAltCizgiKalinligi').value = hs.altKatmanlar.cizgiKalinligi;
+        document.getElementById('hsAltDoluMu').checked = hs.altKatmanlar.doluMu;
+        document.getElementById('hsAltDoluRengi').value = hs.altKatmanlar.doluRengi;
+      }
     }
 
     document.getElementById('baImzaRengi').addEventListener('input', (e) => {
@@ -1277,10 +1361,24 @@
         baslikBoyutuPx: Number(tr.querySelector('.ba-baslik-boyutu').value) || 13,
         metinBoyutuPx: Number(tr.querySelector('.ba-metin-boyutu').value) || 12,
       }));
+      const haritaStili = {
+        ustKatman: {
+          cizgiRengi: document.getElementById('hsUstCizgiRengi').value,
+          cizgiKalinligi: Number(document.getElementById('hsUstCizgiKalinligi').value) || 3,
+          doluMu: document.getElementById('hsUstDoluMu').checked,
+          doluRengi: document.getElementById('hsUstDoluRengi').value,
+        },
+        altKatmanlar: {
+          cizgiRengi: document.getElementById('hsAltCizgiRengi').value,
+          cizgiKalinligi: Number(document.getElementById('hsAltCizgiKalinligi').value) || 1.5,
+          doluMu: document.getElementById('hsAltDoluMu').checked,
+          doluRengi: document.getElementById('hsAltDoluRengi').value,
+        },
+      };
       sonucAlan.textContent = 'Kaydediliyor...';
       const res = await fetch('/api/belge-ayarlari', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imzaRengi, wordYaziTipi, temaBolumleri }),
+        body: JSON.stringify({ imzaRengi, wordYaziTipi, temaBolumleri, haritaStili }),
       });
       const json = await res.json();
       sonucAlan.innerHTML = json.success ? '<span class="text-success">Kaydedildi.</span>' : `<span class="text-danger">${json.message}</span>`;

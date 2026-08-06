@@ -11,12 +11,16 @@ async function ayarlariGetir() {
   return kayit;
 }
 
-async function ayarlariGuncelle({ imzaRengi, wordYaziTipi, temaBolumleri }) {
+async function ayarlariGuncelle({ imzaRengi, wordYaziTipi, temaBolumleri, haritaStili }) {
   let kayit = await BelgeAyarlari.findOne();
   if (!kayit) kayit = new BelgeAyarlari({});
   if (imzaRengi) kayit.imzaRengi = imzaRengi;
   if (wordYaziTipi) kayit.wordYaziTipi = wordYaziTipi;
   if (temaBolumleri) kayit.temaBolumleri = temaBolumleri;
+  if (haritaStili) {
+    if (haritaStili.ustKatman) kayit.haritaStili.ustKatman = haritaStili.ustKatman;
+    if (haritaStili.altKatmanlar) kayit.haritaStili.altKatmanlar = haritaStili.altKatmanlar;
+  }
   await kayit.save();
   return kayit;
 }

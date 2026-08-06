@@ -19,6 +19,19 @@
     #haritaKonteyner.harita-tam-ekran {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2000; border-radius: 0;
     }
+    /* Katman kontrol paneli - Leaflet'in KENDI control mekanizmasiyla
+       eklenir, bu yuzden hem normal HEM tam ekran gorunumde OTOMATIK
+       calisir (harita konteynerinin ICINDEKI DOM agacinda yasar).
+       MINIMAL: kompakt, sadece gerektiginde genisleyen bir kutu. */
+    .harita-katman-kontrol {
+      background: #fff; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      padding: 6px 8px; font-size: 11px; max-width: 200px;
+    }
+    .harita-katman-satiri { display: flex; align-items: center; gap: 6px; padding: 2px 0; cursor: pointer; }
+    .harita-katman-noktasi { width: 11px; height: 11px; border-radius: 50%; flex: none; border: 1px solid rgba(0,0,0,0.2); }
+    .harita-katman-stil-paneli { background: #fff; border-radius: 6px; box-shadow: 0 1px 6px rgba(0,0,0,0.35); padding: 8px; font-size: 11px; width: 170px; }
+    .harita-katman-stil-paneli label { font-size: 10px; margin-bottom: 2px; display: block; }
+    .harita-katman-stil-paneli input[type="color"] { width: 100%; height: 24px; padding: 1px; }
   </style>
 </head>
 <body>
@@ -254,8 +267,16 @@
     let _osmKatmani = null;
     let _uyduKatmani = null;
     let _uyduAktifMi = false;
-    let _aktifParselKatmani = null;
-    let _cevreParselKatmanlari = [];
+    let _aktifParselKatmanKaydi = null;
+    let _cevreParselKatmanKayitlari = [];
+    // Varsayilan katman stilleri - Gorunum Ayarlari'ndan (/api/belge-ayarlari)
+    // cekilir; kullanici HARITADA tek tek katman uzerinde GECICI
+    // (DB'ye kaydedilmez, oturum ici) degistirebilir.
+    let _haritaVarsayilanStil = {
+      ustKatman: { cizgiRengi: '#2e7d32', cizgiKalinligi: 3, doluMu: true, doluRengi: '#2e7d32' },
+      altKatmanlar: { cizgiRengi: '#9e9e9e', cizgiKalinligi: 1.5, doluMu: false, doluRengi: '#9e9e9e' },
+    };
+    let _katmanIdSayaci = 0;
 
     function haritaBaslat() {
       if (_harita) return;
@@ -270,6 +291,26 @@
         attribution: 'Tiles &copy; Esri',
         maxZoom: 19,
       });
+
+      // Katman kontrolu - Leaflet'in KENDI control mekanizmasi, harita
+      // konteynerinin ICINDE yasar - bu yuzden hem NORMAL hem TAM EKRAN
+      // gorunumde OTOMATIK calisir, ayri kod GEREKMEZ.
+      const kontrol = L.control({ position: 'topright' });
+      kontrol.onAdd = () => {
+        const div = L.DomUtil.create('div', 'harita-katman-kontrol');
+        div.id = 'haritaKatmanlarPaneli';
+        L.DomEvent.disableClickPropagation(div);
+        return div;
+      };
+      kontrol.addTo(_harita);
+    }
+
+    async function haritaVarsayilanStilleriYukle() {
+      const json = await fetch('/api/belge-ayarlari').then((r) => r.json());
+      if (json.success && json.data.haritaStili) {
+        if (json.data.haritaStili.ustKatman) _haritaVarsayilanStil.ustKatman = json.data.haritaStili.ustKatman;
+        if (json.data.haritaStili.altKatmanlar) _haritaVarsayilanStil.altKatmanlar = json.data.haritaStili.altKatmanlar;
+      }
     }
 
     window.haritaKatmanDegistir = () => {
@@ -310,34 +351,50 @@
       const dosyalar = kayit.haritaDosyalari || [];
       const index = Number(secici.value);
       if (Number.isNaN(index) || !dosyalar[index]) return;
-      haritaDosyasiniCiz(dosyalar[index], true);
+      haritaDosyasiniCiz(dosyalar[index], LANG.mera.haritaBuParsel, 'ust');
     }
 
-    /** Bir harita dosyasini (aktif parsel icin RENKLI/BELIRGIN, komsu parsel icin SOLUK) haritada CIZER. */
-    function haritaDosyasiniCiz(dosyaKaydi, aktifParselMi) {
-      if (!_harita) return;
+    /** Leaflet stil objesini KAYIT stilinden {cizgiRengi,cizgiKalinligi,doluMu,doluRengi} uretir. */
+    function haritaLeafletStili(stilKaydi) {
+      return {
+        color: stilKaydi.cizgiRengi,
+        weight: stilKaydi.cizgiKalinligi,
+        fill: stilKaydi.doluMu,
+        fillColor: stilKaydi.doluRengi,
+        fillOpacity: stilKaydi.doluMu ? 0.25 : 0,
+      };
+    }
+
+    /**
+     * Bir harita dosyasini haritada CIZER ve "Katmanlar" listesine
+     * EKLER (renk noktasina tiklanarak stil DUZENLENEBILIR). tip:
+     * 'ust' (aktif parsel, TEK olur - ONCEKI ust katman KALDIRILIR)
+     * veya 'alt' (cevre parsel, BIRDEN FAZLA olabilir).
+     */
+    function haritaDosyasiniCiz(dosyaKaydi, ad, tip) {
+      if (!_harita || !dosyaKaydi) return;
       const url = `/${dosyaKaydi.dosyaYolu}`;
-      const stil = aktifParselMi
-        ? { color: '#2e7d32', weight: 3, fillOpacity: 0.15 }
-        : { color: '#9e9e9e', weight: 1.5, fillOpacity: 0.05, dashArray: '4' };
+      const varsayilanStilKaydi = tip === 'ust' ? _haritaVarsayilanStil.ustKatman : _haritaVarsayilanStil.altKatmanlar;
+      const katmanId = `katman-${_katmanIdSayaci++}`;
 
       const katmanEklendiginde = (katman) => {
-        if (aktifParselMi) {
-          if (_aktifParselKatmani) _harita.removeLayer(_aktifParselKatmani);
-          _aktifParselKatmani = katman;
-          katman.setStyle ? katman.setStyle(stil) : null;
-          katman.addTo(_harita);
+        const kayitObj = { id: katmanId, ad, tip, katman, stil: { ...varsayilanStilKaydi } };
+        katman.setStyle ? katman.setStyle(haritaLeafletStili(kayitObj.stil)) : null;
+        katman.addTo(_harita);
+
+        if (tip === 'ust') {
+          if (_aktifParselKatmanKaydi) _harita.removeLayer(_aktifParselKatmanKaydi.katman);
+          _aktifParselKatmanKaydi = kayitObj;
           try { _harita.fitBounds(katman.getBounds(), { maxZoom: 16 }); } catch (e) { /* gecersiz geometri - sessizce gec */ }
         } else {
-          katman.setStyle ? katman.setStyle(stil) : null;
-          katman.addTo(_harita);
-          _cevreParselKatmanlari.push(katman);
+          _cevreParselKatmanKayitlari.push(kayitObj);
         }
+        haritaKatmanListesiCiz();
       };
 
       if (dosyaKaydi.formatTipi === 'geojson' || dosyaKaydi.formatTipi === 'json') {
         fetch(url).then((r) => r.json()).then((geojson) => {
-          const katman = L.geoJSON(geojson, { style: stil });
+          const katman = L.geoJSON(geojson);
           katmanEklendiginde(katman);
         }).catch((err) => console.error('GeoJSON okunamadı:', err));
       } else if (dosyaKaydi.formatTipi === 'kml') {
@@ -346,24 +403,91 @@
       } else if (dosyaKaydi.formatTipi === 'gpx') {
         const katman = omnivore.gpx(url);
         katman.on('ready', () => katmanEklendiginde(katman));
-      } else if (aktifParselMi) {
+      } else if (tip === 'ust') {
         // .kmz gibi DOGRUDAN GOSTERILEMEYEN formatlar - dosya KAYITLI, sadece HARITADA CIZILEMIYOR.
         document.getElementById('haritaYukleSonuc').innerHTML = `<span class="text-muted">${LANG.mera.haritaFormatDesteklenmiyor}</span>`;
       }
+    }
+
+    /** "Katmanlar" listesini (ust + tum alt katmanlar) Leaflet control panelinde CIZER - her satirda tiklamali renk noktasi. */
+    function haritaKatmanListesiCiz() {
+      const panel = document.getElementById('haritaKatmanlarPaneli');
+      if (!panel) return;
+      const tumKatmanlar = [];
+      if (_aktifParselKatmanKaydi) tumKatmanlar.push(_aktifParselKatmanKaydi);
+      tumKatmanlar.push(..._cevreParselKatmanKayitlari);
+
+      if (!tumKatmanlar.length) { panel.innerHTML = ''; return; }
+
+      panel.innerHTML = `<div class="fw-semibold mb-1">${LANG.mera.haritaKatmanlar}</div>` + tumKatmanlar.map((k) => `
+        <div class="harita-katman-satiri" data-katman-id="${k.id}">
+          <span class="harita-katman-noktasi" style="background:${k.stil.cizgiRengi};"></span>
+          <span>${guvenliMetin(k.ad)}</span>
+        </div>`).join('');
+
+      panel.querySelectorAll('.harita-katman-satiri').forEach((satir) => {
+        satir.addEventListener('click', () => haritaKatmanStilPaneliAc(satir.dataset.katmanId, satir));
+      });
+    }
+
+    function haritaKatmanKaydiBul(katmanId) {
+      if (_aktifParselKatmanKaydi && _aktifParselKatmanKaydi.id === katmanId) return _aktifParselKatmanKaydi;
+      return _cevreParselKatmanKayitlari.find((k) => k.id === katmanId);
+    }
+
+    /** Bir katmanin RENK/KALINLIK/DOLU-BOS stilini duzenlemek icin MINIMAL bir mini-panel acar (oturum ici, DB'ye kaydedilmez). */
+    function haritaKatmanStilPaneliAc(katmanId, satirEl) {
+      document.querySelectorAll('.harita-katman-stil-paneli').forEach((p) => p.remove());
+      const kayitObj = haritaKatmanKaydiBul(katmanId);
+      if (!kayitObj) return;
+
+      const panel = document.createElement('div');
+      panel.className = 'harita-katman-stil-paneli mt-1';
+      panel.innerHTML = `
+        <label>${LANG.mera.haritaCizgiRengi}</label>
+        <input type="color" class="hks-cizgi-rengi" value="${kayitObj.stil.cizgiRengi}">
+        <label class="mt-1">${LANG.mera.haritaCizgiKalinligi}</label>
+        <input type="number" step="0.5" min="0.5" class="form-control form-control-sm hks-cizgi-kalinligi" value="${kayitObj.stil.cizgiKalinligi}">
+        <div class="form-check mt-1">
+          <input type="checkbox" class="form-check-input hks-dolu-mu" ${kayitObj.stil.doluMu ? 'checked' : ''}>
+          <label class="form-check-label">${LANG.mera.haritaDoluMu}</label>
+        </div>
+        <label class="mt-1">${LANG.mera.haritaDoluluqRengi}</label>
+        <input type="color" class="hks-dolu-rengi" value="${kayitObj.stil.doluRengi}">
+        <button type="button" class="btn btn-sm btn-secondary w-100 mt-2 hks-kapat-btn">${LANG.mera.haritaKapat}</button>`;
+      L.DomEvent.disableClickPropagation(panel);
+      satirEl.after(panel);
+
+      const uygula = () => {
+        kayitObj.stil = {
+          cizgiRengi: panel.querySelector('.hks-cizgi-rengi').value,
+          cizgiKalinligi: Number(panel.querySelector('.hks-cizgi-kalinligi').value) || 1,
+          doluMu: panel.querySelector('.hks-dolu-mu').checked,
+          doluRengi: panel.querySelector('.hks-dolu-rengi').value,
+        };
+        kayitObj.katman.setStyle ? kayitObj.katman.setStyle(haritaLeafletStili(kayitObj.stil)) : null;
+        haritaKatmanListesiCiz();
+      };
+      panel.querySelector('.hks-cizgi-rengi').addEventListener('input', uygula);
+      panel.querySelector('.hks-cizgi-kalinligi').addEventListener('input', uygula);
+      panel.querySelector('.hks-dolu-mu').addEventListener('change', uygula);
+      panel.querySelector('.hks-dolu-rengi').addEventListener('input', uygula);
+      panel.querySelector('.hks-kapat-btn').addEventListener('click', () => panel.remove());
     }
 
     document.getElementById('haritaVersiyonSecici').addEventListener('change', haritaSeciliVersiyonuGoster);
 
     document.getElementById('cevreParselGosterCheck').addEventListener('change', async (e) => {
       // Onceki komsu parsel katmanlarini TEMIZLE (tekrar tekrar acilip kapatilirsa BIRIKMESIN).
-      _cevreParselKatmanlari.forEach((k) => _harita.removeLayer(k));
-      _cevreParselKatmanlari = [];
-      if (!e.target.checked) return;
+      _cevreParselKatmanKayitlari.forEach((k) => _harita.removeLayer(k.katman));
+      _cevreParselKatmanKayitlari = [];
+      document.querySelectorAll('.harita-katman-stil-paneli').forEach((p) => p.remove());
+      if (!e.target.checked) { haritaKatmanListesiCiz(); return; }
 
       const params = new URLSearchParams({ il: kayit.il, ilce: kayit.ilce, koyMahalle: kayit.koyMahalle });
       const json = await fetch(`${API}/${id}/komsu-parseller?${params}`).then((r) => r.json());
       if (!json.success) return;
-      json.data.forEach((komsu) => haritaDosyasiniCiz(komsu.sonHaritaDosyasi, false));
+      json.data.forEach((komsu) => haritaDosyasiniCiz(komsu.sonHaritaDosyasi, `Ada:${komsu.adaNo || '-'} Parsel:${komsu.parselNo || '-'}`, 'alt'));
     });
 
     document.getElementById('haritaDosyaInput').addEventListener('change', async (e) => {
@@ -563,6 +687,7 @@
       document.getElementById('lblCevreParselGoster').textContent = LANG.mera.cevreParselleriGoster;
       document.getElementById('lblHaritaDosyaYukle').textContent = LANG.mera.haritaDosyaYukle;
       haritaBaslat();
+      await haritaVarsayilanStilleriYukle();
 
       document.getElementById('haritaKatmanBtn').addEventListener('click', haritaKatmanDegistir);
       document.getElementById('haritaTamEkranBtn').addEventListener('click', haritaTamEkranToggle);

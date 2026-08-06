@@ -29,6 +29,27 @@ const VARSAYILAN_TEMA_BOLUMLERI = [
   { anahtar: 'anaIcerikSag', ad: 'Ana İçerik - Sağ Bölge', baslikBoyutuPx: 16, metinBoyutuPx: 13 },
 ];
 
+// Harita alt-modulundeki KML/GeoJSON katmanlari icin VARSAYILAN
+// stil - "ustKatman" AKTIF parselin dosyasi (belirgin), "altKatmanlar"
+// CEVRE parsellerin dosyalari (soluk/arka plan) icindir. Kullanici
+// haritada TEK TEK katman bazinda bunlari GECICI (oturum ici, DB'ye
+// KAYDEDILMEZ) olarak DEGISTIREBILIR - buradaki degerler sadece
+// BASLANGIC/VARSAYILAN degerdir.
+const haritaKatmanStiliSchema = new mongoose.Schema(
+  {
+    cizgiRengi: { type: String, required: true },
+    cizgiKalinligi: { type: Number, required: true },
+    doluMu: { type: Boolean, required: true },
+    doluRengi: { type: String, required: true },
+  },
+  { _id: false }
+);
+
+const VARSAYILAN_HARITA_STILI = {
+  ustKatman: { cizgiRengi: '#2e7d32', cizgiKalinligi: 3, doluMu: true, doluRengi: '#2e7d32' },
+  altKatmanlar: { cizgiRengi: '#9e9e9e', cizgiKalinligi: 1.5, doluMu: false, doluRengi: '#9e9e9e' },
+};
+
 const belgeAyarlariSchema = new mongoose.Schema(
   {
     // Acik gri varsayilan - imza cizgisi/etiketleri VE "İMZA" yazisi
@@ -43,9 +64,16 @@ const belgeAyarlariSchema = new mongoose.Schema(
     // Ekrandaki (Word/PDF DEGIL) FARKLI tema parcalarinin baslik/metin
     // font boyutlari - genisletilebilir liste.
     temaBolumleri: { type: [temaBolumuSchema], default: VARSAYILAN_TEMA_BOLUMLERI },
+    // Harita katmanlarinin VARSAYILAN gorunumu (ust katman = aktif
+    // parsel, alt katmanlar = cevre parseller).
+    haritaStili: {
+      ustKatman: { type: haritaKatmanStiliSchema, default: () => VARSAYILAN_HARITA_STILI.ustKatman },
+      altKatmanlar: { type: haritaKatmanStiliSchema, default: () => VARSAYILAN_HARITA_STILI.altKatmanlar },
+    },
   },
   { timestamps: true }
 );
 
 module.exports = mongoose.model('BelgeAyarlari', belgeAyarlariSchema);
 module.exports.VARSAYILAN_TEMA_BOLUMLERI = VARSAYILAN_TEMA_BOLUMLERI;
+module.exports.VARSAYILAN_HARITA_STILI = VARSAYILAN_HARITA_STILI;
