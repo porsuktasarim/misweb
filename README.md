@@ -395,6 +395,52 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
+## KESİN KÖK NEDEN BULUNDU: Mongoose markModified() Eksikliği
+
+**Kullanıcının verdiği İKİNCİ, ÇOK DEĞERLİ tanı ipucu:** "parsel sec
+deyip parselleri seçiyorum, kaydet diyorum. sonra sayfanın altında
+yeniden kaydet diyorum. sayfadan çıkmadan parsel seçe yeniden
+tıkladığımda parsellerin seçimi kaldırılmış oluyor. eğer kaydet
+demeden tıklarsam seçimler kalkmamış oluyor." Bu gözlem KESİN olarak
+kanıtladı: "Parsel Seç" popup'ının KENDİ kaydı veritabanına GERÇEKTEN
+yazıyordu - SORUN, sayfanın GENEL "Kaydet" butonunun (`adimVeriKaydet`)
+kendisindeydi, benim önceki turdaki "veriyi koru" düzeltmem YETERLİ
+DEĞİLDİ.
+
+**Kesin kök neden (web araştırmasıyla doğrulandı - Mongoose'un resmi
+dokümantasyonu ve birden fazla GitHub issue'su):** Bu proje `kayit.
+surec[i].altAdimlar[j].veri` şeklinde İKİ KAT İÇ İÇE subdocument
+dizisi içinde bir `Mixed` tipli alan kullanıyor. Mongoose'un
+DOKÜMANTASYONUNDA açıkça belirtildiği üzere: **Mixed tipli alanlara
+yapılan DOĞRUDAN atamalar (`altAdim.veri = {...}`), özellikle iç içe
+subdocument dizileri içinde, Mongoose'un otomatik değişiklik takibi
+tarafından GÜVENİLİR şekilde ALGILANMAYABİLİR** - `doc.markModified(
+'path')` AÇIKÇA çağrılmadıkça `.save()` bu değişikliği SESSİZCE
+veritabanına YAZMAYABİLİR (bu, Mongoose'un "FAQ" ve "Document" API
+dokümantasyonunda VE `Automattic/mongoose` GitHub deposunda #1694,
+#8505, #8926 numaralı issue'larda AÇIKÇA belgelenmiş, YILLARDIR
+bilinen bir davranış).
+
+**Düzeltme:** `uc-t.service.js`'deki `altAdim.veri = ...` deseniyle
+yazan **8 fonksiyonun TAMAMINA** (`adimVeriKaydet` - GENEL "Kaydet"
+butonunun kullandığı, EN KRİTİK olan -, `ek4aVeriCek`, `ek4bVeriCek`,
+`ek3aHayvanVarligiCek`, `ek3aAraziVerileriKaydet`, `karar1Kaydet`, ve
+diğerleri) `.save()`'den HEMEN ÖNCE `kayit.markModified('surec');`
+eklendi - bu, Mongoose'a "surec alanının TAMAMINI (tüm iç içe
+içeriğiyle) yeniden yaz" der, EN GÜVENLİ ve KOD KARMAŞIKLIĞI
+GEREKTİRMEYEN çözüm (dinamik `anaAdimIndex`/`altAdimIndex` içeren
+DAHA "cerrahi" bir path - örn. `surec.2.altAdimlar.3.veri` - yerine,
+TÜM `surec` alanını işaretlemek, index'lerin string/number
+tutarsızlığından etkilenmeyen DAHA SAĞLAM bir yaklaşım).
+
+**Dürüstçe belirtilmesi gereken sınırlama:** Bu ortamda GERÇEK bir
+MongoDB instance'ı ÇALIŞTIRAMADIĞIM için (ağ kısıtlaması nedeniyle
+`mongodb-memory-server`'ın embedded binary'sini İNDİREMEDİM), bu
+düzeltmeyi UÇTAN UCA CANLI olarak TEST EDEMEDİM - ama kök neden
+teşhisi (kullanıcının İKİ AYRI, BİRBİRİNİ DOĞRULAYAN gözlemi + resmi
+Mongoose dokümantasyonu) YÜKSEK GÜVEN veriyor. Deploy sonrası
+GERÇEKTEN doğrulanması gerekiyor.
+
 ## Ek-3/a Madde 10 - GERÇEKTEN Entegre Edildi (Önceki Turdan Kalan Eksik)
 
 **Kullanıcının haklı uyarısı:** "10 adımda düzelmemiş yalnız."

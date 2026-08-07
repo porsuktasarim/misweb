@@ -50,6 +50,13 @@ async function karar1Kaydet(id, anaAdimIndex, altAdimIndex, { kararTarihi, karar
   altAdim.tamamlandiMi = true;
   altAdim.tamamlanmaTarihi = new Date();
 
+  // Mongoose, ICE ICE (surec[i].altAdimlar[j]) subdocument dizisi
+  // icindeki Mixed tipli 'veri' alanina yapilan DOGRUDAN atamayi
+  // GUVENILIR sekilde ALGILAYAMAYABILIR (bilinen bir Mongoose
+  // davranisi - arastirmayla dogrulandi) - markModified() ile
+  // ZORLA isaretleniyor, aksi halde .save() bu degisikligi
+  // SESSIZCE veritabanina YAZMAYABILIR.
+  kayit.markModified('surec');
   await kayit.save();
   return kayit;
 }
@@ -112,6 +119,13 @@ async function adimVeriKaydet(id, anaAdimIndex, altAdimIndex, veri) {
   altAdim.veri = veri;
   altAdim.tamamlandiMi = true;
   altAdim.tamamlanmaTarihi = new Date();
+  // Mongoose, ICE ICE (surec[i].altAdimlar[j]) subdocument dizisi
+  // icindeki Mixed tipli 'veri' alanina yapilan DOGRUDAN atamayi
+  // GUVENILIR sekilde ALGILAYAMAYABILIR (bilinen bir Mongoose
+  // davranisi - arastirmayla dogrulandi) - markModified() ile
+  // ZORLA isaretleniyor, aksi halde .save() bu degisikligi
+  // SESSIZCE veritabanina YAZMAYABILIR.
+  kayit.markModified('surec');
   await kayit.save();
   return kayit;
 }
@@ -212,6 +226,13 @@ async function ek4aVeriCek(id, anaAdimIndex, altAdimIndex, { cksSonucId, atlandi
     altAdim.veri = { atlandiMi: true, ciftciler: [] };
     altAdim.tamamlandiMi = true;
     altAdim.tamamlanmaTarihi = new Date();
+    // Mongoose, ICE ICE (surec[i].altAdimlar[j]) subdocument dizisi
+    // icindeki Mixed tipli 'veri' alanina yapilan DOGRUDAN atamayi
+    // GUVENILIR sekilde ALGILAYAMAYABILIR (bilinen bir Mongoose
+    // davranisi - arastirmayla dogrulandi) - markModified() ile
+    // ZORLA isaretleniyor, aksi halde .save() bu degisikligi
+    // SESSIZCE veritabanina YAZMAYABILIR.
+    kayit.markModified('surec');
     await kayit.save();
     return kayit;
   }
@@ -230,6 +251,13 @@ async function ek4aVeriCek(id, anaAdimIndex, altAdimIndex, { cksSonucId, atlandi
   altAdim.tamamlandiMi = true;
   altAdim.tamamlanmaTarihi = new Date();
 
+  // Mongoose, ICE ICE (surec[i].altAdimlar[j]) subdocument dizisi
+  // icindeki Mixed tipli 'veri' alanina yapilan DOGRUDAN atamayi
+  // GUVENILIR sekilde ALGILAYAMAYABILIR (bilinen bir Mongoose
+  // davranisi - arastirmayla dogrulandi) - markModified() ile
+  // ZORLA isaretleniyor, aksi halde .save() bu degisikligi
+  // SESSIZCE veritabanina YAZMAYABILIR.
+  kayit.markModified('surec');
   await kayit.save();
   return kayit;
 }
@@ -270,6 +298,13 @@ async function ek4bVeriCek(id, anaAdimIndex, altAdimIndex, { bbhbSonucId }) {
   altAdim.tamamlandiMi = true;
   altAdim.tamamlanmaTarihi = new Date();
 
+  // Mongoose, ICE ICE (surec[i].altAdimlar[j]) subdocument dizisi
+  // icindeki Mixed tipli 'veri' alanina yapilan DOGRUDAN atamayi
+  // GUVENILIR sekilde ALGILAYAMAYABILIR (bilinen bir Mongoose
+  // davranisi - arastirmayla dogrulandi) - markModified() ile
+  // ZORLA isaretleniyor, aksi halde .save() bu degisikligi
+  // SESSIZCE veritabanina YAZMAYABILIR.
+  kayit.markModified('surec');
   await kayit.save();
   return kayit;
 }
@@ -322,6 +357,13 @@ async function ek3aHayvanVarligiCek(id, anaAdimIndex, altAdimIndex, { bbhbSonucI
   altAdim.tamamlandiMi = true;
   altAdim.tamamlanmaTarihi = new Date();
 
+    // Mongoose, ICE ICE (surec[i].altAdimlar[j]) subdocument dizisi
+    // icindeki Mixed tipli 'veri' alanina yapilan DOGRUDAN atamayi
+    // GUVENILIR sekilde ALGILAYAMAYABILIR (bilinen bir Mongoose
+    // davranisi - arastirmayla dogrulandi) - markModified() ile
+    // ZORLA isaretleniyor, aksi halde .save() bu degisikligi
+    // SESSIZCE veritabanina YAZMAYABILIR.
+    kayit.markModified('surec');
     await kayit.save();
   return kayit;
 }
@@ -377,6 +419,13 @@ async function ek3aAraziVerileriKaydet(id, anaAdimIndex, altAdimIndex, { parselI
   altAdim.tamamlandiMi = true;
   altAdim.tamamlanmaTarihi = new Date();
 
+  // Mongoose, ICE ICE (surec[i].altAdimlar[j]) subdocument dizisi
+  // icindeki Mixed tipli 'veri' alanina yapilan DOGRUDAN atamayi
+  // GUVENILIR sekilde ALGILAYAMAYABILIR (bilinen bir Mongoose
+  // davranisi - arastirmayla dogrulandi) - markModified() ile
+  // ZORLA isaretleniyor, aksi halde .save() bu degisikligi
+  // SESSIZCE veritabanina YAZMAYABILIR.
+  kayit.markModified('surec');
   await kayit.save();
   return kayit;
 }
@@ -442,6 +491,13 @@ async function birlestirVeDevamEt(id, anaAdimIndex, altAdimIndex) {
   altAdim.tamamlandiMi = true;
   altAdim.tamamlanmaTarihi = new Date();
 
+  // Mongoose, ICE ICE (surec[i].altAdimlar[j]) subdocument dizisi
+  // icindeki Mixed tipli 'veri' alanina yapilan DOGRUDAN atamayi
+  // GUVENILIR sekilde ALGILAYAMAYABILIR (bilinen bir Mongoose
+  // davranisi - arastirmayla dogrulandi) - markModified() ile
+  // ZORLA isaretleniyor, aksi halde .save() bu degisikligi
+  // SESSIZCE veritabanina YAZMAYABILIR.
+  kayit.markModified('surec');
   await kayit.save();
   return kayit;
 }
