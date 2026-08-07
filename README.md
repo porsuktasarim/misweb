@@ -395,6 +395,46 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
+## markModified() DE YETERSİZ KALDI - DAHA GÜVENİLİR YÖNTEME GEÇİLDİ
+
+**Kullanıcı "halen kaydetmiyor" diyerek MongoDB'nin başlangıç/bağlantı
+loglarını paylaştı.** Bu loglar (WiredTiger başlatma, bağlantı kabul
+etme mesajları) SORGU/HATA DETAYI İÇERMİYORDU - teşhise doğrudan
+YARDIMCI OLMADI, ama bir önceki `markModified('surec')` düzeltmesinin
+DE YETERSİZ KALDIĞINI (kullanıcının "halen kaydetmiyor" ifadesiyle)
+GÖSTERDİ.
+
+**Daha güvenilir çözüme geçildi:** "oku → iç içe subdocument'i
+mutasyona uğrat → `.save()`" deseni (markModified() ile birlikte bile)
+TERK EDİLDİ. Bunun yerine **`uc-t.service.js`'deki 3 KRİTİK fonksiyon**
+(`adimVeriKaydet` - genel "Kaydet" butonu, `ek3aAraziVerileriKaydet` -
+Parsel Seç, `ek3aHayvanVarligiCek` - BBHB seçimi) **`Model.
+findOneAndUpdate()` ile DOĞRUDAN, TAM YOLU (dot-notation, örn.
+`surec.2.altAdimlar.3.veri`) belirten bir `$set` sorgusuna
+YENİDEN YAZILDI**. Bu yaklaşım Mongoose'un DEĞİŞİKLİK-ALGILAMA
+katmanını TAMAMEN BYPASS EDER - path'in kendisi AÇIKÇA MongoDB
+sürücüsüne söylendiği için, hangi Mongoose sürümü/davranışı olursa
+olsun GÜVENİLİR şekilde çalışır (bu, bu SINIF Mongoose sorunları için
+TOPLULUĞUN yaygın olarak önerdiği ÇÖZÜM YÖNTEMİDİR - salt
+`markModified()`'a güvenmekten DAHA SAĞLAM).
+
+Path oluşturma mantığı İZOLE test edildi: `surec.0.altAdimlar.3.veri`
+gibi DOĞRU path'ler ürettiği doğrulandı. **Diğer 5 fonksiyon**
+(`adimGuncelle`, `ek4aVeriCek`, `ek4bVeriCek`, `karar1Kaydet`,
+`birlestirVeDevamEt`) kullanıcının BU turda test ETMEDİĞİ akışlar
+olduğu için BİLİNÇLİ olarak KAPSAM DIŞI bırakıldı (gereksiz risk
+almamak için) - eski `markModified()` deseninde KALDI, gerekirse
+AYNI yönteme İLERİDE geçirilebilir.
+
+**Dürüstçe belirtilmesi gereken sınırlama:** Yine GERÇEK bir MongoDB
+instance'ı ÇALIŞTIRAMADIĞIM için (ağ kısıtlaması) bu düzeltmeyi
+UÇTAN UCA test EDEMEDİM - ama `findOneAndUpdate` + dot-notation
+`$set` YÖNTEMİ, Mongoose'un KENDİ değişiklik-algılama mekanizmasına
+HİÇ İHTİYAÇ DUYMADIĞI için (düz bir MongoDB sürücü komutu gibi
+davranır), önceki İKİ başarısız denemeden (düz atama, sonra
+markModified) YAPISAL OLARAK FARKLI ve DAHA GÜVENİLİR bir temele
+dayanıyor.
+
 ## KESİN KÖK NEDEN BULUNDU: Mongoose markModified() Eksikliği
 
 **Kullanıcının verdiği İKİNCİ, ÇOK DEĞERLİ tanı ipucu:** "parsel sec

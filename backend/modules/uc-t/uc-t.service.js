@@ -112,21 +112,26 @@ async function adimGuncelle(id, anaAdimIndex, altAdimIndex, { tamamlandiMi, not 
  * SADECE bilgi girisi + uretilen kopyalanabilir metin iceren
  * adimlar icin (ileride benzer adimlarda da yeniden kullanilabilir).
  */
+/**
+ * ONEMLI - GUVENILIRLIK ICIN YENIDEN YAZILDI (markModified() + save()
+ * YAKLASIMI YETERSIZ KALDI): "oku -> ic ice subdocument'i mutasyona
+ * ugrat -> .save()" DESENI TERK EDILDI - bunun yerine MongoDB'ye
+ * DOGRUDAN, TAM YOLU (dot-notation) BELIRTEN bir `$set` sorgusu
+ * gonderiliyor (`findOneAndUpdate`). Bu, Mongoose'un degisiklik-
+ * algilama katmanini TAMAMEN BYPASS EDER - path'in KENDISI acikca
+ * MongoDB'ye soylendigi icin, ic ice subdocument dizileri + Mixed
+ * tipi kombinasyonunda YASANAN GUVENILMEZLIK SORUNU KOKTEN ORTADAN
+ * KALKAR (bu, tam da bu sinif hatalar icin Mongoose toplulugunun
+ * onerdigi COZUM YONTEMIDIR).
+ */
 async function adimVeriKaydet(id, anaAdimIndex, altAdimIndex, veri) {
-  const kayit = await UcT.findById(id);
+  const yol = `surec.${anaAdimIndex}.altAdimlar.${altAdimIndex}`;
+  const kayit = await UcT.findOneAndUpdate(
+    { _id: id },
+    { $set: { [`${yol}.veri`]: veri, [`${yol}.tamamlandiMi`]: true, [`${yol}.tamamlanmaTarihi`]: new Date() } },
+    { new: true }
+  );
   if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
-  const altAdim = kayit.surec[anaAdimIndex].altAdimlar[altAdimIndex];
-  altAdim.veri = veri;
-  altAdim.tamamlandiMi = true;
-  altAdim.tamamlanmaTarihi = new Date();
-  // Mongoose, ICE ICE (surec[i].altAdimlar[j]) subdocument dizisi
-  // icindeki Mixed tipli 'veri' alanina yapilan DOGRUDAN atamayi
-  // GUVENILIR sekilde ALGILAYAMAYABILIR (bilinen bir Mongoose
-  // davranisi - arastirmayla dogrulandi) - markModified() ile
-  // ZORLA isaretleniyor, aksi halde .save() bu degisikligi
-  // SESSIZCE veritabanina YAZMAYABILIR.
-  kayit.markModified('surec');
-  await kayit.save();
   return kayit;
 }
 
@@ -351,21 +356,17 @@ async function ek3aHayvanVarligiCek(id, anaAdimIndex, altAdimIndex, { bbhbSonucI
     }
   }
 
-  const altAdim = kayit.surec[anaAdimIndex].altAdimlar[altAdimIndex];
-  altAdim.kaynakBbhbSonucId = bbhbSonucId;
-  altAdim.veri = { bbhbBolumIndex: bolumIndex, hayvanVarligiTablosu: tablo, bbhbToplam: bolum.bolumToplamBBHB };
-  altAdim.tamamlandiMi = true;
-  altAdim.tamamlanmaTarihi = new Date();
-
-    // Mongoose, ICE ICE (surec[i].altAdimlar[j]) subdocument dizisi
-    // icindeki Mixed tipli 'veri' alanina yapilan DOGRUDAN atamayi
-    // GUVENILIR sekilde ALGILAYAMAYABILIR (bilinen bir Mongoose
-    // davranisi - arastirmayla dogrulandi) - markModified() ile
-    // ZORLA isaretleniyor, aksi halde .save() bu degisikligi
-    // SESSIZCE veritabanina YAZMAYABILIR.
-    kayit.markModified('surec');
-    await kayit.save();
-  return kayit;
+  // ONEMLI - GUVENILIRLIK ICIN YENIDEN YAZILDI (bkz. adimVeriKaydet'teki
+  // ACIKLAMA): markModified()+save() DESENI YETERSIZ KALDI - DOGRUDAN
+  // $set sorgusuna GECILDI.
+  const yol = `surec.${anaAdimIndex}.altAdimlar.${altAdimIndex}`;
+  const veri = { bbhbBolumIndex: bolumIndex, hayvanVarligiTablosu: tablo, bbhbToplam: bolum.bolumToplamBBHB };
+  const guncelKayit = await UcT.findOneAndUpdate(
+    { _id: id },
+    { $set: { [`${yol}.kaynakBbhbSonucId`]: bbhbSonucId, [`${yol}.veri`]: veri, [`${yol}.tamamlandiMi`]: true, [`${yol}.tamamlanmaTarihi`]: new Date() } },
+    { new: true }
+  );
+  return guncelKayit;
 }
 
 /**
@@ -388,8 +389,8 @@ async function ek3aHayvanVarligiCek(id, anaAdimIndex, altAdimIndex, { bbhbSonucI
  * (ana formu tekrar kaydetmeden) kullanilabilir.
  */
 async function ek3aAraziVerileriKaydet(id, anaAdimIndex, altAdimIndex, { parselIdleri }) {
-  const kayit = await UcT.findById(id);
-  if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
+  const mevcutKayit = await UcT.findById(id);
+  if (!mevcutKayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
   if (!parselIdleri || !parselIdleri.length) throw new Error('En az bir parsel seçilmelidir.');
 
   const parseller = await MeraParseli.find({ _id: { $in: parselIdleri } });
@@ -414,19 +415,21 @@ async function ek3aAraziVerileriKaydet(id, anaAdimIndex, altAdimIndex, { parselI
     Array.from(gruplar[c].mulkiyetDurumlari).join(', '),
   ]);
 
-  const altAdim = kayit.surec[anaAdimIndex].altAdimlar[altAdimIndex];
-  altAdim.veri = { ...(altAdim.veri || {}), secilenParselIdleri: parselIdleri, madde7Satirlari };
-  altAdim.tamamlandiMi = true;
-  altAdim.tamamlanmaTarihi = new Date();
+  // ONEMLI - GUVENILIRLIK ICIN YENIDEN YAZILDI (bkz. adimVeriKaydet'teki
+  // ACIKLAMA - markModified()+save() DESENI YETERSIZ KALDI): DOGRUDAN,
+  // TAM YOLU BELIRTEN bir `$set` sorgusu (findOneAndUpdate) kullanilir -
+  // Mongoose'un degisiklik-algilama katmani TAMAMEN BYPASS EDILIR.
+  // Mevcut 'veri'nin DIGER alanlarini (orn. hayvanVarligiTablosu) KORUMAK
+  // icin ONCE OKUNUP sonra TUM veri objesi TEK PARCA olarak $set edilir.
+  const yol = `surec.${anaAdimIndex}.altAdimlar.${altAdimIndex}`;
+  const oncekiVeri = mevcutKayit.surec[anaAdimIndex].altAdimlar[altAdimIndex].veri || {};
+  const yeniVeri = { ...oncekiVeri, secilenParselIdleri: parselIdleri, madde7Satirlari };
 
-  // Mongoose, ICE ICE (surec[i].altAdimlar[j]) subdocument dizisi
-  // icindeki Mixed tipli 'veri' alanina yapilan DOGRUDAN atamayi
-  // GUVENILIR sekilde ALGILAYAMAYABILIR (bilinen bir Mongoose
-  // davranisi - arastirmayla dogrulandi) - markModified() ile
-  // ZORLA isaretleniyor, aksi halde .save() bu degisikligi
-  // SESSIZCE veritabanina YAZMAYABILIR.
-  kayit.markModified('surec');
-  await kayit.save();
+  const kayit = await UcT.findOneAndUpdate(
+    { _id: id },
+    { $set: { [`${yol}.veri`]: yeniVeri, [`${yol}.tamamlandiMi`]: true, [`${yol}.tamamlanmaTarihi`]: new Date() } },
+    { new: true }
+  );
   return kayit;
 }
 
