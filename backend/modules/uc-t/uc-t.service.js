@@ -117,21 +117,30 @@ async function adimGuncelle(id, anaAdimIndex, altAdimIndex, { tamamlandiMi, not 
  * YAKLASIMI YETERSIZ KALDI): "oku -> ic ice subdocument'i mutasyona
  * ugrat -> .save()" DESENI TERK EDILDI - bunun yerine MongoDB'ye
  * DOGRUDAN, TAM YOLU (dot-notation) BELIRTEN bir `$set` sorgusu
- * gonderiliyor (`findOneAndUpdate`). Bu, Mongoose'un degisiklik-
- * algilama katmanini TAMAMEN BYPASS EDER - path'in KENDISI acikca
- * MongoDB'ye soylendigi icin, ic ice subdocument dizileri + Mixed
- * tipi kombinasyonunda YASANAN GUVENILMEZLIK SORUNU KOKTEN ORTADAN
- * KALKAR (bu, tam da bu sinif hatalar icin Mongoose toplulugunun
- * onerdigi COZUM YONTEMIDIR).
+ * gonderiliyor. GECICI TESHIS LOGLARI EKLENDI (kullanicinin "cok
+ * FARKLI bolumlerde de AYNI sorun yasandi" bildirimi uzerine) -
+ * BUNLAR Node.js UYGULAMA KONSOLUNA (MongoDB'nin KENDI loglarina
+ * DEGIL) yazilir, SORUNUN TAM OLARAK NEREDE oldugunu (yanlis id?
+ * yanlis index? yazma BASARISIZ mi, yoksa OKUMA mi yanlis?) GORUNUR
+ * hale getirir.
  */
 async function adimVeriKaydet(id, anaAdimIndex, altAdimIndex, veri) {
+  console.log('[TEŞHİS] adimVeriKaydet çağrıldı:', { id, anaAdimIndex, altAdimIndex, veriOzeti: JSON.stringify(veri).slice(0, 200) });
+
   const yol = `surec.${anaAdimIndex}.altAdimlar.${altAdimIndex}`;
-  const kayit = await UcT.findOneAndUpdate(
-    { _id: id },
-    { $set: { [`${yol}.veri`]: veri, [`${yol}.tamamlandiMi`]: true, [`${yol}.tamamlanmaTarihi`]: new Date() } },
-    { new: true }
-  );
+  const setNesnesi = { [`${yol}.veri`]: veri, [`${yol}.tamamlandiMi`]: true, [`${yol}.tamamlanmaTarihi`]: new Date() };
+  console.log('[TEŞHİS] $set path:', Object.keys(setNesnesi));
+
+  const guncellemeSonucu = await UcT.updateOne({ _id: id }, { $set: setNesnesi });
+  console.log('[TEŞHİS] updateOne sonucu:', { matchedCount: guncellemeSonucu.matchedCount, modifiedCount: guncellemeSonucu.modifiedCount, acknowledged: guncellemeSonucu.acknowledged });
+
+  const kayit = await UcT.findById(id);
   if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
+
+  const yazilanAltAdim = kayit.surec && kayit.surec[anaAdimIndex] && kayit.surec[anaAdimIndex].altAdimlar[altAdimIndex];
+  console.log('[TEŞHİS] Yazma SONRASI veritabanından okunan veri:', JSON.stringify(yazilanAltAdim && yazilanAltAdim.veri).slice(0, 200));
+  console.log('[TEŞHİS] surec dizisi uzunluğu:', kayit.surec ? kayit.surec.length : 'surec YOK', '- altAdimlar uzunluğu:', kayit.surec && kayit.surec[anaAdimIndex] ? kayit.surec[anaAdimIndex].altAdimlar.length : 'N/A');
+
   return kayit;
 }
 
