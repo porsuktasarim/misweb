@@ -396,6 +396,8 @@
   <script src="/assets/js/mis-lang.js?v=1"></script>
   <script>
     function guvenliMetin(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+    /** Coklu-satirli, girintili template literal'lerden gelen HTML'i, etiketler ARASINDAKI (icerik DEGIL) bosluk metin dugumlerini temizleyerek SIKISTIRIR - girintili JS kaynak kodu YAZI KOLAYLIGI icin kalsin, ama render edilen DOM'da GEREKSIZ gorsel bosluk BIRAKMASIN diye. */
+    function sikistir(html) { return html.replace(/>\s+</g, '><').trim(); }
 
     misKabuguBaslat('ayarlar', 'Ayarlar<span class="ayrac">/</span>İl-İlçe-Köy-Mahalle Listesi');
 
@@ -1383,12 +1385,12 @@
     /** Mera Dosya Tipleri tablosunu (duzenlenebilir satirlar + satir sil butonu) CIZER. */
     function mdtTablodanCiz(tipler) {
       const govde = document.getElementById('mdtTablosu');
-      govde.innerHTML = tipler.map((t, i) => `
+      govde.innerHTML = sikistir(tipler.map((t, i) => `
         <tr data-anahtar="${t.anahtar}">
           <td><input type="text" class="form-control form-control-sm mdt-ad" value="${t.ad}"></td>
           <td class="text-center"><input type="checkbox" class="form-check-input mdt-otomatik" ${t.otomatikAdlandirma ? 'checked' : ''}></td>
           <td><button type="button" class="btn btn-sm btn-outline-danger mdt-sil-btn">✕</button></td>
-        </tr>`).join('');
+        </tr>`).join(''));
       govde.querySelectorAll('.mdt-sil-btn').forEach((btn) => btn.addEventListener('click', (e) => e.target.closest('tr').remove()));
     }
 
@@ -1532,7 +1534,7 @@
         ? `<tr><td>${guvenliMetin(s.il)}</td><td>${guvenliMetin(s.bant)}</td></tr>`
         : `<tr><td>${guvenliMetin(s.bant)}</td><td>${s.cokIyi ?? ''}</td><td>${s.iyi ?? ''}</td><td>${s.orta ?? ''}</td><td>${s.zayif ?? ''}</td></tr>`);
 
-      return `
+      return sikistir(`
         <div class="mb-2">
           <div class="small fw-semibold mb-1">${_mvLang.meraVerimAyarlari.aktifVeri}</div>
           <div class="table-responsive" style="max-height:260px; overflow-y:auto;">
@@ -1599,7 +1601,7 @@
           </div>
 
           <div class="mv-sonuc small mt-2"></div>
-        </div>`;
+        </div>`);
     }
 
     function mvTabloOlaylariniBagla(itemEl, tabloAdi, tip) {
