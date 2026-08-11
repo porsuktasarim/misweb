@@ -125,11 +125,13 @@ async function adimGuncelle(id, anaAdimIndex, altAdimIndex, { tamamlandiMi, not 
  * hale getirir.
  */
 async function adimVeriKaydet(id, anaAdimIndex, altAdimIndex, veri) {
-  console.log('[TEŞHİS] adimVeriKaydet çağrıldı:', { id, anaAdimIndex, altAdimIndex, veriOzeti: JSON.stringify(veri).slice(0, 200) });
+  console.log('[TEŞHİS] adimVeriKaydet çağrıldı:', { id, anaAdimIndex, altAdimIndex });
+  console.log('[TEŞHİS] Gönderilen veri.madde7Satirlari VAR MI:', veri && veri.madde7Satirlari ? `EVET (${veri.madde7Satirlari.length} satır)` : 'HAYIR/YOK');
+  console.log('[TEŞHİS] Gönderilen veri.secilenParselIdleri VAR MI:', veri && veri.secilenParselIdleri ? `EVET (${veri.secilenParselIdleri.length} id)` : 'HAYIR/YOK');
+  console.log('[TEŞHİS] Gönderilen veri TÜM anahtarlar:', veri ? Object.keys(veri) : 'veri YOK');
 
   const yol = `surec.${anaAdimIndex}.altAdimlar.${altAdimIndex}`;
   const setNesnesi = { [`${yol}.veri`]: veri, [`${yol}.tamamlandiMi`]: true, [`${yol}.tamamlanmaTarihi`]: new Date() };
-  console.log('[TEŞHİS] $set path:', Object.keys(setNesnesi));
 
   const guncellemeSonucu = await UcT.updateOne({ _id: id }, { $set: setNesnesi });
   console.log('[TEŞHİS] updateOne sonucu:', { matchedCount: guncellemeSonucu.matchedCount, modifiedCount: guncellemeSonucu.modifiedCount, acknowledged: guncellemeSonucu.acknowledged });
@@ -138,8 +140,9 @@ async function adimVeriKaydet(id, anaAdimIndex, altAdimIndex, veri) {
   if (!kayit) throw new Error(`3T kaydı bulunamadı: ${id}`);
 
   const yazilanAltAdim = kayit.surec && kayit.surec[anaAdimIndex] && kayit.surec[anaAdimIndex].altAdimlar[altAdimIndex];
-  console.log('[TEŞHİS] Yazma SONRASI veritabanından okunan veri:', JSON.stringify(yazilanAltAdim && yazilanAltAdim.veri).slice(0, 200));
-  console.log('[TEŞHİS] surec dizisi uzunluğu:', kayit.surec ? kayit.surec.length : 'surec YOK', '- altAdimlar uzunluğu:', kayit.surec && kayit.surec[anaAdimIndex] ? kayit.surec[anaAdimIndex].altAdimlar.length : 'N/A');
+  const yazilanVeri = yazilanAltAdim && yazilanAltAdim.veri;
+  console.log('[TEŞHİS] Yazma SONRASI okunan veri.madde7Satirlari VAR MI:', yazilanVeri && yazilanVeri.madde7Satirlari ? `EVET (${yazilanVeri.madde7Satirlari.length} satır)` : 'HAYIR/YOK');
+  console.log('[TEŞHİS] Yazma SONRASI okunan veri TÜM anahtarlar:', yazilanVeri ? Object.keys(yazilanVeri) : 'veri YOK');
 
   return kayit;
 }
