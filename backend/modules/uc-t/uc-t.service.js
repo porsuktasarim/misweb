@@ -371,8 +371,19 @@ async function ek3aHayvanVarligiCek(id, anaAdimIndex, altAdimIndex, { bbhbSonucI
   // ONEMLI - GUVENILIRLIK ICIN YENIDEN YAZILDI (bkz. adimVeriKaydet'teki
   // ACIKLAMA): markModified()+save() DESENI YETERSIZ KALDI - DOGRUDAN
   // $set sorgusuna GECILDI.
+  //
+  // KRITIK DUZELTME (kullanicinin verdigi TESHIS loglariyla BULUNDU):
+  // Bu fonksiyon `veri` alanini TAMAMEN UZERINE YAZIYORDU - bu, DAHA
+  // ONCE "Parsel Sec" ile kaydedilmis olan madde7Satirlari/
+  // secilenParselIdleri gibi BASKA alanlarin, kullanici Ek-3/a'nin
+  // GENEL "Kaydet" butonuna bastiginda (bu fonksiyon ONCE BBHB verisini
+  // CEKMEK icin cagrildigi icin) SESSIZCE SILINMESINE sebep oluyordu -
+  // hem VERITABANINDA hem FRONTEND'IN hafizadaki `kayit` degiskeninde.
+  // ARTIK mevcut veri OKUNUP KORUNARAK birlestiriliyor (tam da
+  // ek3aAraziVerileriKaydet'teki AYNI onlem).
   const yol = `surec.${anaAdimIndex}.altAdimlar.${altAdimIndex}`;
-  const veri = { bbhbBolumIndex: bolumIndex, hayvanVarligiTablosu: tablo, bbhbToplam: bolum.bolumToplamBBHB };
+  const oncekiVeri = (kayit.surec[anaAdimIndex].altAdimlar[altAdimIndex].veri) || {};
+  const veri = { ...oncekiVeri, bbhbBolumIndex: bolumIndex, hayvanVarligiTablosu: tablo, bbhbToplam: bolum.bolumToplamBBHB };
   const guncelKayit = await UcT.findOneAndUpdate(
     { _id: id },
     { $set: { [`${yol}.kaynakBbhbSonucId`]: bbhbSonucId, [`${yol}.veri`]: veri, [`${yol}.tamamlandiMi`]: true, [`${yol}.tamamlanmaTarihi`]: new Date() } },

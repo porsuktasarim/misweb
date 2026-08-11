@@ -395,6 +395,41 @@ metninde donup kalıyordu. Backend GERÇEKTEN 3-tablo yapısına
 eklendi - benzer bir uyumsuzluk gelecekte tekrar olursa panel
 sonsuza dek takılı kalmak yerine GÖRÜNÜR bir hata mesajı gösterecek.
 
+## GERÇEK KÖK NEDEN BULUNDU (Teşhis Loglarıyla Kanıtlandı)
+
+**Kullanıcının paylaştığı teşhis logu KESİN kanıt sağladı:**
+`adimVeriKaydet`'e gönderilen `veri` objesinde `madde7Satirlari` VE
+`secilenParselIdleri` HİÇ YOKTU - ne gönderilen veride, ne de yazma
+sonrası okunan veride. Ama `matchedCount:1, modifiedCount:1` ile
+YAZMA İŞLEMİNİN KENDİSİ başarılıydı - yani **backend'in `findOneAndUpdate`
+düzeltmesi (proje 080) GERÇEKTEN ÇALIŞIYORDU**, sorun ORADA DEĞİLDİ.
+
+**Gerçek kök neden:** `ek3aKaydet()` (frontend, genel "Kaydet"
+butonu), Ek-3/a'da bir BBHB kaydı SEÇİLİYSE (kullanıcının log'unda
+`bbhbSonucId` DOLU) ÖNCE `/ek3a-hayvan-varligi-cek` endpoint'ini
+çağırıyor - VE **bu backend fonksiyonu (`ek3aHayvanVarligiCek`)
+`veri` alanının TAMAMINI SADECE 3 BBHB ALANIYLA (`bbhbBolumIndex`,
+`hayvanVarligiTablosu`, `bbhbToplam`) ÜZERİNE YAZIYORDU** - daha önce
+"Parsel Seç" ile kaydedilmiş `madde7Satirlari`'yı HEM VERİTABANINDAN
+HEM frontend'in hafızadaki `kayit` değişkeninden SESSİZCE SİLİYORDU.
+Sonrasında `ek3aKaydet()`'in "önceki madde7 verisini koru" adımı
+çalıştığında, korunacak HİÇBİR ŞEY KALMAMIŞ oluyordu (çünkü BİR ÖNCEKİ
+adım - BBHB çekme - onu ZATEN SİLMİŞTİ). **Bu, kullanıcının "aynısını
+çiftçi ailesi ve mevcut hayvan varlığında da yaşamıştık" ifadesini de
+açıklıyor** - AYNI "tam üzerine yazma" hata sınıfı, form genelinde
+tekrarlanan bir kalıptı.
+
+**Düzeltme:** `ek3aHayvanVarligiCek` artık (tıpkı `ek3aAraziVerileriKaydet`
+gibi) ÖNCE mevcut `veri`'yi OKUYUP KORUYARAK BBHB alanlarını
+BİRLEŞTİRİYOR (`{ ...oncekiVeri, bbhbBolumIndex, hayvanVarligiTablosu,
+bbhbToplam }`) - artık HİÇBİR alanı SİLMİYOR. Mantık mock veriyle
+test edildi: önceden var olan `madde7Satirlari`/`secilenParselIdleri`
+artık BBHB çekme sonrasında da KORUNUYOR.
+
+**Teşhis logları ŞİMDİLİK BIRAKILDI** - siz "artık çalışıyor" diye
+doğrulayana kadar. Doğrulandıktan sonra "logları kaldır" derseniz,
+temiz bir teşhis-logsuz versiyon hazırlarım.
+
 ## markModified() DE YETERSİZ KALDI - DAHA GÜVENİLİR YÖNTEME GEÇİLDİ
 
 **Kullanıcı "halen kaydetmiyor" diyerek MongoDB'nin başlangıç/bağlantı
