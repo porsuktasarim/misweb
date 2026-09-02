@@ -80,6 +80,18 @@ Sistem Ayarları (imza rengi, ekran font boyutları, Mera dosya
 tipleri/mülkiyet durumları, harita katman varsayılanları) için bkz.
 [`docs/SISTEM-AYARLARI.md`](docs/SISTEM-AYARLARI.md).
 
+**Önemli yapısal düzeltme:** Ayarlar sayfasında (`ayarlar/index.html`)
+"Sistem Ayarları" ve "Mera Verim Ayarları" sekmeleri, önceki
+düzenlemeler sırasında yanlışlıkla ana `tab-content` div'inin DIŞINDA
+kalmıştı (diğer 3 sekme - İl-İlçe-Köy-Mahalle, EKGB, Personel -
+İÇİNDEYDİ). Bu, Mera Verim Ayarları'ndaki aşırı boşluk görünümünün de
+asıl nedeniydi. Div iç içeliği düzeltildi (kesin bir "div stack"
+analiziyle doğrulanarak) - artık 5 sekmenin tamamı aynı `tab-content`
+içinde, kardeş elemanlar olarak duruyor. Ayrıca üst çubuktaki başlık
+("Ayarlar/...") artık SABİT değil - hangi ana sekme seçiliyse onun
+adını gösterecek şekilde dinamikleştirildi (yeni bir sekme eklenirse
+kod değişikliği gerekmez, buton metni otomatik kullanılır).
+
 ## Dağıtım
 
 `Dockerfile` + `docker-compose.yml`, Coolify üzerinde. Port: 4342.

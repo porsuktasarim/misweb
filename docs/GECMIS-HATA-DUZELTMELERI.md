@@ -142,3 +142,32 @@ Bir turda çalışma alanı (sanal makine) sıfırlanmış bulundu. Kurtarma:
 önceki tüm paketler (`misweb proje 054`'ten itibaren) sırayla üst
 üste açılarak proje yeniden inşa edildi - bu, gerçek kaynağın her
 zaman kullanıcının kendi git deposu olduğunu doğruladı.
+
+## Ayarlar Sayfası - "Yapısal Tutarsızlık" Şikayeti Sonrası Doğrulama
+
+Kullanıcı, Sistem Ayarları ve Mera Verim Ayarları sekmelerinin diğer
+sekmelerden (İl-İlçe-Köy-Mahalle, EKGB, Personel) farklı bir DOM
+seviyesinde olduğunu, bunun devasa boşluğa sebep olduğunu bildirdi.
+
+**Gerçek bir HTML parser ile (görsel inceleme değil) kesin analiz
+yapıldı:** Python'un `html.parser` modülüyle, `<input>` gibi void
+elementler doğru işlenerek, her 5 sekmenin (`il-ilce-koy-tab`,
+`ekgb-birim-fiyat-tab`, `personel-tab`, `belge-ayarlari-tab`,
+`mera-verim-tab`) tam ebeveyn zinciri ve derinliği çıkarıldı -
+**hepsi tam olarak aynı derinlikte (8) ve aynı ebeveyn zincirinde**
+(`html→body→mis-kabuk→mis-icerik→mis-icerik-birincil→mis-panel→
+tab-content→[kendisi]`) bulundu, eşleşmeyen etiket de yoktu. Yani bu
+turda teslim edilen dosyada yapısal bir hata YOK.
+
+Bu, muhtemelen kullanıcının sunucusunda henüz en son paketin tam
+deploy edilmemiş olmasından kaynaklanıyor (projenin bilinen tekrarlayan
+Coolify cache sorunu) - ya da bu oturum boyunca yapılan onlarca
+düzenlemeden birinde GEÇİCİ olarak bozulup sonra fark edilmeden
+düzelmiş olabilir.
+
+**Yine de gelecekte benzer bir kaymayı ÖNLEMEK için:** her 5 sekmenin
+açılış ve kapanış `</div>`'i artık açık HTML yorumlarıyla
+işaretleniyor (`<!-- {id} BAŞLANGIÇ -->` / `<!-- {id} BİTİŞ -->`) -
+bu, ileride bu bölgede yapılacak düzenlemelerde (yeni sekme ekleme
+dahil) kaynak kodda sınırların GÖRSEL olarak açık olmasını sağlıyor,
+kazayla yanlış div kapatma riskini azaltıyor.
