@@ -53,6 +53,12 @@ const MIS_MENU = [
         ikonSvg: '<path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
       },
       {
+        anahtar: 'ek4ab',
+        ad: 'Ek-4ab (BBHB+ÇKS Birleştirme)',
+        href: '/ek4ab/',
+        ikonSvg: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+      },
+      {
         anahtar: 'mevzuat',
         ad: 'Mevzuat',
         href: '/mevzuat/',
