@@ -19,6 +19,17 @@ const ciftciSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// BONUS DUZELTME (kullanicinin bu turki istegiyle DOGRUDAN ILGILI
+// DEGIL, ama AYNI dosyalari incelerken FARK EDILDI): "Teknik Ekip
+// Uyeleri" ve "Muhtar ve Ihtiyar Heyeti" formlarina girilen imza
+// bilgileri, sema BU ALANLARI HIC TANIMLAMADIGI ICIN Mongoose
+// tarafindan SESSIZCE ATILIYORDU (test edildi: `teknikEkipImzacilari`
+// hicbir zaman veritabanina YAZILMIYORDU) - simdi eklendi.
+const imzaciSchema = new mongoose.Schema(
+  { adSoyad: { type: String, required: true }, unvan: { type: String, default: '' } },
+  { _id: false }
+);
+
 const cksSonucSchema = new mongoose.Schema(
   {
     il: { type: String, required: true },
@@ -28,6 +39,8 @@ const cksSonucSchema = new mongoose.Schema(
 
     kaynakDosyalar: { type: [String], default: [] },
     ciftciler: { type: [ciftciSchema], default: [] },
+    teknikEkipImzacilari: { type: [imzaciSchema], default: [] },
+    muhtarHeyetiImzacilari: { type: [imzaciSchema], default: [] },
 
     olusturanKullaniciId: { type: String },
     durum: { type: String, enum: ['aktif', 'arsiv'], default: 'aktif' },

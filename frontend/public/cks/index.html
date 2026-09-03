@@ -33,14 +33,17 @@
 
           <div class="tab-content">
             <div class="tab-pane fade show active" id="yukle-tab">
-              <h2>Rapor Başlığı</h2>
-              <div class="row g-2 mb-2">
-                <div class="col-md-4"><select id="cksIl"></select></div>
-                <div class="col-md-4"><select id="cksIlce"></select></div>
-                <div class="col-md-4"><select id="cksMahalle"></select></div>
-              </div>
+              <h2>Rapor Bilgisi</h2>
+              <p class="text-muted small">
+                İl/İlçe/Köy-Mahalle artık dosyanın kendisinden okunur -
+                yüklediğiniz dosya birden fazla köy/mahalleye (hatta
+                ilçeye) ait kayıt içeriyorsa, her biri OTOMATİK olarak
+                ayrı bir yerleşim grubuna ayrılır ve ayrı bir ÇKS
+                sonucu olarak kaydedilir.
+              </p>
               <div class="row g-2 mb-3">
                 <div class="col-md-3">
+                  <label class="form-label small">Üretim Yılı</label>
                   <input type="number" class="form-control form-control-sm" id="cksUretimYili" placeholder="Üretim Yılı" value="2026" />
                 </div>
               </div>
@@ -113,15 +116,8 @@
   <script src="https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js"></script>
   <script src="/assets/js/mis-menu.js?v=14"></script>
   <script src="/assets/js/shell.js?v=12"></script>
-  <script src="/assets/js/mis-yer-secici.js?v=13"></script>
   <script>
     misKabuguBaslat('cks', 'ÇKS<span class="ayrac">/</span>Çiftçi Kayıt Sistemi Cetveli');
-
-    let cksYerSecim = { il: '', ilce: '', mahalle: '' };
-    misYerSeciciKur({
-      ilSelectId: 'cksIl', ilceSelectId: 'cksIlce', mahalleSelectId: 'cksMahalle',
-      onDegisti: (secim) => { cksYerSecim = secim; },
-    });
 
     async function apiGet(url) {
       const res = await fetch(url);
@@ -157,16 +153,8 @@
       e.preventDefault();
       const sonucAlan = document.getElementById('cksSonucAlani');
 
-      if (!cksYerSecim.il || !cksYerSecim.ilce || !cksYerSecim.mahalle) {
-        alert('Lütfen İl / İlçe / Köy-Mahalle seçin.');
-        return;
-      }
-
       const form = e.target;
       const formData = new FormData(form);
-      formData.append('il', cksYerSecim.il);
-      formData.append('ilce', cksYerSecim.ilce);
-      formData.append('koyMahalle', cksYerSecim.mahalle);
       formData.append('uretimYili', document.getElementById('cksUretimYili').value);
 
       sonucAlan.innerHTML = '<div class="text-muted">İşleniyor...</div>';
@@ -181,31 +169,49 @@
         }
 
         sonOnizlemeVerisi = json.data;
+        const yerlesimler = json.data.yerlesimler;
 
-        const uyariHtml = json.data.siniflandirmaUyarilari.length > 0
-          ? `<div class="alert alert-warning small">
-               <strong>${json.data.siniflandirmaUyarilari.length} ürün otomatik/varsayılan sınıflandırıldı</strong> (Sebze/Meyve kabul edildi), kontrol et:<br>
-               ${json.data.siniflandirmaUyarilari.map(u => u.urun).join(', ')}
-             </div>`
+        if (!yerlesimler.length) {
+          sonucAlan.innerHTML = '<div class="alert alert-warning">Dosyada işlenebilir kayıt bulunamadı.</div>';
+          return;
+        }
+
+        // KULLANICININ ACIK ISTEGI: BIRDEN FAZLA yerlesim varsa (orn.
+        // Silivri/Balaban, Silivri/Akoren, Sile/Yazimanayir) HER BIRI
+        // AYRI bir baslik+tablo olarak GOSTERILIR - "Kaydet" dedigimizde
+        // HEPSI AYRI AYRI ÇKS sonucu olarak kaydedilecek.
+        const ozetHtml = yerlesimler.length > 1
+          ? `<div class="alert alert-info small"><strong>${yerlesimler.length} farklı yerleşim tespit edildi</strong> - "Kaydet" dediğinizde her biri AYRI bir ÇKS sonucu olarak kaydedilecek: ${yerlesimler.map((y) => [y.il, y.ilce, y.koyMahalle].filter(Boolean).join('/')).join(', ')}</div>`
           : '';
 
-        sonucAlan.innerHTML = `
-          <div class="alert alert-success">${json.data.ciftciler.length} çiftçi ailesi bulundu.</div>
-          ${uyariHtml}
-          <div class="table-responsive" style="max-height:400px;overflow:auto;">
-            <table class="table table-sm">
-              <thead><tr><th>Sıra</th><th>Adı Soyadı</th><th>Yem Bitkisi</th><th>Sebze/Meyve</th><th>Hububat/Yağlı</th><th>Tarım</th></tr></thead>
-              <tbody>
-                ${json.data.ciftciler.map((c, i) => `
-                  <tr>
-                    <td>${i + 1}</td><td>${c.isletmeciAdi}</td>
-                    <td>${c.yemBitkisi || ''}</td><td>${c.sebzeMeyve || ''}</td><td>${c.hububatYagli || ''}</td>
-                    <td>${c.tarim ? 'X' : ''}</td>
-                  </tr>`).join('')}
-              </tbody>
-            </table>
-          </div>`;
+        const yerlesimlerHtml = yerlesimler.map((y) => {
+          const uyariHtml = y.siniflandirmaUyarilari.length > 0
+            ? `<div class="alert alert-warning small mb-2">
+                 <strong>${y.siniflandirmaUyarilari.length} ürün otomatik/varsayılan sınıflandırıldı</strong> (Sebze/Meyve kabul edildi), kontrol et:<br>
+                 ${y.siniflandirmaUyarilari.map(u => u.urun).join(', ')}
+               </div>`
+            : '';
+          return `
+            <div class="border rounded p-2 mb-3">
+              <h3 class="h6 mb-2">${[y.il, y.ilce, y.koyMahalle].filter(Boolean).join(' / ')} <span class="text-muted small fw-normal">(${y.ciftciler.length} çiftçi ailesi)</span></h3>
+              ${uyariHtml}
+              <div class="table-responsive" style="max-height:300px;overflow:auto;">
+                <table class="table table-sm mb-0">
+                  <thead><tr><th>Sıra</th><th>Adı Soyadı</th><th>Yem Bitkisi</th><th>Sebze/Meyve</th><th>Hububat/Yağlı</th><th>Tarım</th></tr></thead>
+                  <tbody>
+                    ${y.ciftciler.map((c, i) => `
+                      <tr>
+                        <td>${i + 1}</td><td>${c.isletmeciAdi}</td>
+                        <td>${c.yemBitkisi || ''}</td><td>${c.sebzeMeyve || ''}</td><td>${c.hububatYagli || ''}</td>
+                        <td>${c.tarim ? 'X' : ''}</td>
+                      </tr>`).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>`;
+        }).join('');
 
+        sonucAlan.innerHTML = ozetHtml + yerlesimlerHtml;
         document.getElementById('imzaBolumu').style.display = 'block';
       } catch (err) {
         sonucAlan.innerHTML = `<div class="alert alert-danger">${err.message}</div>`;

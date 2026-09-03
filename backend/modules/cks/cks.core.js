@@ -21,17 +21,40 @@ function yuvarla(sayi) {
 }
 
 /**
+ * KULLANICININ ACIK ISTEGI: ÇKS dosyasi (Koy Genelinde Parsel Uretim
+ * Belgesi) TEK BASINA BIRDEN FAZLA yerlesime (il/ilce/koy uclusune)
+ * AIT kayitlar ICEREBILIR - onceden bu bilgi (cks.import.js zaten
+ * DOSYADAN OKUYORDU) KULLANILMIYOR, TUM kayitlar kullanicinin ELLE
+ * girdigi TEK bir "baslik" (il/ilce/koyMahalle) ALTINDA
+ * BIRLESTIRILIYORDU - bu, FARKLI yerlesimlerin YANLISLIKLA TEK bir
+ * ÇKS raporunun ICINE KARISMASINA sebep oluyordu.
+ *
+ * ARTIK: gruplama ANAHTARI (il, ilce, koy) UCLUSUNU DE ICERIYOR - HER
+ * FARKLI yerlesim kendi BAGIMSIZ "yerlesim" grubuna DUSER, HER
+ * yerlesimin KENDI ciftci listesi VE siniflandirma uyarilari OLUR.
+ *
  * @param {Array} kayitlar - cks.import.js ciktisi (normalize kayitlar)
- * @returns {{ciftciler: Array, siniflandirmaUyarilari: Array}}
+ * @returns {{yerlesimler: Array<{il, ilce, koyMahalle, ciftciler, siniflandirmaUyarilari}>}}
  */
 function derle(kayitlar) {
-  const gruplar = new Map();
-  const uyarilar = new Map(); // urun -> {kategori, eminlik} (varsayilan/tahmini olanlari izler)
+  const yerlesimGruplari = new Map(); // "il::ilce::koy" -> { il, ilce, koyMahalle, ciftciGruplari: Map, uyarilar: Map }
 
   for (const kayit of kayitlar) {
-    const anahtar = kayit.isletmeciAdi;
-    if (!gruplar.has(anahtar)) {
-      gruplar.set(anahtar, {
+    const yerlesimAnahtari = `${kayit.il}::${kayit.ilce}::${kayit.koy}`;
+    if (!yerlesimGruplari.has(yerlesimAnahtari)) {
+      yerlesimGruplari.set(yerlesimAnahtari, {
+        il: kayit.il,
+        ilce: kayit.ilce,
+        koyMahalle: kayit.koy,
+        ciftciGruplari: new Map(),
+        uyarilar: new Map(),
+      });
+    }
+    const yerlesim = yerlesimGruplari.get(yerlesimAnahtari);
+
+    const ciftciAnahtari = kayit.isletmeciAdi;
+    if (!yerlesim.ciftciGruplari.has(ciftciAnahtari)) {
+      yerlesim.ciftciGruplari.set(ciftciAnahtari, {
         isletmeciAdi: kayit.isletmeciAdi,
         tcVkn: kayit.tcVkn,
         yemBitkisi: 0,
@@ -40,25 +63,33 @@ function derle(kayitlar) {
         detaylar: [],
       });
     }
-    const grup = gruplar.get(anahtar);
+    const grup = yerlesim.ciftciGruplari.get(ciftciAnahtari);
     const { kategori, eminlik } = kategoriBelirle(kayit.urun);
 
     grup[kategori] = yuvarla(grup[kategori] + kayit.ekiliAlan);
     grup.detaylar.push({ urun: kayit.urun, ekiliAlan: kayit.ekiliAlan, kategori, adaNo: kayit.adaNo, parselNo: kayit.parselNo });
 
-    if (eminlik !== 'kesin' && !uyarilar.has(kayit.urun)) {
-      uyarilar.set(kayit.urun, { urun: kayit.urun, kategori, eminlik });
+    if (eminlik !== 'kesin' && !yerlesim.uyarilar.has(kayit.urun)) {
+      yerlesim.uyarilar.set(kayit.urun, { urun: kayit.urun, kategori, eminlik });
     }
   }
 
-  const ciftciler = Array.from(gruplar.values())
-    .map((g) => ({ ...g, tarim: g.yemBitkisi > 0 || g.sebzeMeyve > 0 || g.hububatYagli > 0 }))
-    .sort((a, b) => a.isletmeciAdi.localeCompare(b.isletmeciAdi, 'tr-TR'));
+  const yerlesimler = Array.from(yerlesimGruplari.values()).map((yerlesim) => ({
+    il: yerlesim.il,
+    ilce: yerlesim.ilce,
+    koyMahalle: yerlesim.koyMahalle,
+    ciftciler: Array.from(yerlesim.ciftciGruplari.values())
+      .map((g) => ({ ...g, tarim: g.yemBitkisi > 0 || g.sebzeMeyve > 0 || g.hububatYagli > 0 }))
+      .sort((a, b) => a.isletmeciAdi.localeCompare(b.isletmeciAdi, 'tr-TR')),
+    siniflandirmaUyarilari: Array.from(yerlesim.uyarilar.values()).filter((u) => u.eminlik === 'varsayilan'),
+  }));
 
-  return {
-    ciftciler,
-    siniflandirmaUyarilari: Array.from(uyarilar.values()).filter((u) => u.eminlik === 'varsayilan'),
-  };
+  // Yerlesimleri de TUTARLI bir sirada (il, ilce, koy alfabetik) dondur.
+  yerlesimler.sort((a, b) =>
+    `${a.il}${a.ilce}${a.koyMahalle}`.localeCompare(`${b.il}${b.ilce}${b.koyMahalle}`, 'tr-TR')
+  );
+
+  return { yerlesimler };
 }
 
 module.exports = { derle };

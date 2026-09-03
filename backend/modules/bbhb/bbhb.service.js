@@ -136,15 +136,40 @@ async function turkvetIleHesapla({ dosyaYollari }) {
 
 /**
  * 7. Onizlemeden sonra kullanici "kaydet" derse cagrilir.
- * ONEMLI: Guncelleme yapmaz, her zaman YENI kayit olusturur (immutable).
+ * ONEMLI: Guncelleme yapmaz, her zaman YENI kayit(lar) olusturur (immutable).
+ *
+ * KULLANICININ ACIK ISTEGI: bir hesaplama BIRDEN FAZLA yerlesim (il/
+ * ilce/mahalle) ICERIYORSA (orn. Turkvet dosyasi Silivri/Balaban,
+ * Silivri/Akoren VE Sile/Yazimanayir'i AYNI ANDA icerdiginde), HER
+ * YERLESIM AYRI, BAGIMSIZ bir BbhbSonuc KAYDI olarak SAKLANIR - TEK
+ * bir kayitta COKLU "bolumler" OLARAK TUTULMAZ. Bu, HER yerlesimin
+ * kendi BASINA (orn. Ek-4ab'de, 3T'de) SECILEBILIR/REFERANS
+ * VERILEBILIR olmasini saglar - COKLU-BOLUMLU TEK kayit bu ACIDAN
+ * KULLANISSIZDI.
+ *
+ * GERIYE DONUK UYUMLULUK: model semasi DEGISMEDI (`bolumler` hala bir
+ * DIZI) - sadece HER YENI kayit ARTIK TEK ELEMANLI bir `bolumler`
+ * dizisi TASIR. Eski (coklu-bolumlu) kayitlar veritabaninda OLDUGU
+ * GIBI KALIR, bu fonksiyon SADECE YENI kayitlar icin gecerlidir.
+ *
+ * Donus degeri: HER ZAMAN bir DIZI (tek yerlesim olsa bile) - cagiran
+ * kod (controller) buna gore MESAJ URETIR.
  */
 async function sonucuKaydet(hesaplamaSonucu, olusturanKullaniciId) {
-  const kayit = await BbhbSonuc.create({
-    ...hesaplamaSonucu,
-    olusturanKullaniciId,
-    durum: 'aktif',
-  });
-  return kayit;
+  const { bolumler, genelToplamBBHB, ...ortakAlanlar } = hesaplamaSonucu;
+
+  const kayitlar = await Promise.all(
+    bolumler.map((bolum) =>
+      BbhbSonuc.create({
+        ...ortakAlanlar,
+        bolumler: [bolum],
+        genelToplamBBHB: bolum.bolumToplamBBHB,
+        olusturanKullaniciId,
+        durum: 'aktif',
+      })
+    )
+  );
+  return kayitlar;
 }
 
 /** Diger moduller (orn. tahsis) referansla sonucu okumak icin bunu kullanir. */

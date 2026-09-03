@@ -23,13 +23,8 @@ async function onizlemeHandler(req, res) {
   const dosyalar = req.files || [];
   try {
     const dosyaYollari = dosyalar.map((f) => f.path);
-    const baslik = {
-      il: req.body.il,
-      ilce: req.body.ilce,
-      koyMahalle: req.body.koyMahalle,
-      uretimYili: req.body.uretimYili ? parseInt(req.body.uretimYili, 10) : undefined,
-    };
-    const sonuc = await service.onizlemeOlustur({ dosyaYollari, baslik });
+    const uretimYili = req.body.uretimYili ? parseInt(req.body.uretimYili, 10) : undefined;
+    const sonuc = await service.onizlemeOlustur({ dosyaYollari, uretimYili });
     return basarili(res, sonuc);
   } catch (err) {
     return basarisiz(res, err.message || lang.ortak.hataOlustu);
@@ -41,8 +36,12 @@ async function onizlemeHandler(req, res) {
 async function kaydetHandler(req, res) {
   try {
     const kullaniciId = req.user ? req.user.id : null;
-    const kayit = await service.sonucuKaydet(req.body, kullaniciId);
-    return basarili(res, kayit, 'ÇKS sonucu kaydedildi');
+    const kayitlar = await service.sonucuKaydet(req.body, kullaniciId);
+    // KULLANICININ ACIK ISTEGI: coklu yerlesim varsa bunu MESAJDA ACIKCA GOSTER.
+    const mesaj = kayitlar.length > 1
+      ? `${kayitlar.length} ayrı ÇKS sonucu kaydedildi: ${kayitlar.map((k) => [k.il, k.ilce, k.koyMahalle].filter(Boolean).join('/')).join(', ')}`
+      : 'ÇKS sonucu kaydedildi';
+    return basarili(res, kayitlar, mesaj);
   } catch (err) {
     return basarisiz(res, err.message || lang.ortak.hataOlustu);
   }

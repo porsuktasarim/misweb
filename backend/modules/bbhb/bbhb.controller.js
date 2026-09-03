@@ -58,8 +58,14 @@ async function turkvetOnizlemeHandler(req, res) {
 async function kaydetHandler(req, res) {
   try {
     const kullaniciId = req.user ? req.user.id : null;
-    const kayit = await service.sonucuKaydet(req.body, kullaniciId);
-    return basarili(res, kayit, `${lang.bbhb.kisaAd} sonucu kaydedildi`);
+    const kayitlar = await service.sonucuKaydet(req.body, kullaniciId);
+    // KULLANICININ ACIK ISTEGI: coklu yerlesim varsa bunu MESAJDA
+    // ACIKCA GOSTER - hangi yerlesimlerin AYRI AYRI kaydedildigini
+    // teyit etsin diye.
+    const mesaj = kayitlar.length > 1
+      ? `${kayitlar.length} ayrı ${lang.bbhb.kisaAd} sonucu kaydedildi: ${kayitlar.map((k) => [k.bolumler[0].il, k.bolumler[0].ilce, k.bolumler[0].mahalle].filter(Boolean).join('/')).join(', ')}`
+      : `${lang.bbhb.kisaAd} sonucu kaydedildi`;
+    return basarili(res, kayitlar, mesaj);
   } catch (err) {
     return basarisiz(res, err.message || lang.ortak.hataOlustu);
   }
