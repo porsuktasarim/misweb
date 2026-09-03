@@ -303,7 +303,22 @@
     let _karar1KurumListesi = null;
     let _karar1Secimler = {}; // { kurumKod: 'asil'|'yedek' }
     let _karar1IlkYukleme = false;
-    const K1_DIGER_KURUM_KODLARI = ['vali', 'dsi', 'ogm', 'defterdarlik', 'milliEmlakMudurlugu', 'milliEmlakDairesi', 'kadastro', 'ziraatOdasi', 'jandarma', 'polis'];
+    // KANUN SIRASI (4342 sayili Mera Kanunu m.6): "...Bakanlik il muduru,
+    // Bakanlik il mudurlugunden konu uzmani bir ziraat muhendisi
+    // (Teknik Personel), Devlet Su Isleri Genel Mudurlugu yetkili
+    // temsilcisi, Orman Genel Mudurlugu yetkili temsilcisi, ilgili
+    // koy veya mahalle muhtari (Muhtar - AYRI bir bolumde zaten var,
+    // bu listede DEGIL), defterdarliktan... bir hukukcu, Milli Emlak
+    // Mudurlugunden bir temsilci, Kadastro Mudurlugunden bir teknik
+    // eleman, Ziraat Odasi Baskanligindan bir temsilci ve ilgisine
+    // gore genel kolluk biriminde gorevli bir temsilci (Jandarma/
+    // Emniyet) olmak uzere ON BIR KISIDEN olusan bir komisyon..."
+    // "Vali" KANUNUN 11 KISILIK LISTESINDE HIC YOK (sadece opsiyonel,
+    // sistemin eklediği ekstra bir katilimci/imzaci) - bu yuzden EN
+    // SONA alindi. ilMudur/teknikPersonel, gosterilecekKodlar'da
+    // BASKANLIK ZINCIRINE GORE (baskan degillerse) AYRICA eklenir,
+    // bu listede TEKRAR YOK.
+    const K1_DIGER_KURUM_KODLARI = ['dsi', 'ogm', 'defterdarlik', 'milliEmlakMudurlugu', 'milliEmlakDairesi', 'kadastro', 'ziraatOdasi', 'jandarma', 'polis', 'vali'];
 
     async function renderKarar1Paneli(alt) {
       const govde = document.getElementById('veriPaneliGovde');
@@ -482,11 +497,22 @@
       // Milli Emlak Mudurlugu/Dairesi Baskanligi'ndan SADECE komisyonun
       // milliEmlakTuru'na uyan biri gosterilir.
       const gecerliMilliEmlakKodu = _karar1SeciliKomisyon.milliEmlakTuru === 'dairesiBaskanligi' ? 'milliEmlakDairesi' : 'milliEmlakMudurlugu';
+      // KANUN SIRASI: ...DSİ, Orman, (Muhtar - ayrı), Defterdarlık,
+      // Milli Emlak, Kadastro, Ziraat Odası, Genel Kolluk (Jandarma/
+      // Emniyet)... - Milli Emlak'ı DIZI SONUNA ATMAK yerine
+      // Defterdarlık'tan HEMEN SONRAKI dogru konumuna YERLESTIRIYORUZ.
+      // "Vali" kanunun 11 kisilik listesinde OLMADIGI icin EN SONA
+      // birakildi (K1_DIGER_KURUM_KODLARI'nin kendisinde zaten sonda).
+      const digerKodlarMilliEmlakYerlesmis = [];
+      K1_DIGER_KURUM_KODLARI.forEach((kod) => {
+        if (kod === 'milliEmlakMudurlugu' || kod === 'milliEmlakDairesi') return; // asil/dairesi ayrimini asagida TEK kod olarak ekleyecegiz
+        digerKodlarMilliEmlakYerlesmis.push(kod);
+        if (kod === 'defterdarlik') digerKodlarMilliEmlakYerlesmis.push(gecerliMilliEmlakKodu);
+      });
       const gosterilecekKodlar = [
         ...(baskanTip !== 'ilMudur' ? ['ilMudur'] : []),
         ...(baskanTip !== 'teknikPersonel' ? ['teknikPersonel'] : []),
-        ...K1_DIGER_KURUM_KODLARI.filter((kod) => kod !== 'milliEmlakMudurlugu' && kod !== 'milliEmlakDairesi'),
-        gecerliMilliEmlakKodu,
+        ...digerKodlarMilliEmlakYerlesmis,
       ];
 
       // KULLANICININ ACIK ISTEGI: "katilimcilarin hepsi asil olarak
