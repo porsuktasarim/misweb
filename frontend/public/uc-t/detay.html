@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>3T Detay - Mera İzleme Sistemi</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
   <link href="/assets/css/layout.css?v=12" rel="stylesheet" />
   <style>
@@ -76,6 +77,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2/dist/js/tom-select.complete.min.js"></script>
   <script src="/assets/js/mis-menu.js?v=16"></script>
   <script src="/assets/js/shell.js?v=12"></script>
   <script>
@@ -238,6 +240,9 @@
       document.getElementById('kteYil').addEventListener('change', () => komisyonTeknikEkipYilaGoreOner());
     }
 
+    let kteKomisyonTS = null;
+    let kteTeknikEkipTS = null;
+
     async function komisyonTeknikEkipSecenekleriniDoldur(oncekiKomisyonId, oncekiTeknikEkipId) {
       const komisyonJson = await fetch(`${API}/komisyon-adaylari?il=${encodeURIComponent(kayit.il)}`).then((r) => r.json());
       const kSelect = document.getElementById('kteKomisyonSelect');
@@ -253,6 +258,14 @@
       tSelect.innerHTML = tumEkipler.length
         ? '<option value="">— Seç —</option>' + tumEkipler.map((e) => `<option value="${e._id}" data-yil="${e.yil}" ${oncekiTeknikEkipId === e._id ? 'selected' : ''}>${e.yil} - ${e.ekipNo ? e.ekipNo + ' Nolu ' : ''}${e.ilce} Teknik Ekibi</option>`).join('')
         : '<option value="">Bu ilçe için kayıtlı ekip yok</option>';
+
+      // KULLANICININ ACIK ISTEGI: Komisyon ve Teknik Ekip secimi de
+      // ARANABILIR olsun (Ek-4ab'deki BBHB/CKS aramasiyla AYNI desen -
+      // Tom Select, secenek METNI ICINDE arama yapar).
+      if (kteKomisyonTS) { kteKomisyonTS.destroy(); }
+      if (kteTeknikEkipTS) { kteTeknikEkipTS.destroy(); }
+      kteKomisyonTS = new TomSelect(kSelect, { create: false, placeholder: 'Yıl/İl ara veya seç...', maxOptions: null });
+      kteTeknikEkipTS = new TomSelect(tSelect, { create: false, placeholder: 'Yıl/İlçe ara veya seç...', maxOptions: null });
     }
 
     /** Yil degistiginde, O YILA AIT komisyon/ekip varsa OTOMATIK oner (secili yap) - degistirilebilir kalir. */
@@ -261,9 +274,9 @@
       const kSelect = document.getElementById('kteKomisyonSelect');
       const tSelect = document.getElementById('kteTeknikEkipSelect');
       const kEslesen = Array.from(kSelect.options).find((o) => o.dataset.yil === yil);
-      if (kEslesen) kSelect.value = kEslesen.value;
+      if (kEslesen && kteKomisyonTS) kteKomisyonTS.setValue(kEslesen.value);
       const tEslesen = Array.from(tSelect.options).find((o) => o.dataset.yil === yil);
-      if (tEslesen) tSelect.value = tEslesen.value;
+      if (tEslesen && kteTeknikEkipTS) kteTeknikEkipTS.setValue(tEslesen.value);
     }
 
     window.komisyonTeknikEkipKaydet = async () => {
@@ -289,6 +302,7 @@
     let _karar1SeciliKomisyon = null;
     let _karar1KurumListesi = null;
     let _karar1Secimler = {}; // { kurumKod: 'asil'|'yedek' }
+    let _karar1IlkYukleme = false;
     const K1_DIGER_KURUM_KODLARI = ['vali', 'dsi', 'ogm', 'defterdarlik', 'milliEmlakMudurlugu', 'milliEmlakDairesi', 'kadastro', 'ziraatOdasi', 'jandarma', 'polis'];
 
     async function renderKarar1Paneli(alt) {
@@ -297,6 +311,13 @@
       const b = oncekiVeri.baskanlik || {};
       _karar1Secimler = {};
       (oncekiVeri.katilimcilar || []).forEach((k) => { _karar1Secimler[k.kurumKod] = k.temsilciTipi; });
+      // KULLANICININ ACIK ISTEGI: "katilimcilarin hepsi asil olarak
+      // secili olsun" - bu SADECE ILK KEZ (henuz hic kaydedilmemis,
+      // yani onceden KAYITLI katilimci YOKSA) gecerlidir - kullanicinin
+      // SONRADAN bilerek "dahil degil" yaptigi bir kurum, PANEL
+      // yeniden render edildiginde (baskanlik degisikligi vb.) GERI
+      // GELMESIN diye bu bayrak SADECE ILK ACILISTA true olur.
+      _karar1IlkYukleme = (oncekiVeri.katilimcilar || []).length === 0;
 
       if (!_karar1KurumListesi) {
         const kj = await fetch('/api/il-mera-komisyonu/kurum-listesi').then((r) => r.json());
@@ -370,7 +391,9 @@
       } else {
         select.innerHTML = '<option value="">Bu il için kayıtlı komisyon yok</option>';
       }
-      select.addEventListener('change', karar1KomisyonSecildi);
+      // KULLANICININ ACIK ISTEGI: burada da ARANABILIR olsun.
+      const k1KomisyonTS = new TomSelect(select, { create: false, placeholder: 'Yıl/İl ara veya seç...', maxOptions: null });
+      k1KomisyonTS.on('change', karar1KomisyonSecildi);
       document.getElementById('k1VYYok').addEventListener('change', karar1BaskanlikGuncelle);
       document.getElementById('k1IlMudurYok').addEventListener('change', karar1BaskanlikGuncelle);
 
@@ -381,7 +404,7 @@
       document.getElementById('k1Tarih').addEventListener('change', () => {
         const secilenYil = document.getElementById('k1Tarih').value ? new Date(document.getElementById('k1Tarih').value).getFullYear().toString() : '';
         const eslesen = Array.from(select.options).find((o) => o.dataset.yil === secilenYil);
-        if (eslesen) { select.value = eslesen.value; karar1KomisyonSecildi(); }
+        if (eslesen) { k1KomisyonTS.setValue(eslesen.value); }
       });
 
       if (select.value) await karar1KomisyonSecildi();
@@ -465,6 +488,19 @@
         ...K1_DIGER_KURUM_KODLARI.filter((kod) => kod !== 'milliEmlakMudurlugu' && kod !== 'milliEmlakDairesi'),
         gecerliMilliEmlakKodu,
       ];
+
+      // KULLANICININ ACIK ISTEGI: "katilimcilarin hepsi asil olarak
+      // secili olsun" - SADECE ILK ACILISTA (henuz hic kaydedilmemis
+      // bir karar icin), TUM gosterilen kurumlar VARSAYILAN olarak
+      // "dahil + asil" isaretlenir - kullanici istemediklerini
+      // CIKARABILIR/yedek YAPABILIR. Bayrak, TEKRAR render'larda
+      // (baskanlik degisikligi vb.) kullanicinin SONRADAN yaptigi
+      // "dahil degil" secimlerini GERI GETIRMEMEK icin SADECE BIR KEZ
+      // uygulanir.
+      if (_karar1IlkYukleme) {
+        gosterilecekKodlar.forEach((kod) => { if (_karar1Secimler[kod] === undefined) _karar1Secimler[kod] = 'asil'; });
+        _karar1IlkYukleme = false;
+      }
 
       alan.innerHTML = `
         <label class="form-label small fw-semibold d-block">Katılımcılar</label>

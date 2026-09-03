@@ -82,11 +82,22 @@ async function topluUyeYukle(id, dosyaYolu) {
  * VERILEN yil + il/ilce/koyMahalle icin, o yilin Teknik Ekiplerinde
  * kayitli "muhtarlik" kurumlu (secilenYer ile eslesen) uyeyi bulur -
  * 3T'nin Muhtar alanini ONCEDEN doldurmak icin kullanilir.
+ *
+ * ONEMLI DUZELTME (gercek bir hata): sorgu ONCEDEN `TeknikEkip.find({
+ * yil, ilce })` ile ILCE'yi TAM ESLESME (case-sensitive) ARIYORDU -
+ * ama uye.secilenYer icindeki KARSILASTIRMA zaten `esitMi()` ile
+ * (case-insensitive) YAPILIYORDU. Eger veritabanindaki TeknikEkip
+ * kaydinin `ilce` alani ("SİLİVRİ") ile 3T kaydinin ilcesi ("Silivri")
+ * BIREBIR AYNI YAZIMDA DEGILSE, ILK SORGUNUN KENDISI HICBIR SONUC
+ * BULAMIYORDU - Muhtar hic OTOMATIK DOLMUYORDU. Artik SADECE `yil`'e
+ * gore filtrelenip, `ilce` (diger alanlar gibi) `esitMi()` ile
+ * KARSILASTIRILIYOR.
  */
 async function muhtarBul(yil, il, ilce, koyMahalle) {
   const esitMi = (a, b) => (a || '').trim().toLocaleLowerCase('tr-TR') === (b || '').trim().toLocaleLowerCase('tr-TR');
-  const ekipler = await TeknikEkip.find({ yil: Number(yil), ilce }).select('uyeler');
+  const ekipler = await TeknikEkip.find({ yil: Number(yil) }).select('ilce uyeler');
   for (const ekip of ekipler) {
+    if (!esitMi(ekip.ilce, ilce)) continue;
     const uye = ekip.uyeler.find((u) => (
       u.kurumKod === 'muhtarlik'
       && u.secilenYer
