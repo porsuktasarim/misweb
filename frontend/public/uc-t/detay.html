@@ -313,12 +313,13 @@
     // eleman, Ziraat Odasi Baskanligindan bir temsilci ve ilgisine
     // gore genel kolluk biriminde gorevli bir temsilci (Jandarma/
     // Emniyet) olmak uzere ON BIR KISIDEN olusan bir komisyon..."
-    // "Vali" KANUNUN 11 KISILIK LISTESINDE HIC YOK (sadece opsiyonel,
-    // sistemin eklediği ekstra bir katilimci/imzaci) - bu yuzden EN
-    // SONA alindi. ilMudur/teknikPersonel, gosterilecekKodlar'da
-    // BASKANLIK ZINCIRINE GORE (baskan degillerse) AYRICA eklenir,
-    // bu listede TEKRAR YOK.
-    const K1_DIGER_KURUM_KODLARI = ['dsi', 'ogm', 'defterdarlik', 'milliEmlakMudurlugu', 'milliEmlakDairesi', 'kadastro', 'ziraatOdasi', 'jandarma', 'polis', 'vali'];
+    // "Vali" KANUNUN 11 KISILIK LISTESINDE HIC YOK (baskanlik Vali'nin
+    // GOREVLENDIRDIGI bir Vali Yardimcisina AIT) - AMA KULLANICININ
+    // ACIK ISTEGI UZERINE (protokol/hiyerarsi geregi) EN BASA alindi -
+    // Vali Yardimcisi zaten AYRI "Baskanlik" kutusunda (bu tablonun
+    // USTUNDE) baskan olarak gosteriliyor, Vali ise bu tablonun ILK
+    // SATIRI olarak (baskanlik kutusunun HEMEN ALTINDA) yer alir.
+    const K1_DIGER_KURUM_KODLARI = ['vali', 'dsi', 'ogm', 'defterdarlik', 'milliEmlakMudurlugu', 'milliEmlakDairesi', 'kadastro', 'ziraatOdasi', 'jandarma', 'polis'];
 
     async function renderKarar1Paneli(alt) {
       const govde = document.getElementById('veriPaneliGovde');
@@ -501,15 +502,20 @@
       // Milli Emlak, Kadastro, Ziraat Odası, Genel Kolluk (Jandarma/
       // Emniyet)... - Milli Emlak'ı DIZI SONUNA ATMAK yerine
       // Defterdarlık'tan HEMEN SONRAKI dogru konumuna YERLESTIRIYORUZ.
-      // "Vali" kanunun 11 kisilik listesinde OLMADIGI icin EN SONA
-      // birakildi (K1_DIGER_KURUM_KODLARI'nin kendisinde zaten sonda).
       const digerKodlarMilliEmlakYerlesmis = [];
       K1_DIGER_KURUM_KODLARI.forEach((kod) => {
+        if (kod === 'vali') return; // Vali AYRI, EN BASA eklenecek (asagida)
         if (kod === 'milliEmlakMudurlugu' || kod === 'milliEmlakDairesi') return; // asil/dairesi ayrimini asagida TEK kod olarak ekleyecegiz
         digerKodlarMilliEmlakYerlesmis.push(kod);
         if (kod === 'defterdarlik') digerKodlarMilliEmlakYerlesmis.push(gecerliMilliEmlakKodu);
       });
+      // KULLANICININ ACIK ISTEGI: "Vali ve Vali Yardımcısı en başta,
+      // sonra İl Müdürü ve devamı olacak" - Vali Yardımcısı zaten
+      // (baskan oldugunda) AYRI "Baskanlik" kutusunda bu tablonun
+      // USTUNDE gosteriliyor; Vali ise bu tablonun EN ILK SATIRI olur
+      // - Il Muduru/Teknik Personel'DEN BILE ONCE.
       const gosterilecekKodlar = [
+        'vali',
         ...(baskanTip !== 'ilMudur' ? ['ilMudur'] : []),
         ...(baskanTip !== 'teknikPersonel' ? ['teknikPersonel'] : []),
         ...digerKodlarMilliEmlakYerlesmis,
